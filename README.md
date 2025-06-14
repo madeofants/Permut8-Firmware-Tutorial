@@ -17,11 +17,21 @@ This repository contains a comprehensive tutorial and reference system for devel
 - **Level 0-3 Gap Remediation** - Critical learning gaps systematically resolved
 - **Ultra-Stringent Quality System** - 47-category audit protocol with 95.0% average rating
 
+## 📖 Quick Access Documentation
+
+### 🌐 **[Download Interactive HTML Documentation](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/Permut8-Documentation-Complete.html)**
+**One-click download** - Complete documentation in a single HTML file with navigation and search
+
+### 🌟 **[Professional Overview (Web View)](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/Permut8-Documentation-Full.html)**
+**Online viewing** - Professional overview with responsive design
+
+---
+
 ## 🚀 Quick Start
 
 ### For Complete Beginners (30 minutes)
 ```bash
-# 1. Start with the QUICKSTART guide
+# 1. Download the HTML documentation above, or start with the QUICKSTART guide
 open "Documentation Project/active/content/user-guides/QUICKSTART.md"
 
 # 2. Follow the 90-minute Foundation Path:
@@ -129,15 +139,15 @@ PikaCmd.exe impala.pika compile source.impala output.gazl
 
 ## 📖 Documentation Formats
 
-### Interactive Formats
-- **HTML Complete** - `Permut8-Documentation-Complete.html` (Full interactive content)
-- **HTML Overview** - `Permut8-Documentation-Full.html` (Professional navigation)
+### 🔥 **Primary Downloads**
+- **[📱 Interactive HTML Documentation](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/Permut8-Documentation-Complete.html)** - Complete content with navigation and search
+- **[🌐 Professional Overview HTML](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/Permut8-Documentation-Full.html)** - Responsive overview with quality metrics
 
-### PDF Ready
+### 📄 PDF Ready
 - **Markdown Complete** - `Documentation Project/active/FINAL-PDF-DELIVERABLE/Permut8-Documentation-Complete.md`
 - **Build Instructions** - `Documentation Project/active/SIMPLE-PDF-WITH-GLOSSARY-LINKS.md`
 
-### Source Files
+### 📁 Source Files
 - **67 Production Files** - `Documentation Project/active/content/` (A+ quality, ready for use)
 
 ## 🏆 Quality Standards
