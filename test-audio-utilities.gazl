@@ -1,0 +1,104 @@
+ ; Compiled with Impala version 1.0
+
+ PRAWN_FIRMWARE_PATCH_FORMAT: ! DEFi #2
+ signal:			GLOB *2
+ params:			GLOB *8
+ displayLEDs:		GLOB *4
+
+ ;-----------------------------------------------------------------------------
+ clampAudio:		FUNC
+ 					$result:	OUTi
+ 					$value:		INPi
+ ;-----------------------------------------------------------------------------
+ 								LEQi $value #2047 @.f0			; if (value > 2047) 
+ 								MOVi $result #2047 				; result = 2047
+ 								GOTO @.e1  						; } else if (value < -2047) 
+ 					.f0:		GEQi $value #-2047 @.f2			; if (value < -2047) 
+ 								MOVi $result #-2047 			; result = -2047
+ 								GOTO @.e3  						; } else 
+ 					.f2:		MOVi $result $value 			; result = value
+ 					.e3:		NOOP
+ 					.e1:		RETU   							; }
+
+
+ ;-----------------------------------------------------------------------------
+ scaleLinear:		FUNC
+ 					$result:	OUTi
+ 					$paramValue: INPi
+ 					$minValue:	INPi
+ 					$maxValue:	INPi
+ 					$range:		LOCi
+ 					$scaled:	LOCi
+ ;-----------------------------------------------------------------------------
+ 								SUBi $range $maxValue $minValue	; range = maxValue - minValue
+ 								MULi $scaled $paramValue $range	; scaled = paramValue * range
+ 								SHRi %0 $scaled #8				; result = minValue + (scaled >> 8)
+ 								ADDi $result $minValue %0
+ 								RETU   							; }
+
+ circularBuffer:	GLOB *1024
+ 					GLOB *1
+ bufferSize:		DATi #1024
+ 					GLOB *1
+ bufferMask:		DATi #1023
+ 					GLOB *1
+ writePos:			DATi #0
+
+ ;-----------------------------------------------------------------------------
+ writeCircular:		FUNC
+ 								PARA *1
+ 					$sample:	INPi
+ ;-----------------------------------------------------------------------------
+ 								PEEK %0 &writePos 				; global circularBuffer[global writePos & global bufferMask] = sample
+ 								PEEK %1 &bufferMask 
+ 								ANDi %0 %0 %1
+ 								POKE &circularBuffer %0 $sample
+ 								PEEK %0 &writePos 				; global writePos = global writePos + 1
+ 								ADDi %0 %0 #1
+ 								POKE &writePos %0 
+ 								RETU   							; }
+
+
+ ;-----------------------------------------------------------------------------
+ readCircular:		FUNC
+ 					$sample:	OUTi
+ 					$delay:		INPi
+ 					$readIndex:	LOCi
+ ;-----------------------------------------------------------------------------
+ 								PEEK %0 &writePos 				; readIndex = (global writePos - delay) & global bufferMask
+ 								SUBi %0 %0 $delay
+ 								PEEK %1 &bufferMask 
+ 								ANDi $readIndex %0 %1
+ 								PEEK $sample &circularBuffer $readIndex	; sample = (int) global circularBuffer[readIndex]
+ 								RETU   							; }
+
+
+ ;-----------------------------------------------------------------------------
+ process:			FUNC
+ 								PARA *1
+ 					$leftSample: LOCi
+ 					$rightSample: LOCi
+ 					$processedLeft:	LOCi
+ 					$processedRight: LOCi
+ ;-----------------------------------------------------------------------------
+ 					.l0:		PEEK $leftSample &signal:0 		; leftSample = (int) global signal[0]
+ 								PEEK $rightSample &signal:1 	; rightSample = (int) global signal[1]
+ 								MULi %1 $leftSample #120		; processedLeft = (int) clampAudio((leftSample * 120) >> 7)
+ 								SHRi %1 %1 #7
+ 								CALL &clampAudio %0 *2
+ 								MOVi $processedLeft %0 
+ 								MULi %1 $rightSample #120		; processedRight = (int) clampAudio((rightSample * 120) >> 7)
+ 								SHRi %1 %1 #7
+ 								CALL &clampAudio %0 *2
+ 								MOVi $processedRight %0 
+ 								MOVi %1 $processedLeft 			; writeCircular(processedLeft)
+ 								CALL &writeCircular %0 *2
+ 								MOVi %1 #100 					; processedLeft = (int) readCircular(100)
+ 								CALL &readCircular %0 *2
+ 								MOVi $processedLeft %0 
+ 								POKE &signal:0 $processedLeft 	; global signal[0] = processedLeft
+ 								POKE &signal:1 $processedRight 	; global signal[1] = processedRight
+ 								CALL ^yield %0 *1				; yield()
+ 								GOTO @.l0  						; }
+ 								RETU   							; }
+

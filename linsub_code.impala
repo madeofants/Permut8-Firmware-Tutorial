@@ -1,0 +1,155 @@
+/*
+	Impala source for a Permut8 demonstration firmware patch.
+	
+	Impala is a high-level assembler for the GAZL virtual machine. Syntax is similar to C. Language constructs map
+	nearly 1 to 1 with GAZL instructions.
+	
+	There are two different kinds of firmware patches for Permut8. First, there are "mod" patches which just replace
+	one or more of the built-in operators. Their inputs and outputs are memory read positions for left and right
+	channels. Second, there are "full" patches which replaces the code for the entire virtual DSP, taking 12-bit
+	audio signals as input and output.
+	
+	"Mod patches" implement `operate1()` and / or `operate2()`. "Full patches" implement `process()`.
+*/
+
+/* ------ Firmware API ------ */
+
+const int PRAWN_FIRMWARE_PATCH_FORMAT = 2	// Should be 2 for a valid Permut8 version 1.1 firmware patch
+const int FALSE = 0
+const int TRUE = 1
+
+/*
+	These text lines will be used in exchange of the standard Permut8 screenprint. They all follow a fixed character
+	position format. First 3 characters is the instruction mnemonic, then a space, then 3 characters per switch for the
+	first group, space again, and then the same for the second group. A zero length line means no tape on that row. The
+	pointers do not need to point to constant data, but after the call to `init()` the data shouldn't change.
+*/
+readonly array panelTextRows[8] = {
+	"",
+	"SUB |-------- 16-BIT LINEAR SUBTRACT AMOUNT --------|",
+	"",
+	"",
+	"",
+	"",
+	"",
+	""
+}
+
+extern native abort								// `abort()` : Kills the "firmware" and restores normal operation.
+extern native trace								// `trace(pointer string)` : Traces a null-terminated string to Prawn console and standard output (Mac) or DebugView (Windows).
+extern native yield								// `yield()` : As a more effective alternative to returning from the `process()` function you may call `yield()`. It will return processing to the Permut8 audio engine and when the next sample needs to be processed, `yield()` will return back to your GAZL code.
+extern native write								// `write(int offset, int frameCount, pointer values)` : Writes a variable number of 12-bit sample frames to the delay-line memory. Reading and writing is automatically wrapped to delay-line size. Values are written and read in interleaved stereo format.
+extern native read								// `read(int offset, int frameCount, pointer values)` : Reads a variable number of 12-bit sample frames from the delay-line memory. Reading and writing is automatically wrapped to delay-line size. Values are written and read in interleaved stereo format.
+
+const int DEBUG									// Defined by host. If non-zero, asserts and tracing are enabled. In Permut8 asserts and traces are enabled when loading the firmware from the console and disabled when the firmware is loaded with a .p8bank file.
+
+const int OPERATOR_1_NOP						// Externally defined constants for `global params[OPERATOR_1_PARAM_INDEX]`
+const int OPERATOR_1_AND
+const int OPERATOR_1_MUL
+const int OPERATOR_1_OSC
+const int OPERATOR_1_RND
+const int OPERATOR_1_COUNT
+
+const int OPERATOR_2_NOP						// Externally defined constants for `global params[OPERATOR_2_PARAM_INDEX]`
+const int OPERATOR_2_OR
+const int OPERATOR_2_XOR
+const int OPERATOR_2_MSK
+const int OPERATOR_2_SUB
+const int OPERATOR_2_COUNT
+
+const int SWITCHES_SYNC_MASK					// Externally defined bit masks for `global params[SWITCHES_PARAM_INDEX]` (e.g. `(global params[SWITCHES_PARAM_INDEX] & SWITCHES_SYNC_MASK) != 0` to test if sync switch is on)
+const int SWITCHES_TRIPLET_MASK
+const int SWITCHES_DOTTED_MASK
+const int SWITCHES_WRITE_PROTECT_MASK
+const int SWITCHES_REVERSE_MASK
+
+const int CLOCK_FREQ_PARAM_INDEX				// Clock frequency / sample rate rounded to an integer Hz.
+const int SWITCHES_PARAM_INDEX					// Bit mask, see constants above.
+const int OPERATOR_1_PARAM_INDEX				// Operator 1 is an integer 0 to 4 (see definitions above).
+const int OPERAND_1_HIGH_PARAM_INDEX			// Operand 1 high is an integer 0 to 255
+const int OPERAND_1_LOW_PARAM_INDEX				// Operand 1 low is an integer 0 to 255
+const int OPERATOR_2_PARAM_INDEX				// Operator 2 is an integer 0 to 4 (see definitions above).
+const int OPERAND_2_HIGH_PARAM_INDEX			// Operand 2 high is an integer 0 to 255
+const int OPERAND_2_LOW_PARAM_INDEX				// Operand 2 low is an integer 0 to 255
+const int PARAM_COUNT							// Param count can be changed in the future if more parameters are published to GAZL.
+
+const int POSITION_INT_BITS						// Number of integer bits of position (should be 16)
+const int POSITION_FRACT_BITS					// Number of fraction bits of position (should be 4)
+
+global int clock								// `clock` increments (or decrements in reverse mode) between every `process()` / `operate1()` and has a cycle size of 16-bit (from 0x0000 to 0xFFFF). If tempo sync is enabled, `clock` will be the absolute position within the chosen time division. (Optional.)
+global array params[PARAM_COUNT]				// `params` (all ints) are updated by Permut8 whenever any exposed parameter is updated. If there is a defined `update()` function it is called on this occasion. (Optional.)
+global array displayLEDs[4]						// Four 8-bit masks for the visualizer LEDs under the operand switches. Order: operand 1 high & low, operand 2 high & low.
+global int instance								// A session unique number for the plug-in. Always valid and won't change after init. You can use this to initialize random seeds. (Optional.)
+// readonly int clockFreqLimit = 132300			// Defines maximum clock frequency limit. Permut8 normally runs as fast as up to 352.8 kHz but often you want a speed limit for custom firwmares since GAZL is much more CPU intensive than native DSP code. Permut8 only reads this global once after calling `init()`. (Optional and 0 means no limit.)
+// global array config[100]						// When patching via the console you can enter an optional configuration string after the firmware name. It is placed here and can be used from `init()`. (Optional. Can be any number of elements.)
+// global array signal[2]						// For "full patches" only: left and right 12-bit samples to be processed (from -2047 to 2047). Replace with output.
+global array positions[2]						// For "mod patches" only: Left and right memory positions to be processed by `operate1()` and `operate2()`. Positions are expressed in fixed point notation with 4 bits fraction for linear interpolation of memory data. In other words, the full range is 0x00000 to 0xFFFFF. Replace `positions` with output. Values outside of range will be wrapped to range. (Required if `operate1()` or `operate2()` is defined.)
+readonly int updateMask =						// A bit-mask that can be defined to filter out certain parameters from triggering update(). E.g. use ~(1 << CLOCK_FREQ_PARAM_INDEX) to prevent calls to update() when clock frequency changes.
+		(1 << OPERATOR_1_PARAM_INDEX) | (1 << OPERAND_1_HIGH_PARAM_INDEX) | (1 << OPERAND_1_LOW_PARAM_INDEX)
+
+/* ------ Firmware globals ------ */
+
+global int subTerm;
+
+/*
+	`init()` is called once right after the GAZL is assembled. (Optional.)
+
+	function init()
+	{
+	}
+*/
+
+/*
+	`reset()` is called whenever the user flips the "RESET" switch and when the host requests a plug-in reset. Will also
+	be called once after init() and the first call to update(). (Optional.)
+
+	function reset()
+	{
+	}
+*/
+
+/*
+	`update()` is called whenever one or more of `params` are updated (usually not more frequent than every 136 or 137
+	sample). It is also called once initially (before reset()). (Optional.)
+
+*/
+function update()
+locals int x, int y
+{
+	if ((int) global params[OPERATOR_1_PARAM_INDEX] == OPERATOR_1_MUL) {
+		x = ((int) global params[OPERAND_1_HIGH_PARAM_INDEX] << 8) | (int) global params[OPERAND_1_LOW_PARAM_INDEX];
+		y = 0x1 << (x >> (16 - 4));
+		x = x << POSITION_FRACT_BITS;
+		global subTerm = x;
+		global displayLEDs[2] = y >> 8;
+		global displayLEDs[3] = y;
+	}
+}
+
+/*
+	`operate1()` and `operate2()` are the main processing functions for "mod patches". Process left and right positions
+	in `positions` global array. Return 1 if positions where processed or 0 if you want to pass the processing on to the
+	original "factory firmware" operator. Positions are expressed in fixed point notation with 4 bits fraction for
+	linear interpolation of memory data. In other words, the full range is 0x00000 to 0xFFFFF. Values outside of range
+	will be wrapped to range.
+*/
+function operate1(int a)
+returns int r
+locals int x
+{
+	r = 0;
+	if ((int) global params[OPERATOR_1_PARAM_INDEX] == OPERATOR_1_MUL) {
+		x = global subTerm;
+		global positions[0] = (int) global positions[0] - x;
+		global positions[1] = (int) global positions[1] - x;
+		r = 1;
+	}
+}
+
+/*
+function operate2()
+returns int r
+{
+	r = 0;
+}
+*/

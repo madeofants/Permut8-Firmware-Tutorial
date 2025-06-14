@@ -1,0 +1,397 @@
+/*
+	Impala source for a Permut8 demonstration firmware patch.
+	
+	Impala is a high-level assembler for the GAZL virtual machine. Syntax is similar to C. Language constructs map
+	nearly 1 to 1 with GAZL instructions.
+
+	There are two different kinds of firmware patches for Permut8. First, there are "mod" patches which just replace
+	one or more of the built-in operators. Their inputs and outputs are memory read positions for left and right
+	channels. Second, there are "full" patches which replaces the code for the entire virtual DSP, taking 12-bit
+	audio signals as input and output.
+	
+	"Full patches" implement `process()`. "Mod patches" implement `operate1()` and / or `operate2()`.
+*/
+
+/* ------ Firmware API ------ */
+
+const int PRAWN_FIRMWARE_PATCH_FORMAT = 2	// Should be 2 for a valid Permut8 version 1.1 firmware patch
+const int FALSE = 0
+const int TRUE = 1
+
+/*
+	These text lines will be used in exchange of the standard Permut8 screenprint. They all follow a fixed character
+	position format. First 3 characters is the instruction mnemonic, then a space, then 3 characters per switch for the
+	first group, space again, and then the same for the second group. A zero length line means no tape on that row. The
+	pointers do not need to point to constant data, but after the call to `init()` the data shouldn't change.
+*/
+readonly array panelTextRows[8] = {
+	" ",
+	" ",
+	" ",
+	"    |----- LEFT DELAY -----| |----- RIGHT DELAY ----|",
+	" ",
+	" ",
+	" ",
+	"    |--- RING MOD RATE ----| |---- STEREO PHASE ----|"
+}
+
+extern native abort								// `abort()` : Kills the "firmware" and restores normal operation.
+extern native trace								// `trace(pointer string)` : Traces a null-terminated string to Prawn console and standard output (Mac) or DebugView (Windows).
+extern native yield								// `yield()` : As a more effective alternative to returning from the `process()` function you may call `yield()`. It will return processing to the Permut8 audio engine and when the next sample needs to be processed, `yield()` will return back to your GAZL code.
+extern native write								// `write(int offset, int frameCount, pointer values)` : Writes a variable number of 12-bit sample frames to the delay-line memory. Reading and writing is automatically wrapped to delay-line size. Values are written and read in interleaved stereo format.
+extern native read								// `read(int offset, int frameCount, pointer values)` : Reads a variable number of 12-bit sample frames from the delay-line memory. Reading and writing is automatically wrapped to delay-line size. Values are written and read in interleaved stereo format.
+
+const int DEBUG									// Defined by host. If non-zero, asserts and tracing are enabled. In Permut8 asserts and traces are enabled when loading the firmware from the console and disabled when the firmware is loaded with a .p8bank file.
+
+const int OPERATOR_1_NOP						// Externally defined constants for `global params[OPERATOR_1_PARAM_INDEX]`
+const int OPERATOR_1_AND
+const int OPERATOR_1_MUL
+const int OPERATOR_1_OSC
+const int OPERATOR_1_RND
+const int OPERATOR_1_COUNT
+
+const int OPERATOR_2_NOP						// Externally defined constants for `global params[OPERATOR_2_PARAM_INDEX]`
+const int OPERATOR_2_OR
+const int OPERATOR_2_XOR
+const int OPERATOR_2_MSK
+const int OPERATOR_2_SUB
+const int OPERATOR_2_COUNT
+
+const int SWITCHES_SYNC_MASK					// Externally defined bit masks for `global params[SWITCHES_PARAM_INDEX]` (e.g. `((int) global params[SWITCHES_PARAM_INDEX] & SWITCHES_SYNC_MASK) != 0` to test if sync switch is on)
+const int SWITCHES_TRIPLET_MASK
+const int SWITCHES_DOTTED_MASK
+const int SWITCHES_WRITE_PROTECT_MASK
+const int SWITCHES_REVERSE_MASK
+
+const int CLOCK_FREQ_PARAM_INDEX				// Clock frequency / sample rate rounded to an integer Hz.
+const int SWITCHES_PARAM_INDEX					// Bit mask, see constants above.
+const int OPERATOR_1_PARAM_INDEX				// Operator 1 is an integer 0 to 4 (see definitions above).
+const int OPERAND_1_HIGH_PARAM_INDEX			// Operand 1 high is an integer 0 to 255
+const int OPERAND_1_LOW_PARAM_INDEX				// Operand 1 low is an integer 0 to 255
+const int OPERATOR_2_PARAM_INDEX				// Operator 2 is an integer 0 to 4 (see definitions above).
+const int OPERAND_2_HIGH_PARAM_INDEX			// Operand 2 high is an integer 0 to 255
+const int OPERAND_2_LOW_PARAM_INDEX				// Operand 2 low is an integer 0 to 255
+const int PARAM_COUNT							// Param count can be changed in the future if more parameters are published to GAZL.
+
+const int POSITION_INT_BITS						// Number of integer bits of position (should be 16) (for "mod patches")
+const int POSITION_FRACT_BITS					// Number of fraction bits of position (should be 4) (for "mod patches")
+const int HOST_POSITION_PPQ						// Number of pulses per quarter note for the host song position (should be 1920)
+
+global int clock								// `clock` increments between every `process()` (or decrements in reverse mode) and has a cycle size of 16-bit (from 0 to 65536). If tempo sync is enabled, `clock` will be the absolute position within the chosen time division. (Optional.)
+global int hostPosition 						// Host song position in ppq notation (typically 1920 pulses per quarter), scaled by the chosen time division (or 0 if sync is off). -1 = host is not currently playing.
+global array params[PARAM_COUNT]				// `params` (all ints) are updated by Permut8 whenever any exposed parameter is updated. If there is a defined `update()` function it is called on this occasion. (Optional.)
+global array displayLEDs[4]						// Four 8-bit masks for the visualizer LEDs under the operand switches. Order: operand 1 high & low, operand 2 high & low.
+global int instance								// A session unique number for the plug-in. Always valid and won't change after init. You can use this to initialize random seeds. (Optional.)
+readonly int clockFreqLimit = 132300			// Defines maximum clock frequency limit. Permut8 normally runs as fast as up to 352.8 kHz but often you want a speed limit for custom firwmares since GAZL is much more CPU intensive than native DSP code. Permut8 only reads this global once after calling `init()`. (Optional and 0 means no limit.)
+// global array config[100]						// Declare this array to allow the end user to enter a configuration string for the firmware. This is either done by clicking the "firmware tape" on the main GUI or entering a string after the firmware name when patching via the console. This array will be filled before `init()` is called. (Optional. Can be any number of elements.)
+// global pointer configText					// When clicking the "firmware tape" on the main GUI, the dialog can display a custom description text for the configuration parameter. This global string pointer defines the text. (Optional.)
+global array signal[2]							// For "full patches" only: left and right 12-bit samples to be processed (from -2047 to 2047). Replace with output.
+// global array positions[2]					// For "mod patches" only: Left and right memory positions to be processed by `operate1()` and `operate2()`. Positions are expressed in fixed point notation with 4 bits fraction for linear interpolation of memory data. In other words, the full range is 0x00000 to 0xFFFFF. Replace `positions` with output. Values outside of range will be wrapped to range. (Required if `operate1()` or `operate2()` is defined.)
+readonly int updateMask =						// A bit-mask that can be defined to filter out certain parameters from triggering update(). E.g. use ~(1 << CLOCK_FREQ_PARAM_INDEX) to prevent calls to update() when clock frequency changes.
+		(1 << OPERAND_1_HIGH_PARAM_INDEX) | (1 << OPERAND_1_LOW_PARAM_INDEX)
+		| (1 << OPERAND_2_HIGH_PARAM_INDEX) | (1 << OPERAND_2_LOW_PARAM_INDEX)
+		| (1 << SWITCHES_PARAM_INDEX)
+
+/* ------ Standard Tables ------ */
+
+readonly array EIGHT_BIT_EXP_TABLE[256] = {
+	0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 
+	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 
+	0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 
+	0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 
+	0x40, 0x42, 0x44, 0x46, 0x48, 0x4a, 0x4c, 0x4e, 0x50, 0x52, 0x54, 0x56, 0x58, 0x5a, 0x5c, 0x5e, 
+	0x60, 0x62, 0x64, 0x66, 0x68, 0x6a, 0x6c, 0x6e, 0x70, 0x72, 0x74, 0x76, 0x78, 0x7a, 0x7c, 0x7e, 
+	0x80, 0x84, 0x88, 0x8c, 0x90, 0x94, 0x98, 0x9c, 0xa0, 0xa4, 0xa8, 0xac, 0xb0, 0xb4, 0xb8, 0xbc, 
+	0xc0, 0xc4, 0xc8, 0xcc, 0xd0, 0xd4, 0xd8, 0xdc, 0xe0, 0xe4, 0xe8, 0xec, 0xf0, 0xf4, 0xf8, 0xfc, 
+	0x100, 0x110, 0x120, 0x130, 0x140, 0x150, 0x160, 0x170, 0x180, 0x190, 0x1a0, 0x1b0, 0x1c0, 0x1d0, 0x1e0, 0x1f0, 
+	0x200, 0x220, 0x240, 0x260, 0x280, 0x2a0, 0x2c0, 0x2e0, 0x300, 0x320, 0x340, 0x360, 0x380, 0x3a0, 0x3c0, 0x3e0, 
+	0x400, 0x440, 0x480, 0x4c0, 0x500, 0x540, 0x580, 0x5c0, 0x600, 0x640, 0x680, 0x6c0, 0x700, 0x740, 0x780, 0x7c0, 
+	0x800, 0x880, 0x900, 0x980, 0xa00, 0xa80, 0xb00, 0xb80, 0xc00, 0xc80, 0xd00, 0xd80, 0xe00, 0xe80, 0xf00, 0xf80, 
+	0x1000, 0x1100, 0x1200, 0x1300, 0x1400, 0x1500, 0x1600, 0x1700, 0x1800, 0x1900, 0x1a00, 0x1b00, 0x1c00, 0x1d00, 0x1e00, 0x1f00, 
+	0x2000, 0x2200, 0x2400, 0x2600, 0x2800, 0x2a00, 0x2c00, 0x2e00, 0x3000, 0x3200, 0x3400, 0x3600, 0x3800, 0x3a00, 0x3c00, 0x3e00, 
+	0x4000, 0x4400, 0x4800, 0x4c00, 0x5000, 0x5400, 0x5800, 0x5c00, 0x6000, 0x6400, 0x6800, 0x6c00, 0x7000, 0x7400, 0x7800, 0x7c00, 
+	0x8000, 0x8800, 0x9000, 0x9800, 0xa000, 0xa800, 0xb000, 0xb800, 0xc000, 0xc800, 0xd000, 0xd800, 0xe000, 0xe800, 0xf000, 0xffff 
+}
+
+/*
+readonly array SEVEN_BIT_EXP_TABLE[128] = {
+	0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf,
+	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+	0x20, 0x22, 0x24, 0x26, 0x28, 0x2a, 0x2c, 0x2e, 0x30, 0x32, 0x34, 0x36, 0x38, 0x3a, 0x3c, 0x3e,
+	0x40, 0x44, 0x48, 0x4c, 0x50, 0x54, 0x58, 0x5c, 0x60, 0x64, 0x68, 0x6c, 0x70, 0x74, 0x78, 0x7c,
+	0x80, 0x90, 0xa0, 0xb0, 0xc0, 0xd0, 0xe0, 0xf0, 0x100, 0x120, 0x140, 0x160, 0x180, 0x1a0, 0x1c0, 0x1e0,
+	0x200, 0x240, 0x280, 0x2c0, 0x300, 0x340, 0x380, 0x3c0, 0x400, 0x480, 0x500, 0x580, 0x600, 0x680, 0x700, 0x780,
+	0x800, 0x900, 0xa00, 0xb00, 0xc00, 0xd00, 0xe00, 0xf00, 0x1000, 0x1200, 0x1400, 0x1600, 0x1800, 0x1a00, 0x1c00, 0x1e00,
+	0x2000, 0x2400, 0x2800, 0x2c00, 0x3000, 0x3400, 0x3800, 0x3c00, 0x4000, 0x4800, 0x5000, 0x5800, 0x6000, 0x6800, 0x7000, 0x8000
+}
+*/
+
+/* ------ Utilities ------ */
+
+const float LOG2 = 0.69314718055994530942
+const float LOG2R = 1.44269504088896340736
+const float LOG10R = 0.43429448190325182765
+const float E = 2.71828182845904523536
+const float HALF_PI = 1.57079632679489661923
+const float PI = 3.14159265358979323846
+const float TWICE_PI = PI * 2.0
+const float COS_EPSILON = 1.0e-6
+
+function stpcpy(pointer d, pointer s)
+returns pointer a
+locals	pointer b
+{
+	a = d;
+	b = s;
+	while ((*a = (int)*b) != 0) {
+		a = a + 1;
+		b = b + 1;
+	}
+}
+
+/*
+	`buffer` needs to be at least `GAZL_WORD_SIZE + 2` in size (incl. terminating zero). Output will be right-aligned in
+	this buffer and returned pointer is the first character, so the length of the output is
+	`buffer + (GAZL_WORD_SIZE + 1) - returned pointer`. `minLength` is usually 1 (or `i == 0` will return an empty
+	string), increasing it will add leading zeroes.
+*/
+const int GAZL_WORD_SIZE
+function intToString(int i, int radix, int minLength, pointer buffer)
+returns	pointer p
+locals	pointer e, int x
+{
+	assert(2 <= radix && radix <= 16);
+	assert(0 <= minLength && minLength <= GAZL_WORD_SIZE);
+	
+	*(p = buffer + GAZL_WORD_SIZE + 1) = 0;
+	e = p - minLength;
+	x = i;
+	while (p > e || x != 0) {
+		assert(p >= buffer + 2);
+		*(p = p - 1) = ("fedcba9876543210123456789abcdef")[15 + x % radix];	// Mirrored hex string to handle negative x.
+		x = x / radix;
+	}
+	if (i < 0) *(p = p - 1) = '-';
+}
+
+function traceInts(pointer text, int n, pointer ints)
+locals	array buffer[GAZL_WORD_SIZE + 2]
+		, array line[1024]
+		, int i
+		, pointer p
+{
+	p = &line[0];
+	if (text != null) p = (pointer) stpcpy(p, text);
+	*p = 0;
+	for (i = 0 to n) {
+		if (i != 0) { *p = ','; p = p + 1; }
+		p = (pointer) stpcpy(p, intToString(ints[i], 10, 1, buffer));
+	}
+	trace(line);
+}
+
+function traceInt(pointer text, int i)
+locals	array ints[1]
+{
+	ints[0] = i;
+	traceInts(text, 1, ints);
+}
+
+function error(pointer s)
+{
+	trace(s);
+	abort();
+}
+
+function trunc(float x)
+returns	float y
+{
+	if (x < 0.0) y = -floor(-x);
+	else y = floor(x);
+}
+
+function fmod(float x, float y)
+returns	float z
+{
+	if (y == 0.0) error("Division by zero");
+	else z = x - (float)trunc(x / y) * y;
+}
+
+/*
+	Derived from:
+	
+				 oo
+				=====      n
+				\      (-1)   2 n
+		cos x =  >    ------ x
+				/     (2 n)!
+				=====
+				n = 0
+*/
+function cos(float x)
+returns	float y
+locals	float a, float n, float m, float t
+{
+	m = (float) fmod(x, TWICE_PI);
+	m = -m * m;
+	a = n = y = 1.0;
+	do {
+		t = y;
+		a = a * m / (n * n + n);
+		y = y + a;
+		n = n + 2.0;
+	} while (y != t);
+	if (abs(y) < COS_EPSILON) y = 0.0;
+}
+
+/* ------ Firmware constants ------ */
+
+const int COS_TABLE_BITS = 12
+const int COS_TABLE_SIZE = (1 << COS_TABLE_BITS)
+const int BATCH_SIZE = 77;
+
+/* ------ Firmware globals ------ */
+
+global array cosTable[COS_TABLE_SIZE + 1]
+
+global int doReset = FALSE
+global int rate
+global int diff
+global int delayL
+global int delayR
+global int syncBit
+
+/* ------ Firmware functions ------ */
+
+/*
+	(Optional.)
+
+	`init()` is called once right after the GAZL is assembled.
+*/
+function init()
+locals int i, array buf[256]
+{
+	trace("init");
+	trace(intToString(global instance, 10, 1, buf));
+	for (i = 0 to COS_TABLE_SIZE) global cosTable[i] = ftoi((float) cos((TWICE_PI / itof(COS_TABLE_SIZE)) * itof(i)) * 2048.0);
+	global cosTable[COS_TABLE_SIZE] = global cosTable[0];
+}
+
+/*
+	(Optional.)
+
+	`reset()` is called whenever the user flips the "RESET" switch and when the host requests a plug-in reset. Will also
+	be called once after init() and the first call to update().
+*/
+function reset()
+{
+	trace("reset");
+	traceInts(" params: ", PARAM_COUNT, global params);
+	global doReset = TRUE;
+}
+
+function displayDelayValue()
+returns int y
+locals int x
+{
+	y = 0x1 << (x >> (8 - 3));
+}
+
+/*
+	(Optional.)
+
+	`update()` is called whenever one or more of `params` are updated (usually not more frequent than every 136 or 137
+	sample). It is also called once initially (before reset()). The global 'updateMask' can define a filter to prevent
+	calls to `update()` when certain parameters changes.
+*/
+function update()
+locals array buf[256], array params[PARAM_COUNT]
+{
+	trace("update");
+	traceInts(" params: ", PARAM_COUNT, global params);
+	copy (PARAM_COUNT from global params to params);
+	global delayL = (int) global EIGHT_BIT_EXP_TABLE[(int) params[OPERAND_1_HIGH_PARAM_INDEX]];
+	global displayLEDs[0] = displayDelayValue((int) params[OPERAND_1_HIGH_PARAM_INDEX]);
+	global delayR = (int) global EIGHT_BIT_EXP_TABLE[(int) params[OPERAND_1_LOW_PARAM_INDEX]];
+	global displayLEDs[1] = displayDelayValue((int) params[OPERAND_1_LOW_PARAM_INDEX]);
+	global rate = (int) global EIGHT_BIT_EXP_TABLE[(int) params[OPERAND_2_HIGH_PARAM_INDEX]];
+	global diff = (int) params[OPERAND_2_LOW_PARAM_INDEX] << 8;
+	global displayLEDs[3] = displayDelayValue((int) params[OPERAND_2_LOW_PARAM_INDEX]);
+	global syncBit = (int) global params[SWITCHES_PARAM_INDEX] & SWITCHES_SYNC_MASK;
+}
+
+/*
+	`process()` is the main processing function for "full patches". Process left and right sample in `signal` global
+	array.
+	
+	Because of the single-sample feedback loop in Permut8, this API is designed to process one sample frame at a time,
+	otherwise some cpu could have been saved by processing a batch of frames. As a more effective alternative to
+	returning from the `process()` function you may call `yield()`. It will return processing to the Permut8 audio
+	engine and when the next sample needs to be processed, `yield()` will return back to your GAZL code.
+	
+	Performance gain is also possible by implementing your own batch processing with buffering, but that will of course
+	introduce additional (uncompensated) latency.
+	
+	Globals are slow in GAZL so if you use a lot of global data, use the "copy" feature in Impala to efficiently load it
+	into (fast) local data. E.g. `copy (PARAM_COUNT from global params to params)`.
+*/
+function process()
+locals	int i, int c0, int c1, int cosL, int cosR, pointer p, int f, int idx, int idxr, int rate, int diff, int delayL
+		, int delayR, int clock, array leftPair[2], array rightPair[2]
+{
+	idx = 0;
+	loop {
+		if (global doReset != FALSE) {
+			idx = 0;
+			global doReset = FALSE;
+		}
+		rate = global rate;
+		diff = global diff;
+		delayL = global delayL;
+		delayR = global delayR;
+		global displayLEDs[2] = 0x01 << ((cosL + 0x8000) >> (16 - 3));
+		if (global syncBit != 0) idx = (global clock * rate);
+		for (i = 0 to BATCH_SIZE) {
+			clock = global clock;
+			write(clock, 1, global signal);
+			idx = idx & 0xFFFF;
+			p = &global cosTable[idx >> (16 - COS_TABLE_BITS)];
+			c0 = (int) *p;
+			c1 = (int) p[1];
+			f = idx & ((1 << (16 - COS_TABLE_BITS)) - 1);
+			cosL = (c0 << (16 - COS_TABLE_BITS)) + ((c1 - c0) * f);
+			idxr = (idx + diff) & 0xFFFF;
+			p = &global cosTable[idxr >> (16 - COS_TABLE_BITS)];
+			c0 = (int) *p;
+			c1 = (int) p[1];
+			f = idxr & ((1 << (16 - COS_TABLE_BITS)) - 1);
+			cosR = (c0 << (16 - COS_TABLE_BITS)) + ((c1 - c0) * f);
+			read(clock - delayL, 1, leftPair);
+			read(clock - delayR, 1, rightPair);
+			global signal[0] = ((int) leftPair[0] * cosL) >> 15;
+			global signal[1] = ((int) rightPair[1] * cosR) >> 15;
+			idx = idx + rate;
+			yield();
+		}
+	}
+}
+
+/*
+	`operate1()` and `operate2()` are the main processing functions for "mod patches". Process left and right positions
+	in `positions` global array. Return 1 if positions where processed or 0 if you want to pass the processing on to the
+	original "factory firmware" operator. Positions are expressed in fixed point notation with 4 bits fraction for
+	linear interpolation of memory data. In other words, the full range is 0x00000 to 0xFFFFF. Values outside of range
+	will be wrapped to range.
+
+	function operate1()
+	returns int processed
+	{
+		processed = 0
+	}
+
+	function operate2()
+	returns int processed
+	{
+		processed = 0
+	}
+*/

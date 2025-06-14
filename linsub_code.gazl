@@ -1,0 +1,74 @@
+ ; Compiled with Impala version 1.0
+
+ PRAWN_FIRMWARE_PATCH_FORMAT: ! DEFi #2
+ FALSE:				! DEFi #0
+ TRUE:				! DEFi #1
+ panelTextRows:		CNST *8
+ 					DATA &.s_74fa4963 &.s_SUB16B74fa4964 &.s_SUB16B74fa4964:53
+ 					DATA &.s_SUB16B74fa4964:53 &.s_SUB16B74fa4964:53
+ 					DATA &.s_SUB16B74fa4964:53 &.s_SUB16B74fa4964:53
+ 					DATA &.s_SUB16B74fa4964:53
+ 					GLOB *1
+ clock:				DATi #0
+ params:			GLOB *PARAM_COUNT
+ displayLEDs:		GLOB *4
+ 					GLOB *1
+ instance:			DATi #0
+ positions:			GLOB *2
+ 					CNST *1
+ 					! SHLi <A> #1 #OPERATOR_1_PARAM_INDEX
+ 					! SHLi <B> #1 #OPERAND_1_HIGH_PARAM_INDEX
+ 					! IORi <A> <A> <B>
+ 					! SHLi <B> #1 #OPERAND_1_LOW_PARAM_INDEX
+ 					! IORi <A> <A> <B>
+ updateMask:		DATi <A>
+ 					GLOB *1
+ subTerm:			DATi #0
+
+ ;-----------------------------------------------------------------------------
+ update:			FUNC
+ 								PARA *1
+ 					$x:			LOCi
+ 					$y:			LOCi
+ ;-----------------------------------------------------------------------------
+ 								PEEK %0 &params:OPERATOR_1_PARAM_INDEX 	; if ((int) global params[OPERATOR_1_PARAM_INDEX] == OPERATOR_1_MUL) 
+ 								NEQi %0 #OPERATOR_1_MUL @.f0
+ 								PEEK %0 &params:OPERAND_1_HIGH_PARAM_INDEX 	; x = ((int) global params[OPERAND_1_HIGH_PARAM_INDEX] << 8) | (int) global params[OPERAND_1_LOW_PARAM_INDEX]
+ 								SHLi %0 %0 #8
+ 								PEEK %1 &params:OPERAND_1_LOW_PARAM_INDEX 
+ 								IORi $x %0 %1
+ 								! SUBi <A> #16 #4				; y = 0x1 << (x >> (16 - 4))
+ 								SHRi %0 $x <A>
+ 								SHLi $y #0x1 %0
+ 								SHLi $x $x #POSITION_FRACT_BITS	; x = x << POSITION_FRACT_BITS
+ 								POKE &subTerm $x 				; global subTerm = x
+ 								SHRi %0 $y #8					; global displayLEDs[2] = y >> 8
+ 								POKE &displayLEDs:2 %0 
+ 								POKE &displayLEDs:3 $y 			; global displayLEDs[3] = y
+ 					.f0:		RETU   							; }
+
+
+ ;-----------------------------------------------------------------------------
+ operate1:			FUNC
+ 					$r:			OUTi
+ 					$a:			INPi
+ 					$x:			LOCi
+ ;-----------------------------------------------------------------------------
+ 								MOVi $r #0 						; r = 0
+ 								PEEK %0 &params:OPERATOR_1_PARAM_INDEX 	; if ((int) global params[OPERATOR_1_PARAM_INDEX] == OPERATOR_1_MUL) 
+ 								NEQi %0 #OPERATOR_1_MUL @.f0
+ 								PEEK $x &subTerm 				; x = global subTerm
+ 								PEEK %0 &positions:0 			; global positions[0] = (int) global positions[0] - x
+ 								SUBi %0 %0 $x
+ 								POKE &positions:0 %0 
+ 								PEEK %0 &positions:1 			; global positions[1] = (int) global positions[1] - x
+ 								SUBi %0 %0 $x
+ 								POKE &positions:1 %0 
+ 								MOVi $r #1 						; r = 1
+ 					.f0:		RETU   							; }
+
+ .s_74fa4963:		CNST *1
+ 					DATi #0
+ .s_SUB16B74fa4964:	CNST *54
+ 					DATs SUB |-------- 16-BIT LINEAR SUBTRACT AMOUNT --------|
+ 					DATi #0

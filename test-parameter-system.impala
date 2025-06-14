@@ -1,0 +1,110 @@
+// Test file for parameter system and preset management
+const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
+
+extern native yield
+extern native trace
+
+global array signal[2]
+global array params[8]
+global array displayLEDs[4]
+
+// Test parameter smoothing system
+global array smoothCurrent[8]
+global array smoothTarget[8]
+global array smoothRate[8]
+
+// Test preset system (using flattened array for simplicity)
+global array presetParams[128]  // 8 params * 16 presets = 128 total
+global int currentPreset = 0
+global int presetModified = 0
+
+// Parameter constants
+const int CUTOFF_PARAM = 0
+const int RESONANCE_PARAM = 1
+const int LINEAR = 0
+const int EXPONENTIAL = 1
+
+// Test parameter scaling
+function scaleExponential(int paramValue, int minValue, int maxValue)
+returns int result
+locals int scaledValue, int range
+{
+    // Simple exponential approximation using repeated multiplication
+    scaledValue = paramValue * paramValue >> 8;  // Square for exponential curve
+    range = maxValue - minValue;
+    result = minValue + (scaledValue * range >> 8);
+}
+
+// Test parameter smoothing
+function initSmoothParameter(int paramIndex, int initial, int rate)
+{
+    global smoothCurrent[paramIndex] = initial;
+    global smoothTarget[paramIndex] = initial;
+    global smoothRate[paramIndex] = rate;
+}
+
+function updateSmoothParameter(int paramIndex)
+returns int current
+locals int target, int rate, int diff, int step
+{
+    current = (int) global smoothCurrent[paramIndex];
+    target = (int) global smoothTarget[paramIndex];
+    rate = (int) global smoothRate[paramIndex];
+    
+    if (current != target) {
+        diff = target - current;
+        step = diff / rate;
+        
+        if (step == 0) {
+            if (diff > 0) step = 1;
+            else step = -1;
+        }
+        
+        current = current + step;
+        global smoothCurrent[paramIndex] = current;
+    }
+}
+
+// Test preset management
+function onPresetChange(int presetNumber)
+locals int i
+{
+    if (presetNumber >= 0 && presetNumber < 16) {
+        // Load preset parameters (flattened array access)
+        for (i = 0 to 7) {
+            global params[i] = (int) global presetParams[presetNumber * 8 + i];
+        }
+        
+        global currentPreset = presetNumber;
+        global presetModified = 0;
+        
+        trace("Loaded preset:", presetNumber);
+    } else {
+        trace("Invalid preset number:", presetNumber);
+    }
+}
+
+// Test main processing function
+function process()
+locals int smoothCutoff, int smoothResonance
+{
+    // Initialize smoothing on first run
+    initSmoothParameter(CUTOFF_PARAM, (int) global params[CUTOFF_PARAM], 44);
+    initSmoothParameter(RESONANCE_PARAM, (int) global params[RESONANCE_PARAM], 88);
+    
+    loop {
+        // Update parameter targets
+        global smoothTarget[CUTOFF_PARAM] = (int) scaleExponential((int) global params[CUTOFF_PARAM], 20, 20000);
+        global smoothTarget[RESONANCE_PARAM] = (int) global params[RESONANCE_PARAM];
+        
+        // Get smoothed values
+        smoothCutoff = (int) updateSmoothParameter(CUTOFF_PARAM);
+        smoothResonance = (int) updateSmoothParameter(RESONANCE_PARAM);
+        
+        // Simple processing using smoothed parameters
+        global signal[0] = (int) global signal[0] * smoothCutoff >> 12;
+        global signal[1] = (int) global signal[1] * smoothResonance >> 8;
+        
+        yield();
+    }
+}

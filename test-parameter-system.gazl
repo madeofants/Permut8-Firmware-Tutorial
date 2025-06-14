@@ -1,0 +1,148 @@
+ ; Compiled with Impala version 1.0
+
+ PRAWN_FIRMWARE_PATCH_FORMAT: ! DEFi #2
+ signal:			GLOB *2
+ params:			GLOB *8
+ displayLEDs:		GLOB *4
+ smoothCurrent:		GLOB *8
+ smoothTarget:		GLOB *8
+ smoothRate:		GLOB *8
+ presetParams:		GLOB *128
+ 					GLOB *1
+ currentPreset:		DATi #0
+ 					GLOB *1
+ presetModified:	DATi #0
+ CUTOFF_PARAM:		! DEFi #0
+ RESONANCE_PARAM:	! DEFi #1
+ LINEAR:			! DEFi #0
+ EXPONENTIAL:		! DEFi #1
+
+ ;-----------------------------------------------------------------------------
+ scaleExponential:	FUNC
+ 					$result:	OUTi
+ 					$paramValue: INPi
+ 					$minValue:	INPi
+ 					$maxValue:	INPi
+ 					$scaledValue: LOCi
+ 					$range:		LOCi
+ ;-----------------------------------------------------------------------------
+ 								MULi %0 $paramValue $paramValue	; scaledValue = paramValue * paramValue >> 8
+ 								SHRi $scaledValue %0 #8
+ 								SUBi $range $maxValue $minValue	; range = maxValue - minValue
+ 								MULi %0 $scaledValue $range		; result = minValue + (scaledValue * range >> 8)
+ 								SHRi %0 %0 #8
+ 								ADDi $result $minValue %0
+ 								RETU   							; }
+
+
+ ;-----------------------------------------------------------------------------
+ initSmoothParameter: FUNC
+ 								PARA *1
+ 					$paramIndex: INPi
+ 					$initial:	INPi
+ 					$rate:		INPi
+ ;-----------------------------------------------------------------------------
+ 								POKE &smoothCurrent $paramIndex $initial ; global smoothCurrent[paramIndex] = initial
+ 								POKE &smoothTarget $paramIndex $initial	; global smoothTarget[paramIndex] = initial
+ 								POKE &smoothRate $paramIndex $rate ; global smoothRate[paramIndex] = rate
+ 								RETU   							; }
+
+
+ ;-----------------------------------------------------------------------------
+ updateSmoothParameter:	FUNC
+ 					$current:	OUTi
+ 					$paramIndex: INPi
+ 					$target:	LOCi
+ 					$rate:		LOCi
+ 					$diff:		LOCi
+ 					$step:		LOCi
+ ;-----------------------------------------------------------------------------
+ 								PEEK $current &smoothCurrent $paramIndex ; current = (int) global smoothCurrent[paramIndex]
+ 								PEEK $target &smoothTarget $paramIndex ; target = (int) global smoothTarget[paramIndex]
+ 								PEEK $rate &smoothRate $paramIndex ; rate = (int) global smoothRate[paramIndex]
+ 								EQUi $current $target @.f0		; if (current != target) 
+ 								SUBi $diff $target $current		; diff = target - current
+ 								DIVi $step $diff $rate			; step = diff / rate
+ 								NEQi $step #0 @.f1				; if (step == 0) 
+ 								LEQi $diff #0 @.f2				; if (diff > 0) step = 1
+ 								MOVi $step #1 					; step = 1
+ 								GOTO @.e3  
+ 					.f2:		MOVi $step #-1 					; step = -1
+ 					.e3:		NOOP
+ 					.f1:		ADDi $current $current $step	; current = current + step
+ 								POKE &smoothCurrent $paramIndex $current ; global smoothCurrent[paramIndex] = current
+ 					.f0:		RETU   							; }
+
+
+ ;-----------------------------------------------------------------------------
+ onPresetChange:	FUNC
+ 								PARA *1
+ 					$presetNumber: INPi
+ 					$i:			LOCi
+ ;-----------------------------------------------------------------------------
+ 								LSSi $presetNumber #0 @.f1		; if (presetNumber >= 0 && presetNumber < 16) 
+ 								GEQi $presetNumber #16 @.f1
+ 								MOVi $i #0 						; for (i = 0 to 7) 
+ 								GEQi #0 #7 @.e2
+ 					.l3:		MULi %0 $presetNumber #8		; global params[i] = (int) global presetParams[presetNumber * 8 + i]
+ 								ADDi %0 %0 $i
+ 								PEEK %0 &presetParams %0
+ 								POKE &params $i %0
+ 								FORi $i #7 @.l3					; }
+ 					.e2:		POKE &currentPreset $presetNumber  ; global currentPreset = presetNumber
+ 								POKE &presetModified #0 		; global presetModified = 0
+ 								MOVp %1 &.s_Loaded1d31406c 		; trace("Loaded preset:", presetNumber)
+ 								MOVi %2 $presetNumber 
+ 								CALL ^trace %0 *3
+ 								GOTO @.e4  						; } else 
+ 					.f1:		MOVp %1 &.s_Invali1d31406d 		; trace("Invalid preset number:", presetNumber)
+ 								MOVi %2 $presetNumber 
+ 								CALL ^trace %0 *3
+ 					.e4:		RETU   							; }
+
+
+ ;-----------------------------------------------------------------------------
+ process:			FUNC
+ 								PARA *1
+ 					$smoothCutoff: LOCi
+ 					$smoothResonance: LOCi
+ ;-----------------------------------------------------------------------------
+ 								MOVi %1 #CUTOFF_PARAM 			; initSmoothParameter(CUTOFF_PARAM, (int) global params[CUTOFF_PARAM], 44)
+ 								PEEK %2 &params:CUTOFF_PARAM 
+ 								MOVi %3 #44 
+ 								CALL &initSmoothParameter %0 *4
+ 								MOVi %1 #RESONANCE_PARAM 		; initSmoothParameter(RESONANCE_PARAM, (int) global params[RESONANCE_PARAM], 88)
+ 								PEEK %2 &params:RESONANCE_PARAM 
+ 								MOVi %3 #88 
+ 								CALL &initSmoothParameter %0 *4
+ 					.l0:		PEEK %1 &params:CUTOFF_PARAM 	; global smoothTarget[CUTOFF_PARAM] = (int) scaleExponential((int) global params[CUTOFF_PARAM], 20, 20000)
+ 								MOVi %2 #20 
+ 								MOVi %3 #20000 
+ 								CALL &scaleExponential %0 *4
+ 								POKE &smoothTarget:CUTOFF_PARAM %0 
+ 								PEEK %0 &params:RESONANCE_PARAM  ; global smoothTarget[RESONANCE_PARAM] = (int) global params[RESONANCE_PARAM]
+ 								POKE &smoothTarget:RESONANCE_PARAM %0 
+ 								MOVi %1 #CUTOFF_PARAM 			; smoothCutoff = (int) updateSmoothParameter(CUTOFF_PARAM)
+ 								CALL &updateSmoothParameter %0 *2
+ 								MOVi $smoothCutoff %0 
+ 								MOVi %1 #RESONANCE_PARAM 		; smoothResonance = (int) updateSmoothParameter(RESONANCE_PARAM)
+ 								CALL &updateSmoothParameter %0 *2
+ 								MOVi $smoothResonance %0 
+ 								PEEK %0 &signal:0 				; global signal[0] = (int) global signal[0] * smoothCutoff >> 12
+ 								MULi %0 %0 $smoothCutoff
+ 								SHRi %0 %0 #12
+ 								POKE &signal:0 %0 
+ 								PEEK %0 &signal:1 				; global signal[1] = (int) global signal[1] * smoothResonance >> 8
+ 								MULi %0 %0 $smoothResonance
+ 								SHRi %0 %0 #8
+ 								POKE &signal:1 %0 
+ 								CALL ^yield %0 *1				; yield()
+ 								GOTO @.l0  						; }
+ 								RETU   							; }
+
+ .s_Loaded1d31406c:	CNST *15
+ 					DATs Loaded preset:
+ 					DATi #0
+ .s_Invali1d31406d:	CNST *23
+ 					DATs Invalid preset number:
+ 					DATi #0

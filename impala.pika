@@ -1,0 +1,93 @@
+#! /usr/local/bin/PikaCmd
+
+include('systools.pika');
+include('stdlib.pika');
+include('debug.pika');
+trace();
+// traceErrors();
+// profile();
+
+OUTPUT_TAB_WIDTH = 4;
+compose(@INPUT_TAB_STOPS, 0, 20, 32, 64);
+
+loadEntireInput = function {
+	s = '';
+	error = try(>for (; ($i = input('')) != '.'; ) s #= $i # LF);
+	if (error != void && error != 'Unexpected end of input file') throw(error);
+	( s )
+};
+
+fail = function {
+	args(@error, @source, @offset);
+	singleLine = function { replace($0, "\t\r\n", ' ', find, 1) };
+	throw(bake("{$0} : {singleLine(source{offset - 8:8})} <!!!!> {singleLine(source{offset:40})}"));
+};
+
+retabulate = function {
+	out = '';
+	tabIndex = 0;
+	outPosition = 0;
+	tokenize($0, >{
+		reach = max(INPUT_TAB_STOPS[tabIndex], outPosition + 1);
+		for (; { next = outPosition + 4 - outPosition % OUTPUT_TAB_WIDTH; next <= reach }; outPosition = next) out #= TAB;
+		out #= repeat(' ', reach - outPosition);
+		outPosition = reach;
+		out #= $0;
+		outPosition += length($0);
+		++tabIndex;
+	}, "\t");
+	( out )
+};
+
+rebuild = function {
+	run('./initPPEG.pika');
+	compilerSource = load('./impala.ppeg');
+	print("Compiling impala compiler...");
+	if (!ppeg.compileFunction(compilerSource, @compileImpala, @offset))
+		fail("Could not compile impala compiler", compilerSource, offset);
+	print("Successful!");
+	save('./impalaCompiler.pika', sourceFor(@compileImpala));
+};
+
+compile = function {
+	include('./impalaCompiler.pika');
+	if (!compileImpala($0, @gazl, @offset)) fail("Syntax error", $0, offset);
+};
+
+if (!exists(@$1)) {
+	print(bake('Usage: {$0} rebuild (impala compiler) | compile [<input.impala>] [<output.gazl>] [<random id>] | run [<input.impala>]'));
+	::exitCode = 1;
+} else if ($1 == 'rebuild') rebuild()
+else if ($1 == 'compile') {
+	collected = '';
+	if (!exists(@$2)) source = loadEntireInput()
+	else source = load($2);
+	if (!exists(@$3) || $3 === '-') output = <print>
+	else output = >{ collected #= retabulate($0) # LF };
+	if (exists(@$4)) ::impalaRandomId = $4;
+	error = try(>compile(source));
+ 	if (error != void) {
+ 		if (exists(@$2)) print('Error compiling ' # $2 # ': ' # error)
+ 		else print('Error: ' # error);
+ 		if (exists(@$3)) save($3, 'Error: ' # error);
+		::exitCode = 1;
+ 	} else if (exists(@$3) && $3 !== '-') {
+		save($3, collected);
+ 		if (exists(@$2)) print('Successfully compiled ' # $2)
+ 		else print("Successful");
+	}
+} else if ($1 == 'run') {
+	collected = '';
+	if (!exists(@$2)) source = loadEntireInput()
+	else source = load($2);
+	output = >{ collected #= retabulate($0) # LF };
+	compile(source);
+	save(bake('{TEMP_DIR}temp.gazl'), collected);
+	print('');
+	error = try(>system(bake('{::run.root}GAZLCmd {TEMP_DIR}temp.gazl main')));
+	print('');
+	if (error != void) {
+		print(error);
+		::exitCode = 1;
+	}
+} else print("Incorrect command line arguments");

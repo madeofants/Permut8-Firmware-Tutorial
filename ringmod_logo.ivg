@@ -1,0 +1,60 @@
+//
+//  Ringmod Logo - Created by Fredrik Lidström on 2013-07-10.
+//
+
+format IVG-1 requires:IMPD-1;
+
+// standard Permut8 firmware sticker bounds
+bounds 0,0,100,40
+
+// gamma correction applied to strokes and fills to improve anti-alias quality, see ivg spec for more information on optimal values
+options aa-gamma:0.8
+
+// position the graphics
+offset 50,1
+
+// scale the graphics
+scale 0.9,0.9
+
+// rotate the graphics
+rotate 1
+
+
+/***** Draw the Sticker *****/
+
+// Set pen using 0 hue, 0 saturation, 1 value and 0.6 opacity
+pen #333333 width:1 caps:butt joints:miter miter-limit:10
+
+// Set fill 
+fill #efefef
+
+// Define the sticker graphics
+sticker=[ rect 0,0,40,40 ]
+
+// Draw the sticker
+$sticker
+
+/***** Draw the diodes *****/
+diode=[
+	offset 30,0
+	rotate 90
+	pen width:0.8
+	path svg:[M0 2.5 l0 25 M-4 18 l8 0]
+	pen width:0.5
+	ellipse 0,0,1.4
+	path svg:[M-4 13 l4 4 l4 -4 z]
+]
+
+
+// offset and scale
+offset 8,8
+scale 0.8,0.8
+
+fill #cc0000; pen #dd1111
+$diode
+fill #009900; pen #11aa11
+$diode
+fill #3333aa; pen #2222aa
+$diode
+fill #aa33aa; pen #cc22cc 
+$diode

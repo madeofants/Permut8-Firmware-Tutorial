@@ -1,0 +1,10 @@
+RingMod Permut8 Firmware V1.0 (C)2012-2014 NuEdge Development.
+
+A basic delay with a ring / amplitude modulator. Can run freely or tempo synced.
+Right channel phase may be offsetted for a simple stereo effect.
+
+Impala / GAZL source code for this firmware is installed by the standard
+Permut8 installer. It can be found in the "Permut8 Firmware Code" directory
+(under your chosen Sonic Charge installation path on Windows and under
+"/Library/Application Support/Sonic Charge" on Mac).
+

@@ -1,0 +1,706 @@
+compileImpala = function {
+vargs(@_s, , @$dd, @$iref, @$rule); defaults(@$dd, @$nil, @$iref, @$nil, @$rule, 'root');
+{
+    // global structures:
+    //
+    // stock['%' | '<']
+    //
+    //   (Double-ended) queue containing free to use transients ('%') and compile-time variables ('<').
+    //   Borrow with borrow('%' | '<') or borrowForCall() and return with return('operand').
+    //   Arrays must contain unique elements.
+    //
+    // counters['%' | '<']
+    //
+    //   Max number of transients ('%') or compile-time variables ('<') ever created and placed in respective stock.
+    //   Incremented when nothing available in stock.
+    //
+    // symbols['locals' | 'globals' | 'functions' | 'defines']
+    //
+    //   Known symbols in various scopes ('locals' is pruned after each function). Each symbol is indexed with its name
+    //   and underneath that name you will find: 'kind' (the GAZL section it belongs too, e.g. CNST),
+    //   'type' (one-letter internal type, e.g. 'i' for integer, 'F' for function pointer) and 'readonly'.
+    //   declare() is used to declare a new symbol.
+    //
+    // metacode
+    //
+    //   Array of metacode output for the current function. Each element contains: 'operator' (e.g. ':=', '+' etc),
+    //   'type' (resulting one-letter internal type), 'operand.0', 'operand.1', 'operand.2' (GAZL instruction operands
+    //   in clear text). Metacode is generated with emit() or makeMeta() and emitMeta(). It
+    //   is flushed with flushMetaCode() at the end of each function. Special meta operators include: '<--'
+    //   to create a label (operand.0 should contain '@label'). '<-?', '?->', '!' for conditional branching (eliminated
+    //   by processBranches()). ';' to append operand.0 as a comment after the next instruction. Any operator
+    //   prefixed with '<> ' will generate a GAZL compile-time instruction ('!').
+
+    // internal types:
+    //
+    //   i int
+    //   f float
+    //   p pointer
+    //   F funcptr
+    //   U function
+    //   N native 
+    //   A array 
+    //   ? untyped
+
+    IMPALA_VERSION = '1.0';
+    dry = false; // Necessary because we need to test if a BoolGroup is actually a standard Group without generating code if we realize it isn't a standard Group. See TODO entry above.
+    
+    // Mapping meta operators to GAZL instructions. '?' will be replaced with meta instructions resulting type according
+    // to TYPE_SUFFIXES
+    map(@META_TO_GAZL
+            , '=','MOV?' , ':=','MOV?' // '=' is lvalue equivalence, ':=' is rvalue assignment
+            , '=itof','iTOf' , '=ftoi','fTOi' , '=abs','ABS?', '=floor','FLOf'
+            , '=[]','PEEK' , '[]=','POKE' , '=[]$','GETL' , '[]$=','SETL'
+            , '=*','PEEK' , ':=*','PEEK' , '*=','POKE' , '=&','ADRL' , 'copy','COPY'
+            , '-->','GOTO' , '-->#', 'SWCH', '...','FOR?' , '()','CALL' , '--^','RETU'
+            , '|','IOR?' , '&','AND?' , '^','XOR?' , '<<','SHL?' , '>>>','SHRu' , '>>','SHR?'
+            , '+','ADD?' , '-','SUB?' , '*','MUL?' , '/','DIV?' , '%','MOD?' , 'd','DIFp'
+            , '<=','LEQ?' , '<','LSS?' , '>=','GEQ?' , '>','GRT?' , '!=','NEQ?' , '==','EQU?'
+            , '!<=','GRT?' , '!<','GEQ?' , '!>=','LSS?' , '!>','LEQ?' , '!!=','EQU?' , '!==','NEQ?');
+
+    // Mapping of operator + left and right operand types to resulting type.
+    map(@SUPPORTED_OPS
+            , '=*p','?' , '=&f','p' , '=&F','p' , '=&i','p' , '=&p','p' , '=&?','p'
+            , '=-i','i' , '=-f','f' , '=~i','i'
+            , '=floatf','f' , '=float?','f' , '=funcptrF','F' , '=funcptr?','F'
+            , '=inti','i' , '=int?','i' , '=pointerp','p', '=pointer?','p'
+            , '=absi','i' , '=absf','f' , '=itofi','f' , '=ftoif','i' , '=floorf','f'
+            , '|ii','i' , '&ii','i' , '^ii','i' , '<<ii','i' , '>>>ii','i' , '>>ii','i'
+            , '+ii','i' , '-ii','i' , '*ii','i' , '/ii','i' , '%ii','i'
+            , '+ff','f' , '-ff','f' , '*ff','f' , '/ff','f' /* FIX : support mod? */
+            , '+pi','p' , '-pi','p' , '-pp','i'
+            , '=[]pi','?'
+            , '<=ii','i' , '<ii','i' , '>=ii','i' , '>ii','i' , '!=ii','i' , '==ii','i'
+            , '<=ff','f' , '<ff','f' , '>=ff','f' , '>ff','f' , '!=ff','f' , '==ff','f'
+            , '<=pp','p' , '<pp','p' , '>=pp','p' , '>pp','p' , '!=pp','p' , '==pp','p'
+            , '<=FF','F' , '<FF','F' , '>=FF','F' , '>FF','F' , '!=FF','F' , '==FF','F');
+    
+    map(@CASTS_TO_TYPES, 'float','f' , 'funcptr','F' , 'int','i' , 'pointer','p');
+    map(@ZEROES, 'f','#0.0', 'i','#0', 'p','&NULL' , 'F','&NULL');
+    // Note: special ugly tricks with A and E to make array output LOCA (which stands for LOCAL and not LOCAL ARRAY) and MOV? to output MOVE
+    map(@TYPE_SUFFIXES, void,'' , 'i','i' , 'f','f' , 'p','p' , 'F','p' , 'U',void , 'N',void , 'A','A'
+            , '?','E');
+    map(@VERBOSE_TYPES, 'i','int' , 'f','float' , 'p','pointer' , 'F','funcptr' , 'U','function'
+            , 'N','native' , 'A','array' , '?','untyped');
+
+    newLabel => { ( '@.' # $0 # labelCounter++ ) };
+    emitMeta => { clone($0, @metacode[metacode.n++]);
+//debugPrintMeta($0);
+};
+    emit => { makeMeta(@metacode[metacode.n++], $0, $1, $2, $3, $4);
+//debugPrintMeta(@metacode[metacode.n - 1]);
+};
+
+    // FIX : didn't want the dependency to ppeg.fail, but should we really have to copy this useful routine?
+    fail = function {
+        args(@error, @source, @offset);
+        singleLine = function { replace($0, "\t\r\n", ' ', find, 1) };
+        throw(bake("{$0} : {singleLine(source{offset - 8:8})} <!!!!> {singleLine(source{offset:40})}"));
+    };
+
+    //  Short-circuit evaluation
+    //  ========================
+    //
+    //  The general philosophy of this algorithm is to create straight-forward pseudo-code for conditional branching,
+    //  during the first compilation phase, separating comparison operators and branch on true and/or false into
+    //  separate instructions. In a second phase (which is implemented by this function) any redundant conditional
+    //  branching is eliminated and composite instructions (containing both comparison and branching) are generated. 
+    //  
+    //  Each element can be one of:
+    //  
+    //  *) comparison operation (expr == expr, expr < expr etc etc)
+    //  *) branch on false (F->FALSE x:, created by AND)
+    //  *) branch on true (T->TRUE x:, created by OR)
+    //  *) invert (F<=>T, created by NOT)
+    //  *) (unique) false branch label (FALSE x:)
+    //  *) (unique) true branch label (TRUE x:)
+    //  *) any other instruction (effective, e.g. adding numbers or ineffective, e.g. a nop)
+    //  
+    //  There can only be one branch on false and / or true per comparison, and there can be no other effective
+    //  instructions in between, incl. comparisons (but there can and will be labels).
+    //  
+    //  Process bottom to top, maintaining a current branch target condition (false or true), false or true branch
+    //  target labels as well as an label alias map:
+    //  
+    //  *)  <-? false or true branch target :
+    //  if there is an assigned branch target for this condition: map an alias of this label to it and remove
+    //  otherwise assign the false branch target or true branch target (leave the label)
+    //  
+    //  *)  ! invert :
+    //  swap the false and true branch targets
+    //  invert current branch target condition
+    //  remove
+    //  
+    //  *)  ?-> branch on false or true :
+    //  assign the false branch target or true branch target (use the alias map if there is an entry for this target)
+    //  set current branch target condition to true or false
+    //  remove
+    //  
+    //  *)  <= < >= > != == comparison operation :
+    //  if current branch target condition is false, invert the operation (e.g. "==" -> "!=" , ">" -> "<=" etc)
+    //  (if current branch target condition is not false or true this indicates a programming error)
+    //  assign the target label for the operation to the branch target of the current branch target condition
+    //  clear the branch target of both branch target conditions
+    //  
+    //  *)  any other instruction :
+    //  clear the branch target of both branch target conditions
+    //  
+    //  Notice that these routines also perform some basic unconditional goto optimizations.
+    //
+    //  Special rules for 'a' labels which are used for asserts in order to not remove them during optimization.
+
+    $compCase => {
+        if (!targetCond) [inst].operator = '!' # [inst].operator;
+    assert([inst].operand.0 == void, "[inst].operand.0 == void");
+    assert(target[targetCond] != void, "target[targetCond] != void");
+        [inst].operand.0 = [inst].operand.1;
+        [inst].operand.1 = [inst].operand.2;
+        [inst].operand.2 = target[targetCond];
+        target[false] = target[true] = currentGoto = void;
+    };
+    map(@branchesSwitch
+        , '?->', >{
+            targetCond = [inst].type;
+            $l = [inst].operand.0;
+            target[targetCond] = coalesce(@aliases[$l], $l);
+            [inst].operator = void;
+        }
+        , '<-?', >{
+            $l = [inst].operand.0;
+            $t = [inst].type;
+            [inst].type = void;
+            if (target[$t] != void) { aliases[$l] = target[$t]; [inst].operator = (if ($l{2} != 'a') void else '<--'); }
+            else { target[$t] = $l; [inst].operator = '<--' };
+        }
+        , '!', >{ 
+            swap(@target[false], @target[true]);
+            targetCond = !targetCond;
+            [inst].operator = void;
+        }
+        , ';', >{}
+        , '-->', >{
+            $l = [inst].operand.0;
+            target[false] = target[true] = currentGoto = [inst].operand.0 = coalesce(@aliases[$l], $l);
+        }
+        , '<--', >{ if (currentGoto != void) aliases[[inst].operand.0] = currentGoto; }
+        , '<=', $compCase, '<', $compCase, '>=', $compCase, '>', $compCase, '!=', $compCase, '==', $compCase);
+        
+    processBranches => {
+        target[false] = target[true] = void;
+        targetCond = void;
+        currentGoto = void;
+        prune(@aliases);
+
+        for ($i = metacode.n - 1; $i >= 0; --$i) {
+            inst = @metacode[$i];
+            if (exists($p = @branchesSwitch[[inst].operator])) [$p]()
+            else target[false] = target[true] = currentGoto = void;
+        }
+    };
+    
+    borrow => {
+        args(@$class);
+    assert(validateStock($class));
+        if (queueSize(@stock[$class]) > 0) $t = popBack(@stock[$class])
+        else if ($class == '%') $t = '%' # counters['%']++
+        else if ($class == '<') $t = '<' # char(ordinal('A') + counters['<']++) # '>'
+        else assert(false);
+        ( $t )
+    };
+
+// checks no duplicates found in stock
+validateStock => {
+    for ($i = stock[$0].m; $i < stock[$0].n; ++$i) {
+        $o = stock[$0][$i];
+        assert(!exists($p = @$test[$o]));
+        [$p] = true;
+    };
+    ( true )
+};
+    
+    // will claim the first free transient that is in the last consecutive range of available transients (i.e. %4 will be returned if %1 %2 %4 %5 %6 are in "stock").
+    borrowForCall => {
+    assert(>validateStock('%'));
+        a = @stock['%'];
+        if ([a].n <= [a].m) $n = counters['%']++
+        else {
+            qsort([a].m, [a].n, >compare([a][$1]{1:}, [a][$0]{1:}), >swap(@[a][$0], @[a][$1]));
+            for ({ $i = [a].n - 1; $n = [a][$i]{1:} }; $i >= [a].m && [a][$i] == '%' # $n; { --$i; --$n }) ;
+            ++$i; ++$n;
+            remove(@stock['%'], $i);
+        };
+    assert(>validateStock('%'));
+        ( $n )
+    };
+    
+    return => {
+        args(@$op);
+        $c = $op{0};
+        if (span($c, '%<') == 1) {
+c=$c;assert(>validateStock(c));
+    if (assert != '{ }')
+        for ($i = stock[$c].m; $i < stock[$c].n; ++$i)
+            assert(stock[$c][$i] != $op, "stock[$c][$i] != $op");
+
+            pushBack(@stock[$c], $op)
+        } else if ($op{($l = length($op)) - 4:2} == ':<') return($op{$l - 3:})
+    };
+    
+    debugPrintMeta => {
+        if ([$0].operator != void) print(bake('{[$0].operator}({[$0].type}) {[$0].operand.0} {[$0].operand.1} {[$0].operand.2}'));
+    };
+    
+    makeMeta => {
+        $p = $0;
+        args(@$p, @[$p].operator, @[$p].type, @[$p].operand.0, @[$p].operand.1, @[$p].operand.2);
+    };
+    
+    releaseMeta => {
+        args(@$meta);
+        for ($i = 2; $i >= 0; --$i) return([$meta].operand[$i]);
+    };
+    
+    makeRValue => {
+        vargs(@$expr, , @$classes);
+        defaults(@$classes, '#<&^$%');
+        $op = [$expr].operator;
+        $op1 = [$expr].operand.1;
+        $op2 = [$expr].operand.2;
+        if (($op == '=' || $op == ':=') && span($op1{0}, $classes) == 1) ( $op1 )
+        else {
+            return($op2);
+            return($op1);
+            $c = '%';
+            if ({ $t = $op1{0} # $op2{0}; span($t, '#<') == length($t) } && span('<', $classes) == 1) {
+                [$expr].operator = '<> ' # $op;
+                $c = '<';
+            };
+            [$expr].operand.0 = $op0 = borrow($c);
+            emitMeta($expr);
+            ( [$expr].operand.0 )
+        }
+    };
+    
+    // Like makeRValue but with a designated target transient.
+    makeArgValue => {
+        args(@$expr, @$number);
+        $op = [$expr].operator;
+        $op0 = '%' # $number;
+        $op1 = [$expr].operand.1;
+        $op2 = [$expr].operand.2;
+        if (!(($op == '=' || $op == ':=') && $op1 == $op0)) {
+            return($op2);
+            return($op1);
+            if (counters['%'] == $number) counters['%']++
+            else {
+        assert(counters['%'] > $number);
+                for ($i = stock['%'].n - 1; stock['%'][$i] != $op0; --$i) ;
+        assert($i >= stock['%'].m);
+                remove(@stock['%'], $i);
+            };
+            [$expr].operand.0 = $op0;
+            emitMeta($expr);
+        }
+    };
+    
+    typeError => {
+        vargs(@$description, @$sourceCode, @$sourceOffset, @$type1,, @$type2);
+        $type1 = VERBOSE_TYPES[$type1];
+        if (exists(@$type2)) $type2 = VERBOSE_TYPES[$type2];
+        fail(bake($description), $sourceCode, $sourceOffset);
+    };
+    
+    binaryOp => {
+        args(@$operator, @$leftx, @$rightx, @$sourceCode, @$sourceOffset);
+        if (!exists($tp = @SUPPORTED_OPS[$operator # [$leftx].type # [$rightx].type]))
+            typeError('Invalid types ({$type1} and {$type2})', $sourceCode, $sourceOffset, [$leftx].type, [$rightx].type);
+        if ($operator == '=[]') {
+            $op1 = [$leftx].operand.1;
+            if ([$leftx].operator == ':=' && $op1{0} == '&') {
+                $op2 = makeRValue($rightx);
+                if ($op2{0} == '#') makeMeta($leftx, '=*', [$tp], void, $op1 # ':' # $op2{1:}, void)
+                else if ($op2{0} == '<') makeMeta($leftx, '=*', [$tp], void, $op1 # ':' # $op2, void)
+                else makeMeta($leftx, '=[]', [$tp], void, $op1, $op2);
+            } else if ([$leftx].operator == '=&') {
+        assert($op1{0} == '$', "$op1{0} == '$'");
+                $op2 = makeRValue($rightx);
+                if ($op2{0} == '#') makeMeta($leftx, '=', [$tp], void, $op1 # ':' # $op2{1:}, void)
+                else if ($op2{0} == '<') makeMeta($leftx, '=', [$tp], void, $op1 # ':' # $op2, void)
+                else makeMeta($leftx, '=[]$', [$tp], void, $op1, $op2);
+            } else makeMeta($leftx, $operator, [$tp], void, makeRValue($leftx), makeRValue($rightx));
+        } else {
+            if ($operator == '-' && [$rightx].type == 'p') $operator = 'd';
+            makeMeta($leftx, $operator, [$tp], void, makeRValue($leftx), makeRValue($rightx));
+        }
+    };
+
+    mulDivOp => {
+        args(@$operator, @$leftx, @$rightx, @$sourceCode, @$sourceOffset);
+        if (!exists($tp = @SUPPORTED_OPS[$operator # [$leftx].type # [$rightx].type]))
+            typeError('Invalid types ({$type1} and {$type2})', $sourceCode, $sourceOffset, [$leftx].type, [$rightx].type);
+        if ($operator == '*' && [$leftx].operator == '=itof' && [$leftx].operand.2 == '#1.0'
+                && { $t = [$rightx].operand.1{0} # [$rightx].operand.2{0}; span($t, '#<') == length($t) }) {
+            makeMeta($leftx, '=itof', 'f', void, [$leftx].operand.1, makeRValue($rightx));
+        } else if ($operator == '*' && [$rightx].operator == '=itof' && [$rightx].operand.2 == '#1.0'
+                && { $t = [$leftx].operand.1{0} # [$leftx].operand.2{0}; span($t, '#<') == length($t) }) {
+            makeMeta($leftx, '=itof', 'f', void, [$rightx].operand.1, makeRValue($leftx));
+        } else makeMeta($leftx, $operator, [$tp], void, makeRValue($leftx), makeRValue($rightx));
+    };
+    
+    // Any of @$x, @$leftx, @$rightx can address the same meta
+    assign => {
+        args(@$x, @$leftx, @$rightx, @$sourceCode, @$sourceOffset);
+        $lop = [$leftx].operator;
+        $keep = 2;
+        if ([$leftx].type != '?' && [$leftx].type != [$rightx].type)
+            typeError('Incompatible types for assignment ({$type1} = {$type2})', $sourceCode, $sourceOffset, [$leftx].type, [$rightx].type);
+
+        // Notice special handling of constant expressions which will make the resulting rvalue of the assignment constant too.
+
+        if ($lop == '=' && { $t = [$rightx].operand.1{0} # [$rightx].operand.2{0}; span($t, '#<') == length($t) }) {
+            makeMeta($x, ':=', [$rightx].type, [$leftx].operand.1, makeRValue($rightx), void);
+            $keep = 1;
+        } else if ($lop == '=') {
+            makeMeta($x, [$rightx].operator, [$rightx].type, [$leftx].operand.1, [$rightx].operand.1, [$rightx].operand.2);
+            $keep = (if ([$x].operator == '=' || [$x].operator == ':=') 1 else 0);
+        } else if ($lop == '=*') {
+            makeMeta($x, '*=', [$rightx].type, [$leftx].operand.1, makeRValue($rightx), void);
+            $keep = 1;
+        } else if ($lop == '=[]')
+            makeMeta($x, '[]=', [$rightx].type, [$leftx].operand.1, [$leftx].operand.2, makeRValue($rightx))
+        else if ($lop == '=[]$')
+            makeMeta($x, '[]$=', [$rightx].type, [$leftx].operand.1, [$leftx].operand.2, makeRValue($rightx))
+        else fail("Invalid lvalue", $sourceCode, $sourceOffset); // FIX : required?
+        emitMeta($x);
+        // FIX : if '=' and constant, keep the constant instead as that will optimize FOR I = 1 To 10 e.g., now it checks $I against 10 run-time instead of 1 against 10 compile-time
+        for ($i = 2; $i >= 0; --$i) if ($i != $keep) return([$x].operand[$i]);
+        makeMeta($x, '=', [$x].type, void, [$x].operand[$keep], void);
+    };
+    
+    dereference => {
+        args(@$operator, @$expr, @$sourceCode, @$sourceOffset);
+        if ([$expr].operator == '+') {
+            [$expr].operator = '=[]';
+        } else if ([$expr].operator == '-' && [$expr].operand.2{0} == '#') {
+            [$expr].operator = '=[]';
+            [$expr].operand.2 = [$expr].operand.2{0} # -([$expr].operand.2{1:});
+        } else {
+            makeMeta($expr, $operator, '?', void, makeRValue($expr), void);
+        };
+    };
+
+    reference => {
+        args(@$operator, @$expr, @$sourceCode, @$sourceOffset);
+        if ([$expr].operator == '=') {
+    assert([$expr].operand.2 == void, "[$expr].operand.2 == void");
+            [$expr].operator = '=&';
+            [$expr].operand.2 = '*0';
+        } else if ([$expr].operator == '=*' || [$expr].operator == ':=*') {
+    assert([$expr].operand.2 == void, "[$expr].operand.2 == void");
+            [$expr].operator = ':=';
+        } else if ([$expr].operator == '=[]') {
+            [$expr].operator = '+';
+        } else if ([$expr].operator == '=[]$') {
+            [$expr].operator = '=&';
+            $index = [$expr].operand.2;
+            [$expr].operand.2 = '*0';
+            makeMeta($expr, '+', 'p', void, makeRValue($expr), $index);
+        } else fail("Invalid lvalue", $sourceCode, $sourceOffset);
+    };
+    
+    minus => {
+        args(@$operator, @$expr, @$sourceCode, @$sourceOffset);
+        makeMeta($expr, '-', void, void, ZEROES[[$expr].type], makeRValue($expr));
+    };
+
+    not => {
+        args(@$operator, @$expr, @$sourceCode, @$sourceOffset);
+        makeMeta($expr, '^', void, void, makeRValue($expr), '#-1');
+    };
+
+    absFloor => {
+        args(@$operator, @$expr, @$sourceCode, @$sourceOffset);
+        makeMeta($expr, $operator, void, void, makeRValue($expr), void);
+    };
+
+    intToFloatConvert => {
+        args(@$operator, @$expr, @$sourceCode, @$sourceOffset);
+        makeMeta($expr, '=itof', void, void, makeRValue($expr), '#1.0');
+    };
+
+    floatToIntConvert => {
+        args(@$operator, @$expr, @$sourceCode, @$sourceOffset);
+        if ([$expr].operator == '*' && span([$expr].operand.2{0}, '#<') == 1)
+            makeMeta($expr, '=ftoi', void, void, [$expr].operand.1, [$expr].operand.2)
+        else if ([$expr].operator == '*' && span([$expr].operand.1{0}, '#<') == 1)
+            makeMeta($expr, '=ftoi', void, void, [$expr].operand.2, [$expr].operand.1)
+        else
+            makeMeta($expr, '=ftoi', void, void, makeRValue($expr), '#1.0');
+    };
+        
+    map(@UNARY_OPS, '=float',function {} , '=funcptr',function {} , '=int',function {}
+            , '=pointer',function {} , '=*',dereference , '=&',reference
+            , '=-',minus , '=~',not
+            , '=abs',absFloor , '=itof',intToFloatConvert , '=ftoi',floatToIntConvert
+            , '=floor',absFloor);
+
+    unaryOp => {
+        args(@$operator, @$expr, @$sourceCode, @$sourceOffset);
+        $o = '=' # $operator;
+        if (!exists($tp = @SUPPORTED_OPS[$o # [$expr].type]))
+            typeError('Invalid type ({$type1})', $sourceCode, $sourceOffset, [$expr].type);
+        UNARY_OPS[$o]($o, $expr, $sourceCode, $sourceOffset);
+        [$expr].type = [$tp]
+    };
+
+    declare => {
+        args(@$kind, @$scope, @$name, @$type, @$readonly, @$value, @$sourceCode, @$sourceOffset);
+        if ($kind != void) {
+            flushMetaCode('');
+            output(bake("{if ($scope == 'locals') TAB}{if ($name != void) $name # ':'}\t"
+                    # "{replace($kind, '?', TYPE_SUFFIXES[$type])}"
+                    # "{if ($value != void) ' ' # $value}"));
+        };
+        return($value);
+        if ($name != void) {
+            if (exists($p = @symbols[$scope][$name])) {
+                if ($kind != void && [$p].kind != void)
+                    fail('Identifier already declared: ' # $name, $sourceCode, $sourceOffset);
+                if ($type != [$p].type)
+                    typeError('Type mismatch with previous declaration of ' # $name
+                            # ' (was {$type1})', $sourceCode, $sourceOffset, [$p].type);
+                $kind = coalesce($kind, [$p].kind);
+                $readonly = $readonly || [$p].readonly;
+            };
+            map($p, 'type',$type , 'readonly',$readonly , 'kind',$kind);
+            [$p] = true;
+        }
+    };
+
+    flushMetaCode => { 
+        args(@prefix);
+        nextLabel = TAB;
+        nextComment = '';
+        iterate(@metacode, >{
+//debugPrintMeta($0);
+            if (($op = [$0].operator) == void) {}
+            else if ($op == '<--') {
+        assert([$0].operand.0{0} == '@', "[$0].operand.0{0} == '@'");
+                if (nextLabel != TAB) output(bake("{prefix}{nextLabel}NOOP"));
+                nextLabel = [$0].operand.0{1:} # ':' # TAB;
+            } else if ($op == ';') {
+// ???          if (nextComment == '') output('');
+                nextComment = "\t; " # replace([$0].operand.0, "\t", ' ');
+            } else if ($op{:3} == '<> ') {
+                if (nextLabel != TAB) output(bake("{prefix}{nextLabel}NOOP"));
+                nextLabel = TAB;
+                output(bake("{prefix}\t! {replace(META_TO_GAZL[$op{3:}], '?', TYPE_SUFFIXES[[$0].type])}"
+                        # " {[$0].operand.0} {[$0].operand.1} {[$0].operand.2}{nextComment}"));
+                nextComment = '';
+            } else {
+                output(bake("{prefix}{nextLabel}{replace(META_TO_GAZL[$op], '?', TYPE_SUFFIXES[[$0].type])}"
+                        # " {[$0].operand.0} {[$0].operand.1} {[$0].operand.2}{nextComment}"));
+                nextLabel = TAB;
+                nextComment = '';
+            }
+        });
+        metacode.n = 0;
+    };
+
+    lookup => {
+        args(@$x, @$name, @$global, @$sourceCode, @$sourceOffset);
+        if (!$global && exists($p = @symbols.locals['$' # $name])) {
+            $type = [$p].type;
+            // TODO : use actual array size instead of *0, can be tricky with compile-time constants though...
+            if ([$p].type == 'A') makeMeta($x, '=&', 'p', void, '$' # $name, '*0')
+            else makeMeta($x, if ([$p].readonly) ':=' else '=', [$p].type, void, '$' # $name, void);
+        } else if ($global && exists($p = @symbols.globals[$name])) {
+            if ([$p].type == 'A') makeMeta($x, ':=', 'p', void, '&' # $name, void)
+            else makeMeta($x, if ([$p].readonly) ':=*' else '=*', [$p].type, void, '&' # $name, void);
+        } else if (exists($p = @symbols.functions[$name])) {
+            if ([$p].type == 'N') makeMeta($x, ':=', 'N', void, '^' # $name, void)
+            else {
+    assert([$p].type == 'U'); makeMeta($x, ':=', 'F', void, '&' # $name, void)
+            }
+        } else if (exists($p = @symbols.defines[$name])) {
+            makeMeta($x, ':=', [$p].type, void, '#' # $name, void);
+        } else fail('Undeclared identifier: ' # $name, $sourceCode, $sourceOffset);
+    };
+    
+    makeConstant => {
+        args(@$x, @$type, @$sourceCode, @$sourceOffset);
+        $r = makeRValue($x, '#<&');
+        if ([$x].type != $type || span($r{0}, '#<&') != 1)
+            fail(bake("Expected constant {VERBOSE_TYPES[$type]}"), $sourceCode, $sourceOffset);
+        ( $r )
+    };
+    
+    subConstInt => {
+        args(@$opL, @$opR);
+assert(span($opR{0}, '#<') == 1, "span($opR{0}, '#<') == 1");
+        if ($opR == '#0') ( $opL )
+        else if ($opL{0} == '#' && $opR{0} == '#' && span($opL{1:}, '0123456789') == length($opL) - 1
+                && span($opR{1:}, '0123456789') == length($opR) - 1)
+            ( '#' # $opL{1:} - $opR{1:} )
+        else {
+            return($opL);
+            if (span($opL{0}, '#<') == 1) emit('<> -', 'i', $o = borrow('<'), $opL, $opR)
+            else emit('-', 'i', $o = borrow('%'), $opL, $opR);
+            ( $o )
+        }
+    };
+    
+    dropHash = function { ( if ($0{0} == '#') $0{1:} else $0 ) };
+    
+    printable = '';
+    for ($i = 33; $i < 127; ++$i) printable #= char($i);
+    
+	dumpString => {
+		$l = length($s = $1);
+		declare('CNST', 'globals', $0, '?', true, '*' # $l, '', 0);
+		for ($offset = 0; $offset < $l;) {
+			$i = find($s{$offset:}, printable);
+			for ($d = ''; --$i >= 0; ++$offset) $d #= ' #' # ordinal($s{$offset});
+			if ($d != '') declare('DATi', void, void, 'i', true, $d{1:}, '', 0);
+			$i = span($s{$offset:}, printable # ' ');
+			$i = rspan($s{$offset:$i}, ' ') + 1;
+			if ($i > 0) declare('DATs', void, void, 'i', true, $s{$offset:$i}, '', 0);
+			$offset += $i
+		}
+	};
+    
+    makeString => {
+        args(@$prefix, @$x, @$s, @$sourceCode, @$sourceOffset);
+        $s #= char(0);
+        $a = @strings[$prefix];
+        if (!exists($p = @[$a].rlookup[$s])) {
+            $name = '.' # $prefix # '_'
+                    # replace($s, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', '', ::span, 1){:6}
+                    # radix(randomId + [$a].n, 16);
+            if (noForward) dumpString($name, $s)
+			else map(@[$a][[$a].n++], 'name',$name , 'data',$s);
+            $l = length($s);
+            for ($offset = 0; $offset < $l; ++$offset)
+                [$a].rlookup[$s{$offset:}] = $name # (if ($offset != 0) ':' # $offset);
+        };
+        makeMeta($x, ':=', 'p', void, '&' # [$p], void)
+    };
+    
+    start => {
+        prune(@stock);
+        prune(@metacode);
+        prune(@strings.s); // string constants
+        prune(@strings.a); // assert strings
+        prune(@symbols);
+        resetQueue(@stock['%']);
+        resetQueue(@stock['<']);
+        counters['%'] = 0;
+        counters['<'] = 0;
+        labelCounter = 0;
+        metacode.n = 0;
+        strings.s.n = 0;
+        strings.a.n = 0;
+		noForward = false;
+        if (exists(@::impalaRandomId)) randomId = ::impalaRandomId
+        else for ($i = 0; $i < 1000; ++$i) randomId = ::floor(::random(0xFFFFFFFF)) ^ time();
+        output('; Compiled with Impala version ' # IMPALA_VERSION # LF);
+    };
+	
+    end => {
+        iterate(@strings.s, >dumpString([$0].name, [$0].data));
+        if (strings.a.n > 0) {
+            output("\t! EQUi #DEBUG #0 @.noAssertStrings");
+            iterate(@strings.a, >dumpString([$0].name, [$0].data));
+            output(".noAssertStrings:\t!");
+        }
+    };
+};root=>{$b1=_i;_($0)&&{{ start() } ;true}&&{for(;{$b2=_i;FuncDecl($0)||{if(_i>_im)_im=_i;_i=$b2;false}||ExternDecl($0)||{if(_i>_im)_im=_i;_i=$b2;false}||ConstDecl($0)||{if(_i>_im)_im=_i;_i=$b2;false}||GlobalDecl($0)||{if(_i>_im)_im=_i;_i=$b2;false}||(_s{_i}===';')&&{++_i;true}&&_($0)||{if(_i>_im)_im=_i;_i=$b2;false}};);true}&&{$l1=_i;$x=(_s{_i}!='')&&{++_i;true};_i=$l1;!$x}&&{{ end() } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+FuncDecl=>{$b1=_i;FUNCTION($0)&&_($0)&&Identifier(@$id)&&(_s{_i}==='(')&&{++_i;true}&&_($0)&&{{ assert(>validateStock('%')); assert(>validateStock('<')); output(''); output(';-----------------------------------------------------------------------------'); declare('FUNC', 'functions', $id, 'U', true, void, _s, _i); } ;true}&&ArgsDecl(@$inp)&&(_s{_i}===')')&&{++_i;true}&&_($0)&&{{ $out.n = 0 } ;true}&&{$b2=_i;RETURNS($0)&&_($0)&&VarDecl(@$out)&&{{ declare('OUT?', 'locals', '$' # $out.name, $out.type, false, if ($out.size != void) '*' # $out.size else void, _s, _i) } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}||{{ declare('PARA', 'locals', void, '?', false, '*1', _s, _i); } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}}&&{{ iterate(@$inp, >declare('INP?', 'locals', '$' # [$0].name, [$0].type, true, if ([$0].size != void) '*' # [$0].size else void, _s, _i)) } ;true}&&{{$b2=_i;LOCALS($0)&&_($0)&&LocalsDecl(@$loc)&&{{ iterate(@$loc, >declare('LOC?', 'locals', '$' # [$0].name, [$0].type, false, if ([$0].size != void) '*' # [$0].size else void, _s, _i)) } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}};true}&&{{ output(';-----------------------------------------------------------------------------'); } ;true}&&Block($0)&&{{ processBranches(); emit('--^', void, void, void, void); flushMetaCode("\t"); prune(@symbols.locals); labelCounter = 0; output(''); } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+ExternDecl=>{$b1=_i;EXTERN($0)&&_($0)&&{{ [$0].scope = 'globals' } ;true}&&{$b2=_i;{$b3=_i;FUNCTION($0)&&{{ [$0].type = 'U'; [$0].scope = 'functions' } ;true}||{if(_i>_im)_im=_i;_i=$b3;false}||NATIVE($0)&&{{ [$0].type = 'N'; [$0].scope = 'functions' } ;true}||{if(_i>_im)_im=_i;_i=$b3;false}||ARRAY($0)&&{{ [$0].type = 'A' } ;true}||{if(_i>_im)_im=_i;_i=$b3;false}}&&_($0)&&Identifier(@$id)&&{{ [$0].name = $id } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}||VarDecl($0)||{if(_i>_im)_im=_i;_i=$b2;false}}&&{{ declare(void, [$0].scope, [$0].name, [$0].type, false, '?', _s, _i) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+ConstDecl=>{$b1=_i;CONST($0)&&_($0)&&{$m1=_i;BASE_TYPE($0)&&{$type = _s{$m1:_i-$m1};true}}&&_($0)&&{{ $t = CASTS_TO_TYPES[$type]; $nf = noForward; noForward = true } ;true}&&Identifier(@$id)&&{$b2=_i;(_s{_i}==='=')&&{++_i;true}&&_($0)&&Expr(@$x)&&{{ declare('! DEF?', 'defines', $id, $t, true, makeConstant(@$x, $t, _s, _i), _s, _i) } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}||{{ declare(void, 'defines', $id, $t, true, void, _s, _i) } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}}&&{{ noForward = $nf } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+GlobalDecl=>{$b1=_i;{$b2=_i;GLOBAL($0)&&{{ $section = 'GLOB' } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}||READONLY($0)&&{{ $section = 'CNST' } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}||TEMPORARY($0)&&{{ $section = 'TEMP' } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}}&&_($0)&&{$b2=_i;VarDecl(@$v)&&{{ declare($section, 'globals', void, $v.type, $section == 'CNST', '*1', _s, _i); $init = ZEROES[$v.type] } ;true}&&{{$b3=_i;(_s{_i}==='=')&&{++_i;true}&&_($0)&&Expr(@$x)&&{{ $init = makeConstant(@$x, $v.type, _s, _i) } ;true}||{if(_i>_im)_im=_i;_i=$b3;false}};true}&&{{ declare('DAT?', 'globals', $v.name, $v.type, $section == 'CNST', $init, _s, _i) } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}||ArrayDecl(@$a)&&{{ declare($section, 'globals', $a.name, 'A', $section == 'CNST', '*' # $a.size, _s, _i) } ;true}&&{{$b3=_i;(_s{_i}==='=')&&{++_i;true}&&_($0)&&InitList(@$d)||{if(_i>_im)_im=_i;_i=$b3;false}};true}||{if(_i>_im)_im=_i;_i=$b2;false}}||{if(_i>_im)_im=_i;_i=$b1;false}};
+InitList=>{$b1=_i;(_s{_i}==='{')&&{++_i;true}&&_($0)&&{{ $d = ' ' } ;true}&&{{$b2=_i;Expr(@$x)&&{{ $d #= makeConstant(@$x, $x.type, _s, _i); } ;true}&&{for(;{$b3=_i;(_s{_i}===',')&&{++_i;true}&&_($0)&&Expr(@$x)&&{{ $c = makeConstant(@$x, $x.type, _s, _i); if ($c{0} == '<' || $d{1} == '<' || length($d # ' ' # $c) >= 55) { declare('DATA', 'globals', void, $x.type, true, $d{1:}, _s, _i); $d = '' }; $d #= ' ' # $c } ;true}||{if(_i>_im)_im=_i;_i=$b3;false}};);true}||{if(_i>_im)_im=_i;_i=$b2;false}};true}&&(_s{_i}==='}')&&{++_i;true}&&_($0)&&{{ if ($d{1:} != '') declare('DATA', 'globals', void, $x.type, true, $d{1:}, _s, _i) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+ArgsDecl=>{$b1=_i;{{ [$0].n = 0 } ;true}&&{{$b2=_i;VarDecl(@$v)&&{{ clone(@$v, @[$0][[$0].n++]) } ;true}&&{for(;{$b3=_i;(_s{_i}===',')&&{++_i;true}&&_($0)&&VarDecl(@$v)&&{{ clone(@$v, @[$0][[$0].n++]) } ;true}||{if(_i>_im)_im=_i;_i=$b3;false}};);true}||{if(_i>_im)_im=_i;_i=$b2;false}};true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+LocalsDecl=>{$b1=_i;{{ [$0].n = 0 } ;true}&&{{$b2=_i;{$b3=_i;VarDecl(@$v)||{if(_i>_im)_im=_i;_i=$b3;false}||ArrayDecl(@$v)||{if(_i>_im)_im=_i;_i=$b3;false}}&&{{ clone(@$v, @[$0][[$0].n++]) } ;true}&&{for(;{$b3=_i;(_s{_i}===',')&&{++_i;true}&&_($0)&&{$b4=_i;VarDecl(@$v)||{if(_i>_im)_im=_i;_i=$b4;false}||ArrayDecl(@$v)||{if(_i>_im)_im=_i;_i=$b4;false}}&&{{ clone(@$v, @[$0][[$0].n++]) } ;true}||{if(_i>_im)_im=_i;_i=$b3;false}};);true}||{if(_i>_im)_im=_i;_i=$b2;false}};true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+VarDecl=>{$b1=_i;{$m1=_i;BASE_TYPE($0)&&{$type = _s{$m1:_i-$m1};true}}&&_($0)&&Identifier(@$id)&&{{ [$0].type = CASTS_TO_TYPES[$type]; [$0].name = $id; [$0].size = void; } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+ArrayDecl=>{$b1=_i;ARRAY($0)&&_($0)&&Identifier(@$id)&&(_s{_i}==='[')&&{++_i;true}&&_($0)&&Expr(@$x)&&(_s{_i}===']')&&{++_i;true}&&_($0)&&{{ $size = makeConstant(@$x, 'i', _s, _i); map(@[$0], 'type','A' , 'name',$id , 'size',dropHash($size)); return($size) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+Statement=>{$b1=_i;{{ emit(';', void, _s{_i:find(_s{_i:}, "{;\r\n")}, void, void) } ;true}&&{for(;{$b2=_i;Identifier(@$label)&&(_s{_i}===':')&&{++_i;true}&&_($0)&&{{ emit('<--', void, '@' # $label, void, void); } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}};);true}&&{$b2=_i;(_s{_i}===';')&&{++_i;true}&&_($0)||{if(_i>_im)_im=_i;_i=$b2;false}||Assert($0)||{if(_i>_im)_im=_i;_i=$b2;false}||Block($0)||{if(_i>_im)_im=_i;_i=$b2;false}||Copy($0)||{if(_i>_im)_im=_i;_i=$b2;false}||DoWhile($0)||{if(_i>_im)_im=_i;_i=$b2;false}||Loop($0)||{if(_i>_im)_im=_i;_i=$b2;false}||For($0)||{if(_i>_im)_im=_i;_i=$b2;false}||Goto($0)||{if(_i>_im)_im=_i;_i=$b2;false}||If($0)||{if(_i>_im)_im=_i;_i=$b2;false}||Switch($0)||{if(_i>_im)_im=_i;_i=$b2;false}||While($0)||{if(_i>_im)_im=_i;_i=$b2;false}||Expr($0)&&(_s{_i}===';')&&{++_i;true}&&_($0)&&{{ releaseMeta(@[$0]); } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}}||{if(_i>_im)_im=_i;_i=$b1;false}};
+Expr=>{$b1=_i;Bitwise($0)&&{{$b2=_i;(_s{_i}==='=')&&{++_i;true}&&_($0)&&Expr(@$r)&&{{ if (!dry) assign(@[$0], @[$0], @$r, _s, _i); } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}};true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+Bitwise=>{$b1=_i;AddSub($0)&&{for(;{$b2=_i;{$m2=_i;BITWISE_OP($0)&&{$op = _s{$m2:_i-$m2};true}}&&_($0)&&AddSub(@$r)&&{{ if (!dry) binaryOp($op, @[$0], @$r, _s, _i) } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}};);true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+AddSub=>{$b1=_i;MulDiv($0)&&{for(;{$b2=_i;{$m2=_i;ADDSUB_OP($0)&&{$op = _s{$m2:_i-$m2};true}}&&_($0)&&MulDiv(@$r)&&{{ if (!dry) binaryOp($op, @[$0], @$r, _s, _i) } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}};);true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+MulDiv=>{$b1=_i;PrePost($0)&&{for(;{$b2=_i;{$m2=_i;MULDIV_OP($0)&&{$op = _s{$m2:_i-$m2};true}}&&_($0)&&PrePost(@$r)&&{{ if (!dry) mulDivOp($op, @[$0], @$r, _s, _i) } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}};);true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+PrePost=>{$b1=_i;{$b2=_i;{$m2=_i;PREFIX_OP($0)&&{$op = _s{$m2:_i-$m2};true}}&&_($0)||{if(_i>_im)_im=_i;_i=$b2;false}||(_s{_i}==='(')&&{++_i;true}&&_($0)&&{$m2=_i;BASE_TYPE($0)&&{$op = _s{$m2:_i-$m2};true}}&&_($0)&&(_s{_i}===')')&&{++_i;true}&&_($0)||{if(_i>_im)_im=_i;_i=$b2;false}}&&PrePost($0)&&{{ if (!dry) unaryOp($op, @[$0], _s, _i) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}||Value($0)&&{for(;{$b2=_i;FuncCall($0)||{if(_i>_im)_im=_i;_i=$b2;false}||Subscript($0)||{if(_i>_im)_im=_i;_i=$b2;false}};);true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+Subscript=>{$b1=_i;(_s{_i}==='[')&&{++_i;true}&&_($0)&&Expr(@$s)&&(_s{_i}===']')&&{++_i;true}&&_($0)&&{{ if (!dry) binaryOp('=[]', @[$0], @$s, _s, _i) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+FuncCall=>{$b1=_i;(_s{_i}==='(')&&{++_i;true}&&_($0)&&{{ if (!dry) { [$0].count = 0; [$0].base = borrowForCall(); } } ;true}&&{{$b2=_i;Argument($0)&&{for(;{$b3=_i;(_s{_i}===',')&&{++_i;true}&&_($0)&&Argument($0)||{if(_i>_im)_im=_i;_i=$b3;false}};);true}||{if(_i>_im)_im=_i;_i=$b2;false}};true}&&(_s{_i}===')')&&{++_i;true}&&_($0)&&{{ if (!dry) { if (span([$0].type, 'FN') != 1) typeError('Invalid type for function call ({$type1})', _s, _i, [$0].type); $func = makeRValue(@[$0], '&^$%'); emit('()', '?', $func, '%' # [$0].base, '*' # [$0].count + 1); return($func); for (; [$0].count > 0; --[$0].count) return('%' # [$0].base + [$0].count); makeMeta(@[$0], ':=', '?', void, '%' # [$0].base, void); } } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+Argument=>{$b1=_i;Expr(@$a)&&{{ if (!dry) { ++[$0].count; makeArgValue(@$a, [$0].base + [$0].count); } } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+Group=>{$b1=_i;(_s{_i}==='(')&&{++_i;true}&&_($0)&&Expr($0)&&(_s{_i}===')')&&{++_i;true}&&_($0)||{if(_i>_im)_im=_i;_i=$b1;false}};
+BoolGroup=>{$b1=_i;(_s{_i}==='(')&&{++_i;true}&&_($0)&&{{ $label = void } ;true}&&And($0)&&{for(;{$b2=_i;(_s{_i:2}==='||')&&{_i+=2;true}&&_($0)&&{{ if ($label == void) $label = newLabel('t'); emit('?->', true, $label, void, void) } ;true}&&And($0)||{if(_i>_im)_im=_i;_i=$b2;false}};);true}&&(_s{_i}===')')&&{++_i;true}&&_($0)&&{{ if ($label != void) emit('<-?', true, $label, void, void) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+And=>{$b1=_i;{{ $label = void } ;true}&&Comp($0)&&{for(;{$b2=_i;(_s{_i:2}==='&&')&&{_i+=2;true}&&_($0)&&{{ if ($label == void) $label = newLabel('f'); emit('?->', false, $label, void, void) } ;true}&&Comp($0)||{if(_i>_im)_im=_i;_i=$b2;false}};);true}&&{{ if ($label != void) emit('<-?', false, $label, void, void) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+Comp=>{$b1=_i;(_s{_i}==='!')&&{++_i;true}&&_($0)&&Comp($0)&&{{ emit('!', void, void, void, void) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}||{{ dry = true } ;true}&&{$l1=_i;$x=Group($0);_i=$l1;!$x}&&{{ dry = false } ;true}&&BoolGroup($0)||{if(_i>_im)_im=_i;_i=$b1;false}||{{ dry = false } ;true}&&Expr($0)&&{$m1=_i;COMP_OP($0)&&{$op = _s{$m1:_i-$m1};true}}&&_($0)&&Expr(@$r)&&{{ binaryOp($op, @[$0], @$r, _s, _i); emitMeta(@[$0]); releaseMeta(@[$0]); } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+Assert=>{$b1=_i;ASSERT($0)&&_($0)&&{{ emit('<> ==', 'i', '#DEBUG', '#0', $okLabel = newLabel('a')) } ;true}&&{$m1=_i;BoolGroup($0)&&{$str = _s{$m1:_i-$m1};true}}&&(_s{_i}===';')&&{++_i;true}&&_($0)&&{{ emit('?->', true, $okLabel, void, void); $r = borrowForCall(); makeString('a', @$s, $str, _s, _i); makeArgValue(@$s, $r + 1); emit('()', '?', '^assertFail', '%' # $r, '*1'); return('%' # $r + 1); return('%' # $r); emit('<-?', true, $okLabel, void, void) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+Block=>{$b1=_i;(_s{_i}==='{')&&{++_i;true}&&_($0)&&{for(;Statement($0););true}&&(_s{_i}==='}')&&{++_i;true}&&_($0)||{if(_i>_im)_im=_i;_i=$b1;false}};
+Goto=>{$b1=_i;GOTO($0)&&_($0)&&Identifier(@$label)&&(_s{_i}===';')&&{++_i;true}&&_($0)&&{{ emit('-->', void, '@' # $label, void, void); } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+If=>{$b1=_i;IF($0)&&_($0)&&BoolGroup($0)&&{{ emit('?->', false, $dontLabel = newLabel('f'), void, void) } ;true}&&Statement($0)&&{$b2=_i;ELSE($0)&&_($0)&&{{ emit('-->', void, $doneLabel = newLabel('e'), void, void); emit('<-?', false, $dontLabel, void, void) } ;true}&&Statement($0)&&{{ emit('<--', void, $doneLabel, void, void) } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}||{{ emit('<-?', false, $dontLabel, void, void) } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}}||{if(_i>_im)_im=_i;_i=$b1;false}};
+DoWhile=>{$b1=_i;DO($0)&&_($0)&&{{ emit('<-?', false, $loopLabel = newLabel('l'), void, void) } ;true}&&Statement($0)&&WHILE($0)&&_($0)&&BoolGroup($0)&&{{ emit('?->', true, $loopLabel, void, void) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+Loop=>{$b1=_i;LOOP($0)&&_($0)&&{{ emit('<--', void, $loopLabel = newLabel('l'), void, void) } ;true}&&Statement($0)&&{{ emit('-->', void, $loopLabel, void, void) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+For=>{$b1=_i;FOR($0)&&_($0)&&(_s{_i}==='(')&&{++_i;true}&&_($0)&&Variable(@$var)&&{{ if ($var.operator != '=' || span($var.type, "ip") == 0) fail('For variable must be a local modifiable int or pointer variable', _s, _i); $gotInit = false; } ;true}&&{{$b2=_i;(_s{_i}==='=')&&{++_i;true}&&_($0)&&Expr($0)&&{{ assign(@$x, @$var, @[$0], _s, _i); $gotInit = true; } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}};true}&&TO($0)&&_($0)&&Expr($0)&&(_s{_i}===')')&&{++_i;true}&&_($0)&&{{ if ([$0].type != $var.type) typeError('Incompatible types ({$type1} and {$type2})', _s, _i, $var.type, [$0].type); $to = makeRValue(@[$0]); emit('<', [$0].type, void, (if ($gotInit) $x.operand.1 else $var.operand.1), $to); if ($gotInit) releaseMeta(@$x); emit('?->', false, $noLoopLabel = newLabel('e'), void, void); emit('<--', void, $loopLabel = newLabel('l'), void, void); } ;true}&&Statement($0)&&{{ emit('...', $var.type, $var.operand.1, $to, $loopLabel); emit('<-?', false, $noLoopLabel, void, void); return($to); releaseMeta(@$var); } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+Copy=>{$b1=_i;COPY($0)&&_($0)&&(_s{_i}==='(')&&{++_i;true}&&_($0)&&Expr($0)&&FROM($0)&&_($0)&&Expr(@$f)&&TO($0)&&_($0)&&Expr(@$t)&&(_s{_i}===')')&&{++_i;true}&&_($0)&&{{ $length = makeConstant(@[$0], 'i', _s, _i); if ($f.type # $t.type != 'pp') typeError('Invalid types ({$type1} and {$type2})', _s, _i, $f.type, $t.type); makeMeta(@$x, 'copy', '?', makeRValue(@$t, '&$%'), makeRValue(@$f, '&$%'), '*' # dropHash($length)); emitMeta(@$x); releaseMeta(@$x); } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+Switch=>{$b1=_i;SWITCH($0)&&_($0)&&(_s{_i}==='(')&&{++_i;true}&&_($0)&&Expr($0)&&(_s{_i:2}==='==')&&{_i+=2;true}&&_($0)&&Expr(@$f)&&TO($0)&&_($0)&&Expr(@$t)&&{{ if ([$0].type != 'i') fail('Switch expression needs to be int', _s, _i); [$0].from = makeConstant(@$f, 'i', _s, _i); $size = subConstInt(makeConstant(@$t, 'i', _s, _i), [$0].from); $switcher = subConstInt(makeRValue(@[$0], '$%'), [$0].from); [$0].switchLabel = newLabel('s'); $switchExit = newLabel('e'); emit('-->#', [$0].type, $switcher, '*' # dropHash($size), [$0].switchLabel); return($switcher); return($size); $progress = void; } ;true}&&(_s{_i}===')')&&{++_i;true}&&_($0)&&(_s{_i}==='{')&&{++_i;true}&&_($0)&&{for(;{$b2=_i;{$b3=_i;CASE($0)&&_($0)&&{{ if ($progress != void) emit('-->', void, $switchExit, void, void) else $progress = 'gotCases'; emit(';', void, 'case ' # _s{_i:find(_s{_i:}, ":\r\n")}, void, void); } ;true}&&CaseExpr($0)&&{for(;{$b4=_i;(_s{_i}===',')&&{++_i;true}&&_($0)&&CaseExpr($0)||{if(_i>_im)_im=_i;_i=$b4;false}};);true}||{if(_i>_im)_im=_i;_i=$b3;false}||DEFAULT($0)&&_($0)&&{{ if ($progress == 'gotDefault') fail('Default case already defined') else if ($progress != void) emit('-->', void, $switchExit, void, void); emit(';', void, 'default', void, void); emit('<--', void, [$0].switchLabel, void, void); $progress = 'gotDefault' } ;true}||{if(_i>_im)_im=_i;_i=$b3;false}}&&(_s{_i}===':')&&{++_i;true}&&_($0)&&Statement(@$s)||{if(_i>_im)_im=_i;_i=$b2;false}};);true}&&(_s{_i}==='}')&&{++_i;true}&&_($0)&&{{ if ($progress != 'gotDefault') emit('<--', void, [$0].switchLabel, void, void); emit('<--', void, $switchExit, void, void); return([$0].from) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+CaseExpr=>{$b1=_i;Expr($0)&&{{ $n = subConstInt(makeConstant(@[$0], 'i', _s, _i), [$0].from); emit('<--', void, [$0].switchLabel # '#' # dropHash($n), void, void); return($n) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+While=>{$b1=_i;WHILE($0)&&_($0)&&{{ emit('<--', void, $loopLabel = newLabel('l'), void, void) } ;true}&&BoolGroup($0)&&{{ emit('?->', false, $exitLabel = newLabel('e'), void, void) } ;true}&&Statement($0)&&{{ emit('-->', void, $loopLabel, void, void); emit('<-?', false, $exitLabel, void, void) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+Value=>{$b1=_i;Group($0)||{if(_i>_im)_im=_i;_i=$b1;false}||Float(@$f)&&{{ if (!dry) makeMeta(@[$0], ':=', 'f', void, '#' # $f, void) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}||Integer(@$i)&&{{ if (!dry) makeMeta(@[$0], ':=', 'i', void, '#' # $i, void) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}||String(@$s)&&{{ if (!dry) makeString('s', @[$0], evaluate($s), _s, _i) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}||NULL($0)&&_($0)&&{{ if (!dry) makeMeta(@[$0], ':=', 'p', void, '&NULL', void) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}||NULLFUNC($0)&&_($0)&&{{ if (!dry) makeMeta(@[$0], ':=', 'F', void, '&NULL', void) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}||Variable($0)||{if(_i>_im)_im=_i;_i=$b1;false}};
+Variable=>{$b1=_i;{{ $global = false; } ;true}&&{{$b2=_i;GLOBAL($0)&&_($0)&&{{ $global = true; } ;true}||{if(_i>_im)_im=_i;_i=$b2;false}};true}&&Identifier(@$id)&&{{ if (!dry) lookup(@[$0], $id, $global, _s, _i) } ;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+Identifier=>{$b1=_i;{$l1=_i;$x=KEYWORD($0);_i=$l1;!$x}&&{$m1=_i;{$b2=_i;(span(_s{_i},'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$')==1)&&{++_i;true}&&{for(;SYMBOL_CHAR($0););true}||{if(_i>_im)_im=_i;_i=$b2;false}}&&{[$0] = _s{$m1:_i-$m1};true}}&&_($0)||{if(_i>_im)_im=_i;_i=$b1;false}};
+Float=>{$b1=_i;{$m1=_i;{$b2=_i;{(span(_s{_i},'-+')==1)&&{++_i;true};true}&&{false;for(;DIGIT($0);)true}&&(_s{_i}==='.')&&{++_i;true}&&{false;for(;DIGIT($0);)true}&&{{$b3=_i;{$b4=_i;(_s{_i}==='E')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b4;false}||(_s{_i}==='e')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b4;false}}&&{$b4=_i;{(span(_s{_i},'-+')==1)&&{++_i;true};true}&&{false;for(;DIGIT($0);)true}||{if(_i>_im)_im=_i;_i=$b4;false}}||{if(_i>_im)_im=_i;_i=$b3;false}};true}||{if(_i>_im)_im=_i;_i=$b2;false}}&&{[$0] = _s{$m1:_i-$m1};true}}&&_($0)||{if(_i>_im)_im=_i;_i=$b1;false}};
+Integer=>{$b1=_i;{$m1=_i;{$b2=_i;{(span(_s{_i},'-+')==1)&&{++_i;true};true}&&{$b3=_i;(_s{_i:2}==='0x')&&{_i+=2;true}&&{false;for(;HEX($0);)true}||{if(_i>_im)_im=_i;_i=$b3;false}||(_s{_i}==="'")&&{++_i;true}&&{for(;{$b4=_i;{$l4=_i;$x=(_s{_i}==="'")&&{++_i;true};_i=$l4;!$x}&&ASCII($0)||{if(_i>_im)_im=_i;_i=$b4;false}};);true}&&(_s{_i}==="'")&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b3;false}||{false;for(;DIGIT($0);)true}||{if(_i>_im)_im=_i;_i=$b3;false}}||{if(_i>_im)_im=_i;_i=$b2;false}}&&{[$0] = _s{$m1:_i-$m1};true}}&&_($0)||{if(_i>_im)_im=_i;_i=$b1;false}};
+String=>{$b1=_i;{$m1=_i;{$b2=_i;(_s{_i}==='"')&&{++_i;true}&&{for(;{$b3=_i;{$l3=_i;$x=(span(_s{_i},"\"\\\x00\x01\x02\x03\x04\x05\x06\a\b\t\n\v\f\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f")==1)&&{++_i;true};_i=$l3;!$x}&&(_s{_i}!='')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b3;false}||(_s{_i}==='\')&&{++_i;true}&&{$b4=_i;(span(_s{_i},'"\bfnrt')==1)&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b4;false}||(_s{_i}==='u')&&{++_i;true}&&HEX($0)&&HEX($0)&&HEX($0)&&HEX($0)||{if(_i>_im)_im=_i;_i=$b4;false}}||{if(_i>_im)_im=_i;_i=$b3;false}};);true}&&(_s{_i}==='"')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b2;false}}&&{[$0] = _s{$m1:_i-$m1};true}}&&_($0)||{if(_i>_im)_im=_i;_i=$b1;false}};
+KEYWORD=>{$b1=_i;ABS($0)||{if(_i>_im)_im=_i;_i=$b1;false}||ARRAY($0)||{if(_i>_im)_im=_i;_i=$b1;false}||ASSERT($0)||{if(_i>_im)_im=_i;_i=$b1;false}||CASE($0)||{if(_i>_im)_im=_i;_i=$b1;false}||CONST($0)||{if(_i>_im)_im=_i;_i=$b1;false}||COPY($0)||{if(_i>_im)_im=_i;_i=$b1;false}||DEFAULT($0)||{if(_i>_im)_im=_i;_i=$b1;false}||DO($0)||{if(_i>_im)_im=_i;_i=$b1;false}||ELSE($0)||{if(_i>_im)_im=_i;_i=$b1;false}||EXTERN($0)||{if(_i>_im)_im=_i;_i=$b1;false}||FLOAT($0)||{if(_i>_im)_im=_i;_i=$b1;false}||FLOOR($0)||{if(_i>_im)_im=_i;_i=$b1;false}||FOR($0)||{if(_i>_im)_im=_i;_i=$b1;false}||FROM($0)||{if(_i>_im)_im=_i;_i=$b1;false}||FTOI($0)||{if(_i>_im)_im=_i;_i=$b1;false}||FUNCPTR($0)||{if(_i>_im)_im=_i;_i=$b1;false}||FUNCTION($0)||{if(_i>_im)_im=_i;_i=$b1;false}||GLOBAL($0)||{if(_i>_im)_im=_i;_i=$b1;false}||GOTO($0)||{if(_i>_im)_im=_i;_i=$b1;false}||IF($0)||{if(_i>_im)_im=_i;_i=$b1;false}||INT($0)||{if(_i>_im)_im=_i;_i=$b1;false}||ITOF($0)||{if(_i>_im)_im=_i;_i=$b1;false}||LOCALS($0)||{if(_i>_im)_im=_i;_i=$b1;false}||LOOP($0)||{if(_i>_im)_im=_i;_i=$b1;false}||NATIVE($0)||{if(_i>_im)_im=_i;_i=$b1;false}||NULL($0)||{if(_i>_im)_im=_i;_i=$b1;false}||NULLFUNC($0)||{if(_i>_im)_im=_i;_i=$b1;false}||POINTER($0)||{if(_i>_im)_im=_i;_i=$b1;false}||READONLY($0)||{if(_i>_im)_im=_i;_i=$b1;false}||RETURNS($0)||{if(_i>_im)_im=_i;_i=$b1;false}||SWITCH($0)||{if(_i>_im)_im=_i;_i=$b1;false}||TEMPORARY($0)||{if(_i>_im)_im=_i;_i=$b1;false}||TO($0)||{if(_i>_im)_im=_i;_i=$b1;false}||WHILE($0)||{if(_i>_im)_im=_i;_i=$b1;false}};
+ABS=>{$b1=_i;(_s{_i:3}==='abs')&&{_i+=3;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+ARRAY=>{$b1=_i;(_s{_i:5}==='array')&&{_i+=5;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+ASSERT=>{$b1=_i;(_s{_i:6}==='assert')&&{_i+=6;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+CASE=>{$b1=_i;(_s{_i:4}==='case')&&{_i+=4;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+CONST=>{$b1=_i;(_s{_i:5}==='const')&&{_i+=5;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+COPY=>{$b1=_i;(_s{_i:4}==='copy')&&{_i+=4;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+DEFAULT=>{$b1=_i;(_s{_i:7}==='default')&&{_i+=7;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+DO=>{$b1=_i;(_s{_i:2}==='do')&&{_i+=2;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+ELSE=>{$b1=_i;(_s{_i:4}==='else')&&{_i+=4;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+EXTERN=>{$b1=_i;(_s{_i:6}==='extern')&&{_i+=6;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+FLOAT=>{$b1=_i;(_s{_i:5}==='float')&&{_i+=5;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+FLOOR=>{$b1=_i;(_s{_i:5}==='floor')&&{_i+=5;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+FOR=>{$b1=_i;(_s{_i:3}==='for')&&{_i+=3;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+FROM=>{$b1=_i;(_s{_i:4}==='from')&&{_i+=4;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+FTOI=>{$b1=_i;(_s{_i:4}==='ftoi')&&{_i+=4;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+FUNCPTR=>{$b1=_i;(_s{_i:7}==='funcptr')&&{_i+=7;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+FUNCTION=>{$b1=_i;(_s{_i:8}==='function')&&{_i+=8;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+GLOBAL=>{$b1=_i;(_s{_i:6}==='global')&&{_i+=6;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+GOTO=>{$b1=_i;(_s{_i:4}==='goto')&&{_i+=4;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+IF=>{$b1=_i;(_s{_i:2}==='if')&&{_i+=2;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+INT=>{$b1=_i;(_s{_i:3}==='int')&&{_i+=3;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+ITOF=>{$b1=_i;(_s{_i:4}==='itof')&&{_i+=4;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+LOCALS=>{$b1=_i;(_s{_i:6}==='locals')&&{_i+=6;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+LOOP=>{$b1=_i;(_s{_i:4}==='loop')&&{_i+=4;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+NATIVE=>{$b1=_i;(_s{_i:6}==='native')&&{_i+=6;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+NULL=>{$b1=_i;(_s{_i:4}==='null')&&{_i+=4;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+NULLFUNC=>{$b1=_i;(_s{_i:8}==='nullfunc')&&{_i+=8;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+POINTER=>{$b1=_i;(_s{_i:7}==='pointer')&&{_i+=7;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+READONLY=>{$b1=_i;(_s{_i:8}==='readonly')&&{_i+=8;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+RETURNS=>{$b1=_i;(_s{_i:7}==='returns')&&{_i+=7;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+SWITCH=>{$b1=_i;(_s{_i:6}==='switch')&&{_i+=6;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+TEMPORARY=>{$b1=_i;(_s{_i:9}==='temporary')&&{_i+=9;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+TO=>{$b1=_i;(_s{_i:2}==='to')&&{_i+=2;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+WHILE=>{$b1=_i;(_s{_i:5}==='while')&&{_i+=5;true}&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+BITWISE_OP=>{$b1=_i;(_s{_i}==='|')&&{++_i;true}&&{$l1=_i;$x=(_s{_i}==='|')&&{++_i;true};_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i}==='&')&&{++_i;true}&&{$l1=_i;$x=(_s{_i}==='&')&&{++_i;true};_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i}==='^')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i:2}==='<<')&&{_i+=2;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i:3}==='>>>')&&{_i+=3;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i:2}==='>>')&&{_i+=2;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+ADDSUB_OP=>{$b1=_i;(_s{_i}==='+')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i}==='-')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+MULDIV_OP=>{$b1=_i;(_s{_i}==='*')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i}==='/')&&{++_i;true}&&{$l1=_i;$x=(_s{_i}==='/')&&{++_i;true};_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i}==='%')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+COMP_OP=>{$b1=_i;(_s{_i:2}==='<=')&&{_i+=2;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i}==='<')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i:2}==='>=')&&{_i+=2;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i}==='>')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i:2}==='!=')&&{_i+=2;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i:2}==='==')&&{_i+=2;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+BASE_TYPE=>{$b1=_i;INT($0)||{if(_i>_im)_im=_i;_i=$b1;false}||FLOAT($0)||{if(_i>_im)_im=_i;_i=$b1;false}||FUNCPTR($0)||{if(_i>_im)_im=_i;_i=$b1;false}||POINTER($0)||{if(_i>_im)_im=_i;_i=$b1;false}};
+BUILT_IN=>{$b1=_i;(_s{_i:3}==='abs')&&{_i+=3;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i:5}==='floor')&&{_i+=5;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i:4}==='itof')&&{_i+=4;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i:4}==='ftoi')&&{_i+=4;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+PREFIX_OP=>{$b1=_i;(_s{_i}==='-')&&{++_i;true}&&{$l1=_i;$x={$b2=_i;(_s{_i}==="'")&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b2;false}||DIGIT($0)||{if(_i>_im)_im=_i;_i=$b2;false}};_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i}==='~')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i}==='&')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i}==='*')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b1;false}||BUILT_IN($0)&&{$l1=_i;$x=SYMBOL_CHAR($0);_i=$l1;!$x}||{if(_i>_im)_im=_i;_i=$b1;false}};
+SYMBOL_CHAR=>{$b1=_i;(span(_s{_i},'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$0123456789')==1)&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+HEX=>{$b1=_i;(span(_s{_i},'0123456789ABCDEFabcdef')==1)&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+DIGIT=>{$b1=_i;(span(_s{_i},'0123456789')==1)&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+ASCII=>{$b1=_i;{$l1=_i;$x=(span(_s{_i},"\x00\x01\x02\x03\x04\x05\x06\a\b\t\n\v\f\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f")==1)&&{++_i;true};_i=$l1;!$x}&&(_s{_i}!='')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+_=>{$b1=_i;{for(;{$b2=_i;{false;for(;(span(_s{_i}," \t\r\n")==1)&&{++_i;true};)true}||{if(_i>_im)_im=_i;_i=$b2;false}||COMMENT($0)||{if(_i>_im)_im=_i;_i=$b2;false}};);true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+COMMENT=>{$b1=_i;(_s{_i:2}==='/*')&&{_i+=2;true}&&{for(;{$b2=_i;{$l2=_i;$x=(_s{_i:2}==='*/')&&{_i+=2;true};_i=$l2;!$x}&&(_s{_i}!='')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b2;false}};);true}&&(_s{_i:2}==='*/')&&{_i+=2;true}||{if(_i>_im)_im=_i;_i=$b1;false}||(_s{_i:2}==='//')&&{_i+=2;true}&&{for(;{$b2=_i;{$l2=_i;$x=(span(_s{_i},"\r\n")==1)&&{++_i;true};_i=$l2;!$x}&&(_s{_i}!='')&&{++_i;true}||{if(_i>_im)_im=_i;_i=$b2;false}};);true}||{if(_i>_im)_im=_i;_i=$b1;false}};
+_i = _im = 0; if ([$rule]($dd)) { [$iref] = _i; true } else { [$iref] = _im; false }
+};

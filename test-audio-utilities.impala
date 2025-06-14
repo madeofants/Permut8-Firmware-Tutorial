@@ -1,0 +1,76 @@
+// Test file for converted audio utility functions
+const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
+
+extern native yield
+
+global array signal[2]
+global array params[8]
+global array displayLEDs[4]
+
+// Test core audio processing utilities
+function clampAudio(int value)
+returns int result
+{
+    if (value > 2047) {
+        result = 2047;
+    } else if (value < -2047) {
+        result = -2047;
+    } else {
+        result = value;
+    }
+}
+
+// Test parameter scaling
+function scaleLinear(int paramValue, int minValue, int maxValue)
+returns int result
+locals int range, int scaled
+{
+    range = maxValue - minValue;
+    scaled = paramValue * range;
+    result = minValue + (scaled >> 8);  // Divide by 256
+}
+
+// Test circular buffer functions
+global array circularBuffer[1024]
+global int bufferSize = 1024
+global int bufferMask = 1023
+global int writePos = 0
+
+function writeCircular(int sample)
+{
+    global circularBuffer[global writePos & global bufferMask] = sample;
+    global writePos = global writePos + 1;
+}
+
+function readCircular(int delay)
+returns int sample
+locals int readIndex
+{
+    readIndex = (global writePos - delay) & global bufferMask;
+    sample = (int) global circularBuffer[readIndex];
+}
+
+// Test main processing function
+function process()
+locals int leftSample, int rightSample, int processedLeft, int processedRight
+{
+    loop {
+        // Read input
+        leftSample = (int) global signal[0];
+        rightSample = (int) global signal[1];
+        
+        // Test audio processing
+        processedLeft = (int) clampAudio((leftSample * 120) >> 7);
+        processedRight = (int) clampAudio((rightSample * 120) >> 7);
+        
+        // Test circular buffer
+        writeCircular(processedLeft);
+        processedLeft = (int) readCircular(100);  // 100 sample delay
+        
+        // Write output
+        global signal[0] = processedLeft;
+        global signal[1] = processedRight;
+        
+        yield();
+    }
+}
