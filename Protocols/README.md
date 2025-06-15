@@ -17,6 +17,7 @@ This directory contains all project management, development, and quality assuran
 - **FILE-SAFETY-PROTOCOLS.md** - Comprehensive file safety procedures
 - **SESSION-MANAGEMENT-PROTOCOLS.md** - Session management reference
 - **PROJECT-INGESTION-TEMPLATE.md** - Template for new project ingestion
+- **SIMPLE-PDF-WITH-GLOSSARY-LINKS.md** - PDF build protocol with clickable glossary links
 
 ### `archived/` - Historical Protocols
 - Contains outdated or superseded protocols maintained for historical reference
@@ -33,6 +34,10 @@ read session docs to recover our progress: TodoRead + Read Protocols/active/SESS
 - Follow protocols in `active/` for current development standards
 - Reference `reference/` for comprehensive methodology documentation
 - Check `archived/` for historical context when needed
+
+### For Documentation Building
+- **PDF Generation**: Use `reference/SIMPLE-PDF-WITH-GLOSSARY-LINKS.md` for creating PDFs with clickable glossary
+- **HTML Building**: Reference build artifacts in `project-archive/documentation-archives/session-history/build-artifacts/`
 
 ## Protocol Updates
 
