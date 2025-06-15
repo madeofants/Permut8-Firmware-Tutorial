@@ -19,11 +19,11 @@ This repository contains a comprehensive tutorial and reference system for devel
 
 ## 📖 Quick Access Documentation
 
-### 🌐 **[Download Interactive HTML Documentation](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/Permut8-Documentation-Complete.html)**
-**One-click download** - Complete documentation in a single HTML file with navigation and search
+### 📄 **[Download Official User Guide](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/docs/Permut8%20User%20Guide.pdf)**
+**PDF Documentation** - Complete official documentation and user guide
 
-### 🌟 **[Professional Overview (Web View)](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/Permut8-Documentation-Full.html)**
-**Online viewing** - Professional overview with responsive design
+### 📚 **[Browse Documentation Project](https://github.com/madeofants/Permut8-Firmware-Tutorial/tree/main/Documentation%20Project/active/content)**
+**Source Documentation** - Access all 67 A+ documentation files organized by category
 
 ---
 
@@ -72,7 +72,6 @@ PikaCmd.exe impala.pika compile source.impala output.gazl
 │   ├── ringmod_about.txt               # Firmware documentation
 │   └── ringmod_logo.ivg                # Assets
 ├── 📖 docs/                            # Main documentation deliverables
-│   ├── Permut8-Documentation-Updated.html # Interactive HTML documentation
 │   └── Permut8 User Guide.pdf          # Official user guide
 ├── 📚 Documentation Project/
 │   ├── 📂 active/
@@ -153,9 +152,9 @@ PikaCmd.exe impala.pika compile source.impala output.gazl
 
 ## 📖 Documentation Formats
 
-### 🔥 **Primary Downloads**
-- **[📱 Interactive HTML Documentation](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/docs/Permut8-Documentation-Updated.html)** - Complete content with navigation and search
-- **[📄 Official User Guide](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/docs/Permut8%20User%20Guide.pdf)** - PDF documentation
+### 🔥 **Primary Access**
+- **[📄 Official User Guide](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/docs/Permut8%20User%20Guide.pdf)** - Complete PDF documentation
+- **[📚 Documentation Source](https://github.com/madeofants/Permut8-Firmware-Tutorial/tree/main/Documentation%20Project/active/content)** - Browse all 67 A+ documentation files
 
 ### 📄 PDF Ready
 - **Markdown Complete** - `Documentation Project/active/FINAL-PDF-DELIVERABLE/Permut8-Documentation-Complete.md`
