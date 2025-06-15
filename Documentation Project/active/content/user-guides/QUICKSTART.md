@@ -64,8 +64,9 @@ Let's create a simple bit crusher from scratch.
 ### 1. Create a New File
 Create `bitcrush.impala` with this code:
 
+**Bit Crusher - Your First Permut8 Firmware**
+
 ```impala
-// Bit Crusher - Your First Permut8 Firmware
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 extern native yield
