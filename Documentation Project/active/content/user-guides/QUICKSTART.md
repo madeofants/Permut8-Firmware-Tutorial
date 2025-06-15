@@ -57,9 +57,28 @@ You should see `ringmod_code.gazl` created - that's your compiled firmware!
 
 **You just loaded custom firmware!** The ring modulator is now running.
 
-## Your First Firmware (10 minutes)
+## Your First Firmware (15 minutes)
 
-Let's create a simple bit crusher from scratch.
+Let's create a simple bit crusher and understand how Permut8's operator system works.
+
+### **Understanding Permut8's Core System**
+
+Before we build, let's understand what makes Permut8 special:
+
+**The Heart**: 128 kilowords of delay memory with moving read/write heads
+- **Write position (red dot)**: Where incoming audio is stored
+- **Read positions (green dots)**: Where audio is played back from
+- **Two instructions**: Manipulate the read positions to create effects
+
+**How Effects Work**: All Permut8 effects come from creatively moving where audio is read from memory:
+- **Delays**: Read from behind the write position
+- **Pitch effects**: Read at different speeds than writing  
+- **Modulation**: Constantly move the read positions
+- **Our bitcrusher**: Will use **custom firmware** to bypass this system and process audio directly
+
+**Original vs Custom Firmware**:
+- **Original**: Use operators (AND, MUL, OSC, etc.) + operands to manipulate read positions
+- **Custom**: Take complete control and implement any algorithm you want
 
 ### 1. Create a New File
 Create `bitcrush.impala` with this code:
@@ -159,6 +178,26 @@ Permut8BankV2: {
 }
 ```
 
+### **Understanding the Operators in Your Presets**
+
+You might notice each preset has an `Operator1` value. Here's what they do:
+
+**What These Numbers Mean**:
+- These are **operator codes** that would normally control how Permut8 manipulates read positions
+- **Our custom firmware ignores them** - we're doing direct audio processing instead
+- **They're required** for proper bank format, but won't affect our bitcrusher
+
+**Normal Permut8 Operators**:
+- **Operator1: "0"** = NOP (No Operation - bypass)
+- **Operator1: "2"** = MUL (Multiply - changes pitch/speed)  
+- **Operator1: "6"** = XOR (Bit manipulation of read positions)
+- **Operator1: "8"** = SUB (Subtract - creates delays)
+
+**Why This Matters**: Understanding these helps you:
+1. **Design better custom firmware** - Know what users expect
+2. **Mix approaches** - Combine original operators with custom processing
+3. **Learn effect building** - See how Permut8 naturally thinks about audio
+
 ### 3. Prepare GAZL for Bank
 **Remove the first line** from your compiled `bitcrush.gazl`:
 1. Open `bitcrush.gazl` in any text editor
@@ -174,11 +213,25 @@ Permut8BankV2: {
 
 ## How to Use Your Bitcrusher
 
-### **Interface Overview**
-Your custom firmware transforms Permut8's interface:
-- **Original**: Instruction 1 High Operand controlled by switches/LED display  
-- **Custom**: Direct knob control with "CRUSH AMOUNT" label
-- **LED Feedback**: Shows current bit depth - more LEDs = more bits = cleaner sound
+### **What Just Happened?**
+Your custom firmware **completely bypassed** Permut8's normal operator system:
+
+**Normal Permut8 Flow**:
+```
+Audio Input → Delay Memory → [Operators manipulate read positions] → Audio Output
+```
+
+**Your Custom Bitcrusher Flow**:
+```
+Audio Input → [Direct bit manipulation in code] → Audio Output
+```
+
+**Why This Matters**: You took **complete control** of the audio processing instead of using Permut8's built-in read/write head manipulation system.
+
+### **Interface Transformation**
+- **Normal**: Instruction 1 High Operand set by switches (for operators like MUL, AND, etc.)
+- **Your Firmware**: Same parameter becomes direct "bit depth" knob control
+- **Visual**: LED display shows "CRUSH AMOUNT" instead of hex operand value
 
 ### **Preset Guide**
 - **A0 "Subtle Bit Reduction"**: Start here - gentle lo-fi character, maintains clarity
@@ -240,12 +293,46 @@ Now all four LED displays dance with the ring modulation!
 - Adjust modulation shape: Look for the `cosTable` 
 - Add parameter smoothing: Implement interpolation in `update()`
 
+## Understanding What You've Learned
+
+### **Two Approaches to Permut8 Effects**
+
+**You've just seen both approaches**:
+
+1. **Ring Modulator (Existing)**: Uses Permut8's **original operator system**
+   - Manipulates read/write positions in delay memory
+   - Effects come from **where** and **how** audio is read back
+   - Uses operators like MUL (pitch), SUB (delay), OSC (modulation)
+
+2. **Bitcrusher (Your Custom)**: Uses **direct audio processing**
+   - Bypasses the delay memory system entirely  
+   - Processes audio samples directly in code
+   - Full control over every aspect of the algorithm
+
+### **Why Both Matter**
+
+**Original Operators**: 
+- **Efficient** - Built into hardware, very fast
+- **Musical** - Designed for natural delay/modulation effects
+- **Limited** - Can only do read/write head manipulation
+
+**Custom Firmware**:
+- **Unlimited** - Any algorithm you can code
+- **Educational** - Learn by implementing from scratch
+- **Flexible** - Mix approaches or create entirely new effects
+
+### **The Big Picture**
+Permut8 is **both** a sophisticated delay manipulation system **and** a programmable audio processor. Master both approaches to become a complete Permut8 developer.
+
 ## What's Next?
 
 ### **New to Audio Programming?** Start with the foundation:
 1. 📖 [How DSP Affects Sound](../cookbook/fundamentals/how-dsp-affects-sound.md) - Understand how code creates audio effects (20 min)
 2. 📖 [Getting Audio In and Out](../tutorials/getting-audio-in-and-out.md) - Foundation I/O tutorial (10 min)
 3. 📖 [Your First Distortion Effect](../cookbook/fundamentals/simplest-distortion.md) - Progressive effect building (15 min)
+
+### **Want to Master Permut8's Operator System?** 
+📖 [Understanding Permut8 Operators](../tutorials/understanding-permut8-operators.md) - Complete guide to the instruction system and effect building (25 min)
 
 ### **Ready for More Effects?** Based on what you just did:
 
