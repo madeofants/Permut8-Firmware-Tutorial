@@ -185,7 +185,7 @@ function process()
 
 ### 5.2 Test the Volume Control
 1. **Compile**: `PikaCmd.exe -compile audio_passthrough.impala`
-2. **Load**: `patch audio_passthrough.gazl`
+2. **Load**: Load `audio_passthrough.gazl` via plugin interface
 3. **Expected result**: Audio should now be quieter (half volume)
 4. **Success indicator**: Clear volume reduction while maintaining audio quality
 

@@ -58,7 +58,7 @@ function process() {
 ### Try It Right Now
 
 1. **Compile**: `PikaCmd.exe compile basic_gain.impala`
-2. **Load**: `patch basic_gain.gazl`
+2. **Load**: Load `basic_gain.gazl` via plugin interface
 3. **Play** some audio and **listen**
 
 **What You'll Hear**: Much louder audio that starts to sound harsh and buzzy when the input is loud. This harshness IS distortion - you're hearing the audio system struggle with numbers that are too big.

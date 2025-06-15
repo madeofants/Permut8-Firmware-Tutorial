@@ -339,9 +339,9 @@ PikaCmd.exe -compile ringmod_code.impala
 Plugin interface for loading firmware and debugging within Permut8 plugin.
 
 **patch command**  
-Console command to load compiled firmware (.gazl files) into Permut8.
+Command to load compiled firmware (.gazl files) into Permut8 via plugin interface.
 ```
-patch bitcrush.gazl
+Load bitcrush.gazl via plugin interface
 ```
 
 ### Development Process

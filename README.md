@@ -49,8 +49,8 @@ PikaCmd.exe impala.pika compile source.impala output.gazl
 
 # Load into Permut8
 # 1. Open Permut8 plugin in DAW
-# 2. Click console button (bottom right)  
-# 3. Type: patch filename.gazl
+# 2. Load firmware using plugin interface
+# 3. Select compiled .gazl file
 ```
 
 ## 📁 Repository Structure

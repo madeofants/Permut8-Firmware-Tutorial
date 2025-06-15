@@ -292,7 +292,7 @@ trace(buf);
 
 ### Test Mode
 ```impala
-if (DEBUG) {  // Defined when loading from console
+if (DEBUG) {  // Defined when loading in debug mode
     trace("Debug mode active");
 }
 ```

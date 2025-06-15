@@ -125,7 +125,7 @@ trace(pointer string)  // Output debug message
 
 **Console Access**: 
 - Open Permut8 plugin in DAW
-- Click console button (bottom right of plugin)
+- Use plugin interface to load firmware
 - Trace messages appear in real-time console window
 
 **Development Workflows**:
