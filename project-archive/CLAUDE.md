@@ -81,15 +81,16 @@ The `Documentation Project/` contains a structured documentation system:
 ## Working with Documentation
 
 ### AI Session Protocols
-When working on documentation, follow the protocols in `Documentation Project/active/ai-context/`:
+When working on documentation, follow the protocols in `Protocols/active/`:
 
 #### Session Recovery Command (use first in new sessions):
 ```
-read session docs to recover our progress: TodoRead + Read Documentation Project/active/COMPREHENSIVE-AUDIT-TASK-TRACKER.md + Read Documentation Project/active/DOCUMENTATION_STATUS_TRACKER.md + Read Documentation Project/active/ai-context/session-start.md + Task "find most recent session log"
+read session docs to recover our progress: TodoRead + Read Protocols/active/SESSION-START-PROTOCOL.md + Read Documentation Project/active/COMPREHENSIVE-AUDIT-TASK-TRACKER.md + Read Documentation Project/active/DOCUMENTATION_STATUS_TRACKER.md + Task "find most recent session log"
 ```
 
-- Review `session-start.md` for session requirements
-- Follow single-task completion protocol  
+- Review `Protocols/active/SESSION-START-PROTOCOL.md` for session requirements
+- Follow protocols in `Protocols/active/` for current standards
+- Reference `Protocols/reference/` for comprehensive methodologies
 - Create session logs for all work
 - Update tracking documents after audits
 
