@@ -102,12 +102,12 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎛️ Permut8 Firmware Documentation</h1>
+        <h1>🎛️ Permut8 Firmware Tutorial</h1>
         
         <div class="generation-info">
-            <strong>📖 Complete Documentation</strong><br>
-            Generated: June 15, 2025 at 08:57 AM<br>
-            All documentation files combined into a single HTML document for offline reference.
+            <strong>📖 Complete Tutorial</strong><br>
+            Generated: June 15, 2025 at 04:17 PM<br>
+            Complete firmware tutorial and reference combined into a single HTML document for offline use.
         </div>
 
         <div class="nav-toc">
@@ -183,9 +183,9 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 <p>extern native yield</p>
 <p>readonly array panelTextRows[8] = {
     "",
-    "BIT |-------- CRUSH AMOUNT (MORE BITS = LESS CRUSH) --------|",
     "",
     "",
+    "BIT |------ CRUSH AMOUNT (INSTRUCTION 1) ------|",
     "",
     "",
     "",
@@ -210,6 +210,9 @@ locals int bits, int shift, int mask
         yield();
     }
 }</code></pre></p>
+<strong>Interface Architecture</strong>: This custom firmware demonstrates Permut8's interface override system:
+<ul><li><strong>Original Interface</strong>: Instruction 1 High Operand (<code>params[3]</code>) set via switches/LED display (0-255)</li><li><strong>Custom Override</strong>: Same parameter becomes direct knob control with custom label</li><li><strong>Visual Transform</strong>: <code>panelTextRows[3]</code> replaces hex display with "CRUSH AMOUNT" </li><li><strong>Data Flow</strong>: User knob → <code>params[3]</code> → bit depth calculation → LED feedback</li></ul>
+<p>The parameter access is identical (<code>params[3]</code>), but the user experience is completely transformed.</p>
 <h3>2. Compile Your Firmware</h3>
 <pre><code>PikaCmd.exe -compile bitcrush.impala</code></pre>
 <strong>If that doesn't work</strong>, use the full command:
@@ -231,8 +234,10 @@ Create </code>bitcrush.p8bank<code> with this <strong>exact format</strong> (not
 Permut8BankV2: {
     CurrentProgram: A0
     Programs: {
-        A0: { Name: "Light Crush", Operator1: "2" }
-        A1: { Name: "Heavy Crush", Operator1: "6" }
+        A0: { Name: "Subtle Bit Reduction", Operator1: "2" }
+        A1: { Name: "Lo-Fi Crunch", Operator1: "6" }
+        A2: { Name: "Extreme Decimation", Operator1: "8" }
+        A3: { Name: "Clean High-Res", Operator1: "0" }
     }
     Firmware: {
         Name: "bitcrush"
@@ -247,30 +252,27 @@ Permut8BankV2: {
 1. Open </code>bitcrush.gazl<code> in any text editor
 2. Delete the first line: </code>; Compiled with Impala version 1.0<code>
 3. Save the file
-<h3>4. Create Firmware Bank</h3>
-Create </code>bitcrush.p8bank<code> with this <strong>exact format</strong> (note the header):</code></pre>
-Permut8BankV2: {
-    CurrentProgram: A0
-    Programs: {
-        A0: { Name: "Light Crush", Operator1: "2" }
-        A1: { Name: "Heavy Crush", Operator1: "6" }
-    }
-    Firmware: {
-        Name: "bitcrush"
-        Code: {
-[PASTE YOUR CLEANED GAZL CONTENT HERE]
- }
-    }
-}
-<pre><code>
-<strong>⚠️ Critical</strong>: 
-<ul><li>Header MUST be </code>Permut8BankV2:<code> (not </code>bitcrush.p8bank:<code>)</li><li>Paste your entire cleaned </code>bitcrush.gazl<code> content between </code>Code: {<code> and </code> }<code></li></ul>
-<h3>5. Load and Test</h3>
-1. Load bank: File → Load Bank → </code>bitcrush.p8bank<code>
-2. Select A0 preset (Light Crush) or A1 (Heavy Crush)
-3. Play some audio through Permut8
-4. Turn <strong>knob 4</strong> (not knob 1!) - hear the bit crushing!
-<strong>Congratulations!</strong> You just created working DSP firmware. Knob 4 now controls bit depth, creating that classic lo-fi digital sound.
+<h3>4. Load and Test Your Bitcrusher</h3>
+<p>1. <strong>Load the bank</strong>: File → Load Bank → </code>bitcrush.p8bank<code>
+2. <strong>Select a preset</strong> to start with
+3. <strong>Play audio</strong> through Permut8
+4. <strong>Turn the knob</strong> to hear the bitcrushing effect!</p>
+<h2>How to Use Your Bitcrusher</h2>
+<h3><strong>Interface Overview</strong></h3>
+Your custom firmware transforms Permut8's interface:
+<ul><li><strong>Original</strong>: Instruction 1 High Operand controlled by switches/LED display  </li><li><strong>Custom</strong>: Direct knob control with "CRUSH AMOUNT" label</li><li><strong>LED Feedback</strong>: Shows current bit depth - more LEDs = more bits = cleaner sound</li></ul>
+<h3><strong>Preset Guide</strong></h3>
+<ul><li><strong>A0 "Subtle Bit Reduction"</strong>: Start here - gentle lo-fi character, maintains clarity</li><li><strong>A1 "Lo-Fi Crunch"</strong>: Classic 90s digital sound, crunchy but musical  </li><li><strong>A2 "Extreme Decimation"</strong>: Aggressive digital distortion, harsh and pixelated</li><li><strong>A3 "Clean High-Res"</strong>: Minimal processing, slight coloration</li></ul>
+<h3><strong>Sound Guide</strong></h3>
+<ul><li><strong>Full left (1-2 bits)</strong>: Harsh, pixelated, extreme digital distortion</li><li><strong>Center (4-5 bits)</strong>: Classic lo-fi sound, crunchy but musical</li><li><strong>Full right (7-8 bits)</strong>: Subtle warmth, barely noticeable effect</li></ul>
+<h3><strong>Tips for New Users</strong></h3>
+1. <strong>Start with preset A0</strong> and turn the knob slowly
+2. <strong>Watch the LED display</strong> - it shows you the current bit depth visually
+3. <strong>Try with different input levels</strong> - louder input makes the effect more obvious
+4. <strong>Combine with other effects</strong> - bitcrushing works great before reverb or delay
+<h3><strong>Expected Behavior</strong></h3>
+<ul><li><strong>Immediate response</strong>: Effect changes in real-time as you turn the knob</li><li><strong>LED feedback</strong>: Display pattern changes to show current bit depth</li><li><strong>Audio range</strong>: From subtle lo-fi warmth to extreme digital destruction</li></ul>
+<strong>Congratulations!</strong> You just created working DSP firmware with a custom interface that converts complex operand controls into an intuitive effect knob.
 <h2>Modify Existing Firmware (15 minutes)</h2>
 <p>Let's add LED animation to the ring modulator.</p>
 <h3>1. Copy the Original</h3>
@@ -8001,9 +8003,24 @@ signal[0] = clipped;</code></pre></p>
 <em>Create digital distortion effects through bit depth reduction and sample rate downsampling</em>
 <h2>What This Does</h2>
 <p>Generates digital distortion by reducing the bit depth and sample rate of audio signals, creating characteristic lo-fi artifacts, digital stepping, and harmonic distortion. Perfect for vintage sampler emulation and modern digital textures.</p>
+<h3><strong>Interface Architecture</strong></h3>
+<p>This effect uses all four instruction operands as custom knob controls:</p>
+<strong>Original Interface</strong>: Each operand controlled via scrollable LED displays + bit switches  
+<strong>Custom Firmware</strong>: Direct knob controls with custom labels via <code>panelTextRows</code>
+<strong>Suggested Panel Layout</strong>:
+<pre><code>readonly array panelTextRows[8] = {
+    "",
+    "",
+    "",
+    "CRUSH |-- BIT DEPTH --| |--- DRY/WET ---|",  // params[3] & params[6]
+    "",
+    "",
+    "",
+    "CRUSH |-- RATE DIV ---| |--- GAIN -----|"   // params[4] & params[7]
+};</code></pre>
 <h2>Quick Reference</h2>
 <strong>Essential Parameters:</strong>
-<ul><li><code>params[0]</code>: Bit depth (0-255, controls quantization amount)</li><li><code>params[1]</code>: Sample rate reduction (0-255, hold factor) </li><li><code>params[2]</code>: Dry/wet mix (0-255, blend control)</li><li><code>params[3]</code>: Output gain (0-255, level compensation)</li></ul>
+<ul><li><code>params[3]</code>: Bit depth (Instruction 1 High Operand, 0-255, controls quantization amount)</li><li><code>params[4]</code>: Sample rate reduction (Instruction 1 Low Operand, 0-255, hold factor) </li><li><code>params[6]</code>: Dry/wet mix (Instruction 2 High Operand, 0-255, blend control)</li><li><code>params[7]</code>: Output gain (Instruction 2 Low Operand, 0-255, level compensation)</li></ul>
 <strong>Key Concepts:</strong> Quantization distortion, sample-and-hold, digital artifacts, aliasing effects
 <strong>Common Settings:</strong>
 <pre><code>// Vintage sampler: moderate crushing with character
@@ -8040,11 +8057,11 @@ locals int output_left
 locals int output_right
 {
     loop {
-        // Read parameters
-        bits = ((int)global params[0] >> 4) + 1;        // 1-16 effective bit depth
-        rate_div = ((int)global params[1] >> 3) + 1;    // 1-32 rate division
-        mix = (int)global params[2];                    // 0-255 dry/wet mix
-        gain = ((int)global params[3] >> 1) + 64;       // 64-191 output gain
+        // Read parameters (Instruction operands)
+        bits = ((int)global params[3] >> 4) + 1;        // 1-16 effective bit depth (Instruction 1 High)
+        rate_div = ((int)global params[4] >> 3) + 1;    // 1-32 rate division (Instruction 1 Low)
+        mix = (int)global params[6];                    // 0-255 dry/wet mix (Instruction 2 High)
+        gain = ((int)global params[7] >> 1) + 64;       // 64-191 output gain (Instruction 2 Low)
         
         // Sample rate reduction (hold samples)
         global hold_counter = global hold_counter + 1;
@@ -8225,7 +8242,7 @@ The delay effect stores incoming audio samples in memory using the <code>read()<
 </div>
 
         <div style="margin-top: 60px; padding-top: 20px; border-top: 2px solid #ecf0f1; text-align: center; color: #7f8c8d;">
-            <p><strong>Permut8 Firmware Documentation</strong></p>
+            <p><strong>Permut8 Firmware Tutorial</strong></p>
             <p>Generated on June 15, 2025 | Complete offline reference</p>
         </div>
     </div>

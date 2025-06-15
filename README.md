@@ -19,8 +19,8 @@ This repository contains a comprehensive tutorial and reference system for devel
 
 ## 📖 Quick Access Documentation
 
-### 🌐 **[Permut8-Firmware-Documentation.html](Permut8-Firmware-Documentation.html)**
-**Complete Offline HTML** - All documentation in single file with navigation (NEW!)
+### 🌐 **[Permut8-Firmware-Tutorial.html](Permut8-Firmware-Tutorial.html)**
+**Complete Offline Tutorial** - All documentation in single HTML file with navigation (UPDATED!)
 
 ### 📄 **[Download Official User Guide](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/docs/Permut8%20User%20Guide.pdf)**
 **PDF Documentation** - Complete official documentation and user guide
@@ -215,13 +215,14 @@ PikaCmd.exe impala.pika compile source.impala output.gazl
 
 ## 📋 Recent Achievements
 
-### Critical QUICKSTART Tutorial Fixes (June 2025)
-- ✅ **Bank Loading Issues Resolved** - Fixed three critical p8bank creation errors
-- ✅ **GAZL Cleaning Process Added** - Step-by-step assembly cleaning guide
-- ✅ **Header Format Corrected** - Proper `Permut8BankV2:` format implementation
-- ✅ **Comprehensive Troubleshooting** - Complete error prevention guide
-- ✅ **HTML Documentation Generated** - Single-file offline reference
-- ✅ **Supporting Documentation Updated** - Creating-firmware-banks.md and p8bank-format.md enhanced
+### Interface Documentation Overhaul (June 2025)
+- ✅ **Foundational Interface Clarification** - Distinguished original vs custom firmware interfaces
+- ✅ **Enhanced QUICKSTART Tutorial** - Descriptive presets and comprehensive UX guidance
+- ✅ **Parameter Reference Corrections** - Fixed critical parameter usage errors in cookbook examples
+- ✅ **Interface Architecture Documentation** - Complete data flow and interaction explanations
+- ✅ **Standardized Terminology** - Semantic naming instead of confusing physical positions
+- ✅ **Updated HTML Tutorial** - Complete offline tutorial with all interface corrections
+- ✅ **New User Experience** - Clear learning path with interface override concept
 
 ### Level 0-3 Gap Remediation (January 2025)
 - ✅ **Critical Learning Gaps Resolved** - Systematic analysis and remediation

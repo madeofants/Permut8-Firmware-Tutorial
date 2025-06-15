@@ -4,12 +4,66 @@
 
 ## What This Does
 
-Parameter mapping transforms raw knob values (0-255) into meaningful ranges for your audio algorithms. Good mapping makes knobs feel natural and musical instead of awkward or unusable.
+Parameter mapping transforms raw operand values (0-255) into meaningful ranges for your audio algorithms. Good mapping makes controls feel natural and musical instead of awkward or unusable.
+
+## Permut8 Parameter Interface Architecture
+
+### **Understanding the Interface System**
+
+**Original Permut8 Interface:**
+- **Instruction 1**: High Operand (`params[3]`) + Low Operand (`params[4]`)
+- **Instruction 2**: High Operand (`params[6]`) + Low Operand (`params[7]`)
+- **User Control**: Scrollable LED displays + bit switches (8 switches per operand)
+- **Display**: Each operand shows as hex value (00-FF) representing 0-255
+
+**Custom Firmware Override:**
+- **Transform**: Convert operand parameters into direct knob controls
+- **Interface**: `panelTextRows` replaces hex displays with custom labels
+- **Experience**: Same parameter data, intuitive user interface
+
+### **Data Flow Example**
+```impala
+// User interaction → Parameter storage → Algorithm processing
+
+// 1. User Action (either interface type):
+//    Original: User sets switches/drags LED to value 128
+//    Custom: User turns knob to middle position
+//
+// 2. Parameter Storage:
+//    params[3] = 128  (same value, different input method)
+//
+// 3. Algorithm Processing:
+int cutoff_freq = ((int)params[3] * 8000) / 255;  // 0-8000 Hz range
+//    Result: 128 * 8000 / 255 = ~4000 Hz
+//
+// 4. LED Feedback:
+displayLEDs[0] = params[3];  // Show current parameter state
+```
+
+### **panelTextRows Layout System**
+```impala
+readonly array panelTextRows[8] = {
+    "",                                // Row 0
+    "",                                // Row 1
+    "",                                // Row 2
+    "FILTER |-- CUTOFF --| |-- RESO --|", // Row 3: params[3] left, params[6] right
+    "",                                // Row 4
+    "",                                // Row 5
+    "",                                // Row 6
+    "EFFECT |-- MIX -----| |-- GAIN --|"  // Row 7: params[4] left, params[7] right
+};
+
+// Layout maps to parameter positions:
+// Row 3: Instruction High Operands (params[3], params[6])
+// Row 7: Instruction Low Operands (params[4], params[7])
+```
 
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0-7]`: Raw knob values (0-255)
+- `params[3,4,6,7]`: Instruction operand values (0-255)
+- `params[0]`: Clock frequency (system controlled)
+- `params[1]`: Switch states (bitmask)
 - `target_range`: Your algorithm's useful range (often 0-2047)
 - `smoothing`: Prevents parameter clicks during changes
 

@@ -3,6 +3,30 @@
 ## What This Is
 Core DSP concepts and audio processing techniques for Permut8 firmware. Covers signal flow, filtering, effects algorithms, and optimization patterns for real-time audio.
 
+## Parameter Interface System
+
+**Original Permut8 Interface**: 
+- Instruction operands controlled via scrollable LED displays + bit switches
+- Users click/drag hex displays or flip individual bit switches to set values
+- Each operand = 8-bit value (0-255) displayed as hex (00-FF)
+
+**Custom Firmware Override**:
+- Converts operand parameters into direct knob controls
+- `panelTextRows` replaces hex displays with effect-specific labels
+- Same parameter data (`params[3-7]`), different user interface
+
+**Code Access Pattern**:
+```impala
+// Read parameter value (same regardless of interface type)
+int value = (int)params[OPERAND_1_HIGH_PARAM_INDEX];  // 0-255
+// This value comes from:
+//   Original UI: User's switch/LED input
+//   Custom firmware: Direct knob control
+
+// Provide LED feedback
+displayLEDs[0] = someCalculation;  // Show result to user
+```
+
 ## Signal Flow Fundamentals
 
 ### Constants and Definitions

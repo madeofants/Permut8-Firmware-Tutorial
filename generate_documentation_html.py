@@ -206,12 +206,12 @@ def generate_html():
 </head>
 <body>
     <div class="container">
-        <h1>🎛️ Permut8 Firmware Documentation</h1>
+        <h1>🎛️ Permut8 Firmware Tutorial</h1>
         
         <div class="generation-info">
-            <strong>📖 Complete Documentation</strong><br>
+            <strong>📖 Complete Tutorial</strong><br>
             Generated: """ + datetime.now().strftime("%B %d, %Y at %I:%M %p") + """<br>
-            All documentation files combined into a single HTML document for offline reference.
+            Complete firmware tutorial and reference combined into a single HTML document for offline use.
         </div>
 
         <div class="nav-toc">
@@ -264,7 +264,7 @@ def generate_html():
     
     html_content += """
         <div style="margin-top: 60px; padding-top: 20px; border-top: 2px solid #ecf0f1; text-align: center; color: #7f8c8d;">
-            <p><strong>Permut8 Firmware Documentation</strong></p>
+            <p><strong>Permut8 Firmware Tutorial</strong></p>
             <p>Generated on """ + datetime.now().strftime("%B %d, %Y") + """ | Complete offline reference</p>
         </div>
     </div>
@@ -281,7 +281,7 @@ def main():
         html_content = generate_html()
         
         # Write to main directory
-        output_file = "Permut8-Firmware-Documentation.html"
+        output_file = "Permut8-Firmware-Tutorial.html"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(html_content)
         

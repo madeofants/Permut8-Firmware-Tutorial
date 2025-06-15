@@ -72,9 +72,9 @@ extern native yield
 
 readonly array panelTextRows[8] = {
     "",
-    "BIT |-------- CRUSH AMOUNT (MORE BITS = LESS CRUSH) --------|",
     "",
     "",
+    "BIT |------ CRUSH AMOUNT (INSTRUCTION 1) ------|",
     "",
     "",
     "",
@@ -102,6 +102,15 @@ locals int bits, int shift, int mask
     }
 }
 ```
+
+**Interface Architecture**: This custom firmware demonstrates Permut8's interface override system:
+
+- **Original Interface**: Instruction 1 High Operand (`params[3]`) set via switches/LED display (0-255)
+- **Custom Override**: Same parameter becomes direct knob control with custom label
+- **Visual Transform**: `panelTextRows[3]` replaces hex display with "CRUSH AMOUNT" 
+- **Data Flow**: User knob → `params[3]` → bit depth calculation → LED feedback
+
+The parameter access is identical (`params[3]`), but the user experience is completely transformed.
 
 ### 2. Compile Your Firmware
 ```bash
@@ -135,8 +144,10 @@ Create `bitcrush.p8bank` with this **exact format** (note the header):
 Permut8BankV2: {
     CurrentProgram: A0
     Programs: {
-        A0: { Name: "Light Crush", Operator1: "2" }
-        A1: { Name: "Heavy Crush", Operator1: "6" }
+        A0: { Name: "Subtle Bit Reduction", Operator1: "2" }
+        A1: { Name: "Lo-Fi Crunch", Operator1: "6" }
+        A2: { Name: "Extreme Decimation", Operator1: "8" }
+        A3: { Name: "Clean High-Res", Operator1: "0" }
     }
     Firmware: {
         Name: "bitcrush"
@@ -153,35 +164,44 @@ Permut8BankV2: {
 2. Delete the first line: `; Compiled with Impala version 1.0`
 3. Save the file
 
-### 4. Create Firmware Bank
-Create `bitcrush.p8bank` with this **exact format** (note the header):
-```
-Permut8BankV2: {
-    CurrentProgram: A0
-    Programs: {
-        A0: { Name: "Light Crush", Operator1: "2" }
-        A1: { Name: "Heavy Crush", Operator1: "6" }
-    }
-    Firmware: {
-        Name: "bitcrush"
-        Code: {
-[PASTE YOUR CLEANED GAZL CONTENT HERE]
- }
-    }
-}
-```
+### 4. Load and Test Your Bitcrusher
 
-**⚠️ Critical**: 
-- Header MUST be `Permut8BankV2:` (not `bitcrush.p8bank:`)
-- Paste your entire cleaned `bitcrush.gazl` content between `Code: {` and ` }`
+1. **Load the bank**: File → Load Bank → `bitcrush.p8bank`
+2. **Select a preset** to start with
+3. **Play audio** through Permut8
+4. **Turn the knob** to hear the bitcrushing effect!
 
-### 5. Load and Test
-1. Load bank: File → Load Bank → `bitcrush.p8bank`
-2. Select A0 preset (Light Crush) or A1 (Heavy Crush)
-3. Play some audio through Permut8
-4. Turn **knob 4** (not knob 1!) - hear the bit crushing!
+## How to Use Your Bitcrusher
 
-**Congratulations!** You just created working DSP firmware. Knob 4 now controls bit depth, creating that classic lo-fi digital sound.
+### **Interface Overview**
+Your custom firmware transforms Permut8's interface:
+- **Original**: Instruction 1 High Operand controlled by switches/LED display  
+- **Custom**: Direct knob control with "CRUSH AMOUNT" label
+- **LED Feedback**: Shows current bit depth - more LEDs = more bits = cleaner sound
+
+### **Preset Guide**
+- **A0 "Subtle Bit Reduction"**: Start here - gentle lo-fi character, maintains clarity
+- **A1 "Lo-Fi Crunch"**: Classic 90s digital sound, crunchy but musical  
+- **A2 "Extreme Decimation"**: Aggressive digital distortion, harsh and pixelated
+- **A3 "Clean High-Res"**: Minimal processing, slight coloration
+
+### **Sound Guide**
+- **Full left (1-2 bits)**: Harsh, pixelated, extreme digital distortion
+- **Center (4-5 bits)**: Classic lo-fi sound, crunchy but musical
+- **Full right (7-8 bits)**: Subtle warmth, barely noticeable effect
+
+### **Tips for New Users**
+1. **Start with preset A0** and turn the knob slowly
+2. **Watch the LED display** - it shows you the current bit depth visually
+3. **Try with different input levels** - louder input makes the effect more obvious
+4. **Combine with other effects** - bitcrushing works great before reverb or delay
+
+### **Expected Behavior**
+- **Immediate response**: Effect changes in real-time as you turn the knob
+- **LED feedback**: Display pattern changes to show current bit depth
+- **Audio range**: From subtle lo-fi warmth to extreme digital destruction
+
+**Congratulations!** You just created working DSP firmware with a custom interface that converts complex operand controls into an intuitive effect knob.
 
 ## Modify Existing Firmware (15 minutes)
 

@@ -6,13 +6,34 @@
 
 Generates digital distortion by reducing the bit depth and sample rate of audio signals, creating characteristic lo-fi artifacts, digital stepping, and harmonic distortion. Perfect for vintage sampler emulation and modern digital textures.
 
+### **Interface Architecture**
+
+This effect uses all four instruction operands as custom knob controls:
+
+**Original Interface**: Each operand controlled via scrollable LED displays + bit switches  
+**Custom Firmware**: Direct knob controls with custom labels via `panelTextRows`
+
+**Suggested Panel Layout**:
+```impala
+readonly array panelTextRows[8] = {
+    "",
+    "",
+    "",
+    "CRUSH |-- BIT DEPTH --| |--- DRY/WET ---|",  // params[3] & params[6]
+    "",
+    "",
+    "",
+    "CRUSH |-- RATE DIV ---| |--- GAIN -----|"   // params[4] & params[7]
+};
+```
+
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Bit depth (0-255, controls quantization amount)
-- `params[1]`: Sample rate reduction (0-255, hold factor) 
-- `params[2]`: Dry/wet mix (0-255, blend control)
-- `params[3]`: Output gain (0-255, level compensation)
+- `params[3]`: Bit depth (Instruction 1 High Operand, 0-255, controls quantization amount)
+- `params[4]`: Sample rate reduction (Instruction 1 Low Operand, 0-255, hold factor) 
+- `params[6]`: Dry/wet mix (Instruction 2 High Operand, 0-255, blend control)
+- `params[7]`: Output gain (Instruction 2 Low Operand, 0-255, level compensation)
 
 **Key Concepts:** Quantization distortion, sample-and-hold, digital artifacts, aliasing effects
 
@@ -62,11 +83,11 @@ locals int output_left
 locals int output_right
 {
     loop {
-        // Read parameters
-        bits = ((int)global params[0] >> 4) + 1;        // 1-16 effective bit depth
-        rate_div = ((int)global params[1] >> 3) + 1;    // 1-32 rate division
-        mix = (int)global params[2];                    // 0-255 dry/wet mix
-        gain = ((int)global params[3] >> 1) + 64;       // 64-191 output gain
+        // Read parameters (Instruction operands)
+        bits = ((int)global params[3] >> 4) + 1;        // 1-16 effective bit depth (Instruction 1 High)
+        rate_div = ((int)global params[4] >> 3) + 1;    // 1-32 rate division (Instruction 1 Low)
+        mix = (int)global params[6];                    // 0-255 dry/wet mix (Instruction 2 High)
+        gain = ((int)global params[7] >> 1) + 64;       // 64-191 output gain (Instruction 2 Low)
         
         // Sample rate reduction (hold samples)
         global hold_counter = global hold_counter + 1;

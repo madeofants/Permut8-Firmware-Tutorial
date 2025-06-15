@@ -14,14 +14,14 @@ global array params[8]  // 8-bit values (0-255)
 
 ### Parameter Indices
 ```impala
-params[0] = CLOCK_FREQ_PARAM_INDEX      // Sample rate in Hz
+params[0] = CLOCK_FREQ_PARAM_INDEX      // Clock frequency knob
 params[1] = SWITCHES_PARAM_INDEX        // Bit mask of switch states  
-params[2] = OPERATOR_1_PARAM_INDEX      // Operator 1 selection (0-4)
-params[3] = OPERAND_1_HIGH_PARAM_INDEX  // Knob 1 (top-left)
-params[4] = OPERAND_1_LOW_PARAM_INDEX   // Knob 2 (bottom-left) 
-params[5] = OPERATOR_2_PARAM_INDEX      // Operator 2 selection (0-4)
-params[6] = OPERAND_2_HIGH_PARAM_INDEX  // Knob 3 (top-right)
-params[7] = OPERAND_2_LOW_PARAM_INDEX   // Knob 4 (bottom-right)
+params[2] = OPERATOR_1_PARAM_INDEX      // Instruction 1 operator type
+params[3] = OPERAND_1_HIGH_PARAM_INDEX  // Instruction 1 High Operand (LED display)
+params[4] = OPERAND_1_LOW_PARAM_INDEX   // Instruction 1 Low Operand (LED display)
+params[5] = OPERATOR_2_PARAM_INDEX      // Instruction 2 operator type
+params[6] = OPERAND_2_HIGH_PARAM_INDEX  // Instruction 2 High Operand (LED display)
+params[7] = OPERAND_2_LOW_PARAM_INDEX   // Instruction 2 Low Operand (LED display)
 ```
 
 ## Reading Parameters
