@@ -101,8 +101,10 @@ function update() {
 
 ### Basic Bank Template
 
+**⚠️ Critical**: Header must be exactly `Permut8BankV2: {` (not filename-based)
+
 ```
-your_effect.p8bank: {
+Permut8BankV2: {
     CurrentProgram: A0
     Programs: {
         A0: {
@@ -192,11 +194,25 @@ your_effect.p8bank: {
 
 ## Step 4: GAZL Integration
 
-### Extract GAZL Content
+### Clean GAZL Content First
+
+**⚠️ Critical**: GAZL must be cleaned before bank integration to avoid loading errors.
 
 1. **Open your_effect.gazl** in a text editor
-2. **Copy all assembly code** (the entire file content)
-3. **Format for bank structure**:
+2. **Remove compiler-generated comments**:
+   ```
+   ; Compiled with Impala version 1.0    ← DELETE THIS LINE
+   ```
+3. **Remove any separator lines**:
+   ```
+   ;-----------------------------------------------------------------------------    ← DELETE THESE LINES
+   ```
+4. **Keep only pure assembly code** (no comments, no decorative formatting)
+
+### Extract GAZL Content
+
+1. **Copy cleaned assembly code** (after removing comments/separators)
+2. **Format for bank structure**:
 
 ```
 Code: {
@@ -213,6 +229,7 @@ Code: {
 - Preserve exact spacing and syntax
 - Include all assembly directives
 - Maintain line order exactly
+- **No compiler comments or separator lines**
 
 **Example GAZL Integration**:
 ```
@@ -380,7 +397,16 @@ Firmware: {
 ## Common Issues and Solutions
 
 ### Bank Won't Load
-- **Check GAZL syntax**: Ensure no formatting errors
+- **"Invalid data format (unsupported version?)"**: Check bank header format
+  - Must start with `Permut8BankV2: {` (exact format, case-sensitive)
+  - Not `filename.p8bank: {` or other variations
+- **"Invalid mnemonic: Compiled"**: Clean GAZL file first
+  - Remove compiler comment: `; Compiled with Impala version 1.0`
+  - Remove from first line of .gazl before bank creation
+- **"Invalid mnemonic" with dashes**: Remove decorative separators
+  - Remove lines like `;-----------------------------------------------------------------------------`
+  - Keep only pure assembly code
+- **Check GAZL syntax**: Ensure no formatting errors in clean assembly
 - **Verify parameter ranges**: All values within 0-255
 - **Test individual presets**: Isolate problematic preset
 

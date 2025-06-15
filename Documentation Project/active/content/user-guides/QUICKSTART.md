@@ -68,10 +68,8 @@ Create `bitcrush.impala` with this code:
 // Bit Crusher - Your First Permut8 Firmware
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
+extern native yield
 
-// Panel text (optional but cool!)
 readonly array panelTextRows[8] = {
     "",
     "BIT |-------- CRUSH AMOUNT (MORE BITS = LESS CRUSH) --------|",
@@ -83,29 +81,23 @@ readonly array panelTextRows[8] = {
     ""
 }
 
-// Global variables
-global array signal[2]          // Left/Right audio samples
-global array params[8]          // Knob values
-global array displayLEDs[4]     // LED displays
+global array signal[2]
+global array params[8]
+global array displayLEDs[4]
 
-// Main processing function
 function process()
 locals int bits, int shift, int mask
 {
     loop {
-        // Read bit depth from first knob (0-255 mapped to 1-12 bits)
-        bits = ((int) global params[3] >> 5) + 1;  // 1-8 bits
+        bits = ((int) global params[3] >> 5) + 1;
         shift = 12 - bits;
         mask = 0xFFF0 << shift;
         
-        // Light up LEDs to show bit depth
         global displayLEDs[0] = 1 << (bits - 1);
         
-        // Process audio: reduce bit depth
         global signal[0] = ((int) global signal[0]) & mask;
         global signal[1] = ((int) global signal[1]) & mask;
         
-        // Return control to Permut8
         yield();
     }
 }
@@ -122,9 +114,25 @@ PikaCmd.exe -compile bitcrush.impala
 ```
 
 ### 3. Create Firmware Bank
-Package your compiled firmware for distribution:
+
+**Step 3a: Clean the GAZL File**
+Before creating the bank, you need to clean the compiled GAZL file:
+
+1. **Open `bitcrush.gazl`** in a text editor
+2. **Remove the compiler comment line** (if present):
+   ```
+   ; Compiled with Impala version 1.0
+   ```
+3. **Remove any separator lines** like:
+   ```
+   ;-----------------------------------------------------------------------------
+   ```
+4. **Keep only the pure assembly code**
+
+**Step 3b: Create the Bank File**
+Create `bitcrush.p8bank` with this **exact format** (note the header):
 ```
-bitcrush.p8bank: {
+Permut8BankV2: {
     CurrentProgram: A0
     Programs: {
         A0: { Name: "Light Crush", Operator1: "2" }
@@ -132,18 +140,48 @@ bitcrush.p8bank: {
     }
     Firmware: {
         Name: "bitcrush"
-        Code: { /* compiled bitcrush.gazl */ }
+        Code: {
+[PASTE YOUR CLEANED GAZL CONTENT HERE]
+ }
     }
 }
 ```
 
-### 4. Load and Test
+### 3. Prepare GAZL for Bank
+**Remove the first line** from your compiled `bitcrush.gazl`:
+1. Open `bitcrush.gazl` in any text editor
+2. Delete the first line: `; Compiled with Impala version 1.0`
+3. Save the file
+
+### 4. Create Firmware Bank
+Create `bitcrush.p8bank` with this **exact format** (note the header):
+```
+Permut8BankV2: {
+    CurrentProgram: A0
+    Programs: {
+        A0: { Name: "Light Crush", Operator1: "2" }
+        A1: { Name: "Heavy Crush", Operator1: "6" }
+    }
+    Firmware: {
+        Name: "bitcrush"
+        Code: {
+[PASTE YOUR CLEANED GAZL CONTENT HERE]
+ }
+    }
+}
+```
+
+**⚠️ Critical**: 
+- Header MUST be `Permut8BankV2:` (not `bitcrush.p8bank:`)
+- Paste your entire cleaned `bitcrush.gazl` content between `Code: {` and ` }`
+
+### 5. Load and Test
 1. Load bank: File → Load Bank → `bitcrush.p8bank`
 2. Select A0 preset (Light Crush) or A1 (Heavy Crush)
 3. Play some audio through Permut8
-4. Turn the first knob - hear the bit crushing!
+4. Turn **knob 4** (not knob 1!) - hear the bit crushing!
 
-**Congratulations!** You just created working DSP firmware. The first knob now controls bit depth, creating that classic lo-fi digital sound.
+**Congratulations!** You just created working DSP firmware. Knob 4 now controls bit depth, creating that classic lo-fi digital sound.
 
 ## Modify Existing Firmware (15 minutes)
 
@@ -219,6 +257,17 @@ Now all four LED displays dance with the ring modulation!
 - `global params[]` contains all knob values (0-255)
 
 ### Problems?
+
+**Bank Loading Issues:**
+- **"Invalid data format (unsupported version?)"** → Check bank header format:
+  - Must start with `Permut8BankV2: {` (not filename-based header)
+  - Header format is case-sensitive and exact
+- **"Invalid mnemonic: Compiled"** → Clean your GAZL file:
+  - Remove compiler comment: `; Compiled with Impala version 1.0`
+  - Remove from first line of .gazl file before creating bank
+- **"Invalid mnemonic" with dashes** → Remove separator lines:
+  - Remove lines like `;-----------------------------------------------------------------------------`
+  - Keep only pure assembly code in bank
 
 **Compilation Issues:**
 - **Command not recognized?** Try `.\PikaCmd.exe impala.pika compile input.impala output.gazl`

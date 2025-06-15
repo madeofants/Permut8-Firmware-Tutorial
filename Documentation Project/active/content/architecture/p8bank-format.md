@@ -4,11 +4,19 @@ Complete specification for Permut8 bank files (.p8bank) based on official Beatri
 
 ## Overview
 
-P8Bank files are the standard distribution format for Permut8 firmware. They package compiled firmware with preset configurations, enabling complete firmware distribution and easy loading via the Permut8 plugin interface.
+P8Bank files are **ASCII text files** in a specific structured format. They are NOT binary files. They package compiled firmware with preset configurations, enabling complete firmware distribution and easy loading via the Permut8 plugin interface.
+
+**⚠️ Critical Requirements**:
+- Files must be plain text format (ASCII)
+- Header must be exactly `Permut8BankV2: {` (case-sensitive)
+- GAZL assembly must be clean (no compiler comments or separators)
+- All syntax must be precisely formatted
 
 ## Bank File Structure
 
 ### Top-Level Format
+**⚠️ Header Format Critical**: Must be exactly `Permut8BankV2: {` with precise case and spacing.
+
 ```
 Permut8BankV2: {
     CurrentProgram: A0
@@ -18,6 +26,12 @@ Permut8BankV2: {
     About: { /* Optional documentation */ }
 }
 ```
+
+**Common Header Mistakes**:
+- ❌ `filename.p8bank: {` (filename-based)
+- ❌ `permut8bankv2: {` (wrong case)
+- ❌ `Permut8BankV2:{` (missing space)
+- ✅ `Permut8BankV2: {` (correct format)
 
 ## Detailed Sections
 
@@ -75,6 +89,13 @@ Programs: {
 
 Contains the compiled GAZL assembly code:
 
+**⚠️ GAZL Cleaning Required**: Raw compiler output must be cleaned before bank integration.
+
+**Remove Before Bank Creation**:
+- Compiler comments: `; Compiled with Impala version 1.0`
+- Separator lines: `;-----------------------------------------------------------------------------`
+- Any decorative formatting or non-assembly content
+
 ```
 Firmware: {
     Name: "firmware_name"
@@ -87,7 +108,7 @@ Firmware: {
         "params: GLOB *PARAM_COUNT"
         "displayLEDs: GLOB *4"
         "clock: DATi #0"
-        // ... complete GAZL assembly
+        // ... complete GAZL assembly (CLEANED)
         "process: FUNC"
         // ... function definitions
     }
@@ -201,8 +222,39 @@ Heavy Mode:   Operator1: "7", Operand1High: "0xFF"
 - Parameter ranges must be within valid bounds
 - GAZL assembly must compile and execute correctly
 
+## Common Loading Errors and Solutions
+
+### "Invalid data format (unsupported version?)"
+**Cause**: Incorrect bank header format  
+**Solution**: 
+- Ensure header is exactly `Permut8BankV2: {` (case-sensitive)
+- Not `filename.p8bank: {` or other variations
+- Check for proper spacing and syntax
+
+### "Invalid mnemonic: Compiled"
+**Cause**: Compiler comments left in GAZL assembly  
+**Solution**:
+- Remove compiler comment: `; Compiled with Impala version 1.0`
+- Clean GAZL before bank creation
+- Only include pure assembly code
+
+### "Invalid mnemonic" with dashes
+**Cause**: Decorative separator lines in GAZL  
+**Solution**:
+- Remove lines like `;-----------------------------------------------------------------------------`
+- Remove all non-assembly formatting
+- Keep only functional GAZL mnemonics
+
+### Bank Loads But No Sound
+**Cause**: Missing or incorrect firmware structure  
+**Solution**:
+- Verify `process()` function exists and calls `yield()`
+- Check signal processing logic
+- Ensure proper parameter handling
+
 ## See Also
 
 - **[Creating Firmware Banks](../user-guides/tutorials/creating-firmware-banks.md)** - Step-by-step bank creation
 - **[Core Language Reference](../language/core_language_reference.md)** - Bank-compatible firmware patterns
 - **[Official Firmware Patterns](../user-guides/cookbook/advanced/firmware-patterns.md)** - Beatrick/FooBar examples
+- **[QUICKSTART Tutorial](../user-guides/QUICKSTART.md)** - Hands-on bank creation example

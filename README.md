@@ -19,6 +19,9 @@ This repository contains a comprehensive tutorial and reference system for devel
 
 ## 📖 Quick Access Documentation
 
+### 🌐 **[Permut8-Firmware-Documentation.html](Permut8-Firmware-Documentation.html)**
+**Complete Offline HTML** - All documentation in single file with navigation (NEW!)
+
 ### 📄 **[Download Official User Guide](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/docs/Permut8%20User%20Guide.pdf)**
 **PDF Documentation** - Complete official documentation and user guide
 
@@ -211,6 +214,14 @@ PikaCmd.exe impala.pika compile source.impala output.gazl
 3. **Follow File Safety** - `Protocols/active/EXTRACTED-FILE-SAFETY-PROTOCOLS.md`
 
 ## 📋 Recent Achievements
+
+### Critical QUICKSTART Tutorial Fixes (June 2025)
+- ✅ **Bank Loading Issues Resolved** - Fixed three critical p8bank creation errors
+- ✅ **GAZL Cleaning Process Added** - Step-by-step assembly cleaning guide
+- ✅ **Header Format Corrected** - Proper `Permut8BankV2:` format implementation
+- ✅ **Comprehensive Troubleshooting** - Complete error prevention guide
+- ✅ **HTML Documentation Generated** - Single-file offline reference
+- ✅ **Supporting Documentation Updated** - Creating-firmware-banks.md and p8bank-format.md enhanced
 
 ### Level 0-3 Gap Remediation (January 2025)
 - ✅ **Critical Learning Gaps Resolved** - Systematic analysis and remediation
