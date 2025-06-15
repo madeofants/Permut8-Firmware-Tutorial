@@ -44,6 +44,9 @@ open "Documentation Project/active/content/user-guides/QUICKSTART.md"
 
 ### For Developers
 ```bash
+# Navigate to firmware directory
+cd firmware/
+
 # Compile firmware
 PikaCmd.exe impala.pika compile source.impala output.gazl
 
@@ -58,12 +61,19 @@ PikaCmd.exe impala.pika compile source.impala output.gazl
 ```
 📦 Permut8 Firmware Code/
 ├── 📋 README.md                          # This file
-├── ⚙️ CLAUDE.md                           # AI assistant project instructions
-├── 🔧 PikaCmd.exe                         # Impala compiler
-├── 📄 *.impala                           # Example firmware source files
-├── 🔩 *.gazl                             # Compiled firmware files
-├── 📖 Permut8-Documentation-Complete.html # Interactive HTML documentation
-├── 🌐 Permut8-Documentation-Full.html    # Professional overview page
+├── 📄 LICENSE                           # Project license
+├── 🔧 firmware/                         # Complete firmware development environment
+│   ├── PikaCmd.exe                      # Impala compiler
+│   ├── *.impala                        # Example firmware source files
+│   ├── *.gazl                          # Compiled firmware files
+│   ├── *.pika                          # Language definition files
+│   ├── Compile Loop Windows.cmd        # Auto-compilation script
+│   ├── Impala Snippets.txt             # Code snippets and examples
+│   ├── ringmod_about.txt               # Firmware documentation
+│   └── ringmod_logo.ivg                # Assets
+├── 📖 docs/                            # Main documentation deliverables
+│   ├── Permut8-Documentation-Updated.html # Interactive HTML documentation
+│   └── Permut8 User Guide.pdf          # Official user guide
 ├── 📚 Documentation Project/
 │   ├── 📂 active/
 │   │   ├── 📝 content/                   # 67 A+ production documentation files
@@ -87,7 +97,10 @@ PikaCmd.exe impala.pika compile source.impala output.gazl
 │   │   └── 📖 session-logs/             # Detailed session history
 │   ├── 📚 archive-non-production/       # Historical reference materials
 │   └── 🎯 SESSION-START-PROTOCOL.md     # Quick session recovery guide
-└── 🛠️ meta-protocols/                    # Reusable development protocols
+└── 🗃️ project-archive/                   # Organized project files
+    ├── meta-protocols/                  # Reusable development protocols
+    ├── outdated-html/                   # Previous HTML versions
+    └── misc/                           # Various project files
 ```
 
 ## 🎓 Learning Paths
@@ -124,10 +137,11 @@ PikaCmd.exe impala.pika compile source.impala output.gazl
 
 ## 🔧 Development Tools
 
-### Core Tools
+### Core Tools (in firmware/ directory)
 - **PikaCmd.exe** - Impala language compiler
 - **impala.pika** - Language definition file
 - **Compile Loop Windows.cmd** - Auto-compilation script
+- **Impala Snippets.txt** - Code examples and snippets
 
 ### Build System
 ```bash
@@ -140,8 +154,8 @@ PikaCmd.exe impala.pika compile source.impala output.gazl
 ## 📖 Documentation Formats
 
 ### 🔥 **Primary Downloads**
-- **[📱 Interactive HTML Documentation](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/Permut8-Documentation-Complete.html)** - Complete content with navigation and search
-- **[🌐 Professional Overview HTML](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/Permut8-Documentation-Full.html)** - Responsive overview with quality metrics
+- **[📱 Interactive HTML Documentation](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/docs/Permut8-Documentation-Updated.html)** - Complete content with navigation and search
+- **[📄 Official User Guide](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/docs/Permut8%20User%20Guide.pdf)** - PDF documentation
 
 ### 📄 PDF Ready
 - **Markdown Complete** - `Documentation Project/active/FINAL-PDF-DELIVERABLE/Permut8-Documentation-Complete.md`
