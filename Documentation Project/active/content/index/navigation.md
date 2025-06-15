@@ -24,8 +24,9 @@
 
 **Professional Development:**
 12. **complete-development-workflow.md** - Professional development methodology
-13. **debug-your-plugin.md** - Essential debugging when things go wrong
-14. **test-your-plugin.md** - Validate your plugin works correctly
+13. **compiler-troubleshooting-guide.md** - Fix compilation issues and understand PikaCmd.exe
+14. **debug-your-plugin.md** - Essential debugging when things go wrong
+15. **test-your-plugin.md** - Validate your plugin works correctly
 
 **Time Investment**: 2-4 hours from zero to professional plugin development
 **Foundation Time**: 90 minutes for complete conceptual understanding (steps 1-4)

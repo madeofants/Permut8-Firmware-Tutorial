@@ -32,6 +32,25 @@ project/
 - **Rollback capabilities** for failed operations
 - **Progress reporting** throughout the process
 
+### **4. COMPILATION SYSTEM UNDERSTANDING**
+
+**Technical Foundation**: Many projects involve interpreters that appear to be compilers. Understanding the three-layer architecture is essential:
+
+1. **Shell Layer**: Command resolution and executable location (`.\ prefix` requirements)
+2. **Interpreter Layer**: Program loads and executes a script file (first argument)
+3. **Script Layer**: The script performs actual compilation/processing logic (remaining arguments)
+
+**Example Application**: PikaCmd.exe follows this pattern:
+```bash
+# Wrong: Treats as standalone compiler
+PikaCmd.exe compile input.file output.file
+
+# Correct: Provides script, then arguments
+.\PikaCmd.exe script.pika compile input.file output.file
+```
+
+**Reference**: Complete technical analysis in `Documentation Project/active/content/user-guides/tutorials/compiler-troubleshooting-guide.md`
+
 ---
 
 ## 📋 UNIVERSAL PROCESSING FRAMEWORK

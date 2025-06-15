@@ -323,12 +323,25 @@ locals int input, int output
 
 **Compilation Command Structure**:
 ```bash
+# Standard compilation
 PikaCmd.exe impala.pika compile source.impala output.gazl
+
+# If you get errors, use explicit path resolution
+.\PikaCmd.exe impala.pika compile source.impala output.gazl
 ```
 
+**Understanding PikaCmd.exe Architecture**:
+PikaCmd.exe is actually a **Pika language interpreter**, not a standalone compiler. The compilation process involves three layers:
+
+1. **Shell Layer**: Command resolution (`.\` prefix may be required)
+2. **Interpreter Layer**: PikaCmd.exe loads and executes `impala.pika` script
+3. **Script Layer**: The `impala.pika` script performs the actual compilation logic
+
 **Build Process Flow**:
-1. **Source Code** (.impala) → **Pika Compiler** → **GAZL Assembly** (.gazl)
+1. **Source Code** (.impala) → **Pika Interpreter** → **GAZL Assembly** (.gazl)
 2. **GAZL Assembly** → **Permut8 Plugin** → **Audio Output**
+
+**For detailed troubleshooting**: See [Compiler Troubleshooting Guide](compiler-troubleshooting-guide.md)
 
 ### Step 2: Compilation Workflow
 
@@ -342,6 +355,8 @@ PikaCmd.exe impala.pika compile project-name.impala project-name.gazl
 
 # 3. Check for compilation errors
 # If successful, you'll see the .gazl file created
+# If you get "command not recognized", use .\PikaCmd.exe
+# If you get "Cannot open file for reading", ensure impala.pika is specified
 ```
 
 **Automated Build Script** (Windows batch file):

@@ -38,7 +38,14 @@ Open a command prompt/terminal in this directory and run:
 PikaCmd.exe -compile ringmod_code.impala
 ```
 
+**If you get an error**, try this instead:
+```bash
+.\PikaCmd.exe impala.pika compile ringmod_code.impala ringmod_code.gazl
+```
+
 You should see `ringmod_code.gazl` created - that's your compiled firmware!
+
+**Why the different commands?** See [Compiler Troubleshooting Guide](../tutorials/compiler-troubleshooting-guide.md) for the technical explanation.
 
 ### 3. Create and Load Firmware Bank
 1. Open Permut8 in your DAW
@@ -107,6 +114,11 @@ locals int bits, int shift, int mask
 ### 2. Compile Your Firmware
 ```bash
 PikaCmd.exe -compile bitcrush.impala
+```
+
+**If that doesn't work**, use the full command:
+```bash
+.\PikaCmd.exe impala.pika compile bitcrush.impala bitcrush.gazl
 ```
 
 ### 3. Create Firmware Bank
@@ -207,9 +219,16 @@ Now all four LED displays dance with the ring modulation!
 - `global params[]` contains all knob values (0-255)
 
 ### Problems?
-- Firmware won't compile? Check for missing semicolons
-- No sound? Make sure you called `yield()` in your loop
-- LEDs not working? Values should be 8-bit (0-255)
+
+**Compilation Issues:**
+- **Command not recognized?** Try `.\PikaCmd.exe impala.pika compile input.impala output.gazl`
+- **"Cannot open file for reading"?** You need the script: `.\PikaCmd.exe impala.pika compile ...`
+- **Still having trouble?** See [Compiler Troubleshooting Guide](../tutorials/compiler-troubleshooting-guide.md)
+
+**Runtime Issues:**
+- **Firmware won't compile?** Check for missing semicolons and proper syntax
+- **No sound?** Make sure you called `yield()` in your loop
+- **LEDs not working?** Values should be 8-bit (0-255)
 
 ---
 

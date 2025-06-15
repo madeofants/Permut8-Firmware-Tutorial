@@ -67,7 +67,10 @@ function process()
 
 ### 1.2 Try to Compile the Broken Plugin
 1. Save the file and try: `PikaCmd.exe -compile broken_reverb.impala`
-2. **You should get compilation errors!** This is normal - we'll fix them step by step.
+2. **If you get "command not recognized"**, try: `.\PikaCmd.exe impala.pika compile broken_reverb.impala broken_reverb.gazl`
+3. **You should get compilation errors!** This is normal - we'll fix them step by step.
+
+**Note**: If you're having basic compilation issues (command not found, file reading errors), see [Compiler Troubleshooting Guide](compiler-troubleshooting-guide.md) first.
 
 ---
 
@@ -76,6 +79,11 @@ function process()
 ### 2.1 Read the Error Messages
 When compilation fails, PikaCmd gives you specific error messages. Common ones:
 
+**Environment Errors** (see [Compiler Troubleshooting Guide](compiler-troubleshooting-guide.md)):
+- **"Command not recognized"** - Use `.\PikaCmd.exe` instead
+- **"Cannot open file for reading"** - Missing `impala.pika` in command
+
+**Code Errors**:
 - **"Undefined variable"** - You used a variable you didn't declare
 - **"Missing semicolon"** - Forgot a semicolon somewhere
 - **"Unexpected token"** - Syntax error (wrong brackets, etc.)

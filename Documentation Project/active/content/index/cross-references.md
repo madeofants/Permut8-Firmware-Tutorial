@@ -29,7 +29,8 @@ This final module provides advanced navigation, troubleshooting guides, cross-re
 5. **professional concepts** → audio-engineering-for-programmers.md (25-min essential concepts)
 6. **choose approach** → mod-vs-full-architecture-guide.md (Architectural decision guidance)
 7. **professional process** → complete-development-workflow.md (Systematic development methodology)
-8. **when problems arise** → debug-your-plugin.md (Essential troubleshooting skills)
+8. **compilation issues** → compiler-troubleshooting-guide.md (Fix PikaCmd.exe and build problems)
+9. **when problems arise** → debug-your-plugin.md (Essential troubleshooting skills)
 
 **Expected Result**: Complete conceptual foundation with working first effect and professional development readiness
 
@@ -44,10 +45,11 @@ This final module provides advanced navigation, troubleshooting guides, cross-re
 
 ### **"My plugin doesn't compile"**
 **Immediate Solutions**:
-1. **basic syntax errors** → language-syntax-reference.md (Section: Common Syntax Errors)
-2. **missing includes** → core_language_reference.md (Section: Essential Includes)
-3. **build system issues** → custom-build-tools.md (Section: Compilation Troubleshooting)
-4. **multi-file problems** → multi-file-projects.md (Section: Build Integration)
+1. **compilation system issues** → compiler-troubleshooting-guide.md (PikaCmd.exe setup and command troubleshooting)
+2. **basic syntax errors** → language-syntax-reference.md (Section: Common Syntax Errors)
+3. **missing includes** → core_language_reference.md (Section: Essential Includes)
+4. **build system issues** → custom-build-tools.md (Section: Compilation Troubleshooting)
+5. **multi-file problems** → multi-file-projects.md (Section: Build Integration)
 
 **Advanced Debugging**:
 - **Complex build issues** → debugging-techniques.md (Section: Build System Debugging)
