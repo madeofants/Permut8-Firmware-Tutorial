@@ -106,7 +106,7 @@
         
         <div class="generation-info">
             <strong>📖 Complete Tutorial</strong><br>
-            Generated: June 15, 2025 at 11:45 PM<br>
+            Generated: June 16, 2025 at 12:50 AM<br>
             Complete firmware tutorial and reference combined into a single HTML document for offline use.
         </div>
 
@@ -165,7 +165,7 @@ Open a command prompt/terminal in this directory and run:
 <strong>If you get an error</strong>, try this instead:
 <pre><code>.\PikaCmd.exe impala.pika compile ringmod_code.impala ringmod_code.gazl</code></pre>
 <p>You should see <code>ringmod_code.gazl</code> created - that's your compiled firmware!</p>
-<strong>Why the different commands?</strong> See <a href="../tutorials/compiler-troubleshooting-guide.md">Compiler Troubleshooting Guide</a> for the technical explanation.
+<strong>Why the different commands?</strong> See <a href="#compiler-troubleshooting-guide">Compiler Troubleshooting Guide</a> for the technical explanation.
 <h3>3. Create and Load Firmware Bank</h3>
 1. Open Permut8 in your DAW
 2. Create a firmware bank:
@@ -376,10 +376,10 @@ Load bank: File → Load Bank → </code>ringmod_leds.p8bank<code>
    - Manipulates read/write positions in delay memory
    - Effects come from <strong>where</strong> and <strong>how</strong> audio is read back
    - Uses operators like MUL (pitch), SUB (delay), OSC (modulation)</p>
-<p>2. <strong>Bitcrusher (Your Custom)</strong>: Uses <strong>direct audio processing</strong>
-   - Bypasses the delay memory system entirely  
-   - Processes audio samples directly in code
-   - Full control over every aspect of the algorithm</p>
+<p>2. <strong>Custom Delay (Your Custom)</strong>: Uses <strong>direct memory manipulation</strong>
+   - Manually implements what SUB operator does automatically
+   - Processes audio through delay memory with custom offset calculation
+   - Full control over delay timing and feedback parameters</p>
 <h3><strong>Why Both Matter</strong></h3>
 <strong>Original Operators</strong>: 
 <ul><li><strong>Efficient</strong> - Built into hardware, very fast</li><li><strong>Musical</strong> - Designed for natural delay/modulation effects</li><li><strong>Limited</strong> - Can only do read/write head manipulation</li></ul>
@@ -389,22 +389,22 @@ Load bank: File → Load Bank → </code>ringmod_leds.p8bank<code>
 Permut8 is <strong>both</strong> a sophisticated delay manipulation system <strong>and</strong> a programmable audio processor. Master both approaches to become a complete Permut8 developer.
 <h2>What's Next?</h2>
 <h3><strong>New to Audio Programming?</strong> Start with the foundation:</h3>
-1. 📖 <a href="../cookbook/fundamentals/how-dsp-affects-sound.md">How DSP Affects Sound</a> - Understand how code creates audio effects (20 min)
-2. 📖 <a href="../tutorials/getting-audio-in-and-out.md">Getting Audio In and Out</a> - Foundation I/O tutorial (10 min)
-3. 📖 <a href="../cookbook/fundamentals/simplest-distortion.md">Your First Distortion Effect</a> - Progressive effect building (15 min)
+1. 📖 <a href="#how-dsp-affects-sound">How DSP Affects Sound</a> - Understand how code creates audio effects (20 min)
+2. 📖 <a href="#getting-audio-in-and-out">Getting Audio In and Out</a> - Foundation I/O tutorial (10 min)
+3. 📖 <a href="#simplest-distortion">Your First Distortion Effect</a> - Progressive effect building (15 min)
 <h3><strong>Want to Master Permut8's Operator System?</strong> </h3>
-📖 <a href="../tutorials/understanding-permut8-operators.md">Understanding Permut8 Operators</a> - Complete guide to the instruction system and effect building (25 min)
+📖 <a href="#understanding-permut8-operators">Understanding Permut8 Operators</a> - Complete guide to the instruction system and effect building (25 min)
 <h3><strong>Ready for More Effects?</strong> Based on what you just did:</h3>
 <strong>Created a bit crusher?</strong> → Try these effects next:
-<ul><li>📖 <a href="../cookbook/fundamentals/basic-filter.md">Basic Filter</a> - Add resonance</li><li>📖 <a href="../cookbook/audio-effects/bitcrusher.md">Bitcrusher</a> - More lo-fi options</li><li>📖 <a href="../cookbook/parameters/parameter-smoothing.md">Parameter Smoothing</a> - Remove clicks</li></ul>
+<ul><li>📖 <a href="#basic-filter">Basic Filter</a> - Add resonance</li><li>📖 <a href="#bitcrusher">Bitcrusher</a> - More lo-fi options</li><li>📖 <a href="#parameter-smoothing">Parameter Smoothing</a> - Remove clicks</li></ul>
 <strong>Modified the ring mod?</strong> → Explore these:
-<ul><li>📖 <a href="../cookbook/visual-feedback/control-leds.md">Control LEDs</a> - More patterns</li><li>📖 <a href="../cookbook/timing/sync-to-tempo.md">Sync to Tempo</a> - Beat-synced effects</li><li>📖 <a href="../cookbook/audio-effects/make-a-delay.md">Make a Delay</a> - Use the memory buffer</li></ul>
+<ul><li>📖 <a href="#control-leds">Control LEDs</a> - More patterns</li><li>📖 <a href="#sync-to-tempo">Sync to Tempo</a> - Beat-synced effects</li><li>📖 <a href="#make-a-delay">Make a Delay</a> - Use the memory buffer</li></ul>
 <h3><strong>Understanding Permut8 Architecture:</strong></h3>
 <strong>Which firmware type should you choose?</strong>
 <ul><li><strong>Full Patches</strong> (like our bit crusher): Replace entire DSP engine, process audio samples directly</li><li><strong>Mod Patches</strong> (like linsub): Modify built-in operators, manipulate memory positions</li></ul>
-<p>📖 <a href="../tutorials/mod-vs-full-architecture-guide.md">Mod vs Full Architecture Guide</a> - Critical decision guidance</p>
+<p>📖 <a href="#mod-vs-full-architecture-guide">Mod vs Full Architecture Guide</a> - Critical decision guidance</p>
 <h3><strong>Professional Development:</strong></h3>
-<ul><li>📖 <a href="../tutorials/complete-development-workflow.md">Complete Development Workflow</a> - Systematic methodology</li><li>📖 <a href="../tutorials/debug-your-plugin.md">Debug Your Plugin</a> - Essential troubleshooting</li></ul>
+<ul><li>📖 <a href="#complete-development-workflow">Complete Development Workflow</a> - Systematic methodology</li><li>📖 <a href="#debug-your-plugin">Debug Your Plugin</a> - Essential troubleshooting</li></ul>
 <h3>Quick Tips:</h3>
 <ul><li></code>global signal[0]<code> = left channel, </code>global signal[1]<code> = right channel</li><li>Audio samples range from -2047 to 2047 (12-bit)</li><li></code>yield()<code> returns control to Permut8 after each sample</li><li></code>global params[]<code> contains all knob values (0-255)</li></ul>
 <h3>Problems?</h3>
@@ -419,7 +419,7 @@ Permut8 is <strong>both</strong> a sophisticated delay manipulation system <stro
   - Remove lines like </code>;-----------------------------------------------------------------------------<code>
   - Keep only pure assembly code in bank
 <strong>Compilation Issues:</strong>
-<ul><li><strong>Command not recognized?</strong> Try </code>.\PikaCmd.exe impala.pika compile input.impala output.gazl<code></li><li><strong>"Cannot open file for reading"?</strong> You need the script: </code>.\PikaCmd.exe impala.pika compile ...<code></li><li><strong>Still having trouble?</strong> See <a href="../tutorials/compiler-troubleshooting-guide.md">Compiler Troubleshooting Guide</a></li></ul>
+<ul><li><strong>Command not recognized?</strong> Try </code>.\PikaCmd.exe impala.pika compile input.impala output.gazl<code></li><li><strong>"Cannot open file for reading"?</strong> You need the script: </code>.\PikaCmd.exe impala.pika compile ...<code></li><li><strong>Still having trouble?</strong> See <a href="#compiler-troubleshooting-guide">Compiler Troubleshooting Guide</a></li></ul>
 <strong>Runtime Issues:</strong>
 <ul><li><strong>Firmware won't compile?</strong> Check for missing semicolons and proper syntax</li><li><strong>No sound?</strong> Make sure you called </code>yield()` in your loop</li><li><strong>LEDs not working?</strong> Values should be 8-bit (0-255)</li></ul>
 <p>---</p>
@@ -8407,7 +8407,7 @@ The delay effect stores incoming audio samples in memory using the <code>read()<
 
         <div style="margin-top: 60px; padding-top: 20px; border-top: 2px solid #ecf0f1; text-align: center; color: #7f8c8d;">
             <p><strong>Permut8 Firmware Tutorial</strong></p>
-            <p>Generated on June 15, 2025 | Complete offline reference</p>
+            <p>Generated on June 16, 2025 | Complete offline reference</p>
         </div>
     </div>
 </body>

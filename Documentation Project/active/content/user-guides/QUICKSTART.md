@@ -45,7 +45,7 @@ PikaCmd.exe -compile ringmod_code.impala
 
 You should see `ringmod_code.gazl` created - that's your compiled firmware!
 
-**Why the different commands?** See [Compiler Troubleshooting Guide](../tutorials/compiler-troubleshooting-guide.md) for the technical explanation.
+**Why the different commands?** See [Compiler Troubleshooting Guide](#compiler-troubleshooting-guide) for the technical explanation.
 
 ### 3. Create and Load Firmware Bank
 1. Open Permut8 in your DAW
@@ -373,10 +373,10 @@ Now all four LED displays dance with the ring modulation!
    - Effects come from **where** and **how** audio is read back
    - Uses operators like MUL (pitch), SUB (delay), OSC (modulation)
 
-2. **Bitcrusher (Your Custom)**: Uses **direct audio processing**
-   - Bypasses the delay memory system entirely  
-   - Processes audio samples directly in code
-   - Full control over every aspect of the algorithm
+2. **Custom Delay (Your Custom)**: Uses **direct memory manipulation**
+   - Manually implements what SUB operator does automatically
+   - Processes audio through delay memory with custom offset calculation
+   - Full control over delay timing and feedback parameters
 
 ### **Why Both Matter**
 
@@ -396,24 +396,24 @@ Permut8 is **both** a sophisticated delay manipulation system **and** a programm
 ## What's Next?
 
 ### **New to Audio Programming?** Start with the foundation:
-1. 📖 [How DSP Affects Sound](../cookbook/fundamentals/how-dsp-affects-sound.md) - Understand how code creates audio effects (20 min)
-2. 📖 [Getting Audio In and Out](../tutorials/getting-audio-in-and-out.md) - Foundation I/O tutorial (10 min)
-3. 📖 [Your First Distortion Effect](../cookbook/fundamentals/simplest-distortion.md) - Progressive effect building (15 min)
+1. 📖 [How DSP Affects Sound](#how-dsp-affects-sound) - Understand how code creates audio effects (20 min)
+2. 📖 [Getting Audio In and Out](#getting-audio-in-and-out) - Foundation I/O tutorial (10 min)
+3. 📖 [Your First Distortion Effect](#simplest-distortion) - Progressive effect building (15 min)
 
 ### **Want to Master Permut8's Operator System?** 
-📖 [Understanding Permut8 Operators](../tutorials/understanding-permut8-operators.md) - Complete guide to the instruction system and effect building (25 min)
+📖 [Understanding Permut8 Operators](#understanding-permut8-operators) - Complete guide to the instruction system and effect building (25 min)
 
 ### **Ready for More Effects?** Based on what you just did:
 
 **Created a bit crusher?** → Try these effects next:
-- 📖 [Basic Filter](../cookbook/fundamentals/basic-filter.md) - Add resonance
-- 📖 [Bitcrusher](../cookbook/audio-effects/bitcrusher.md) - More lo-fi options
-- 📖 [Parameter Smoothing](../cookbook/parameters/parameter-smoothing.md) - Remove clicks
+- 📖 [Basic Filter](#basic-filter) - Add resonance
+- 📖 [Bitcrusher](#bitcrusher) - More lo-fi options
+- 📖 [Parameter Smoothing](#parameter-smoothing) - Remove clicks
 
 **Modified the ring mod?** → Explore these:
-- 📖 [Control LEDs](../cookbook/visual-feedback/control-leds.md) - More patterns
-- 📖 [Sync to Tempo](../cookbook/timing/sync-to-tempo.md) - Beat-synced effects
-- 📖 [Make a Delay](../cookbook/audio-effects/make-a-delay.md) - Use the memory buffer
+- 📖 [Control LEDs](#control-leds) - More patterns
+- 📖 [Sync to Tempo](#sync-to-tempo) - Beat-synced effects
+- 📖 [Make a Delay](#make-a-delay) - Use the memory buffer
 
 ### **Understanding Permut8 Architecture:**
 
@@ -421,11 +421,11 @@ Permut8 is **both** a sophisticated delay manipulation system **and** a programm
 - **Full Patches** (like our bit crusher): Replace entire DSP engine, process audio samples directly
 - **Mod Patches** (like linsub): Modify built-in operators, manipulate memory positions
 
-📖 [Mod vs Full Architecture Guide](../tutorials/mod-vs-full-architecture-guide.md) - Critical decision guidance
+📖 [Mod vs Full Architecture Guide](#mod-vs-full-architecture-guide) - Critical decision guidance
 
 ### **Professional Development:**
-- 📖 [Complete Development Workflow](../tutorials/complete-development-workflow.md) - Systematic methodology
-- 📖 [Debug Your Plugin](../tutorials/debug-your-plugin.md) - Essential troubleshooting
+- 📖 [Complete Development Workflow](#complete-development-workflow) - Systematic methodology
+- 📖 [Debug Your Plugin](#debug-your-plugin) - Essential troubleshooting
 
 ### Quick Tips:
 - `global signal[0]` = left channel, `global signal[1]` = right channel
@@ -449,7 +449,7 @@ Permut8 is **both** a sophisticated delay manipulation system **and** a programm
 **Compilation Issues:**
 - **Command not recognized?** Try `.\PikaCmd.exe impala.pika compile input.impala output.gazl`
 - **"Cannot open file for reading"?** You need the script: `.\PikaCmd.exe impala.pika compile ...`
-- **Still having trouble?** See [Compiler Troubleshooting Guide](../tutorials/compiler-troubleshooting-guide.md)
+- **Still having trouble?** See [Compiler Troubleshooting Guide](#compiler-troubleshooting-guide)
 
 **Runtime Issues:**
 - **Firmware won't compile?** Check for missing semicolons and proper syntax
