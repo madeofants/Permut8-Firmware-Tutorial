@@ -20,7 +20,7 @@ This repository contains a comprehensive tutorial and reference system for devel
 ## 📖 Quick Access Documentation
 
 ### 🌐 **[Permut8-Firmware-Tutorial.html](Permut8-Firmware-Tutorial.html)**
-**Complete Offline Tutorial** - All documentation in single HTML file with navigation (UPDATED!)
+**Complete Offline Tutorial** - All documentation in single HTML file with navigation (UPDATED with Integration improvements!)
 
 ### 📄 **[Download Official User Guide](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/docs/Permut8%20User%20Guide.pdf)**
 **PDF Documentation** - Complete official documentation and user guide
@@ -169,6 +169,7 @@ PikaCmd.exe impala.pika compile source.impala output.gazl
 ## 📖 Documentation Formats
 
 ### 🔥 **Primary Access**
+- **[🌐 HTML Tutorial](Permut8-Firmware-Tutorial.html)** - Complete offline tutorial with all Integration improvements
 - **[📄 Official User Guide](https://github.com/madeofants/Permut8-Firmware-Tutorial/raw/main/docs/Permut8%20User%20Guide.pdf)** - Complete PDF documentation
 - **[📚 Documentation Source](https://github.com/madeofants/Permut8-Firmware-Tutorial/tree/main/Documentation%20Project/active/content)** - Browse all 67 A+ documentation files
 

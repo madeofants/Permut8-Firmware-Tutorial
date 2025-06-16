@@ -207,9 +207,9 @@ params[2] = 0;    // Mode 0 (clean)
 
 ## Related Techniques
 
-- **[Parameter Mapping](parameter-mapping.md)**: Map switch positions to useful ranges
-- **[Level Metering](level-metering.md)**: Visual feedback for switch states
-- **[Basic Filter](basic-filter.md)**: Switch between filter types
+- **[Parameter Mapping](#parameter-mapping)**: Map switch positions to useful ranges
+- **[Level Metering](#level-metering)**: Visual feedback for switch states
+- **[Basic Filter](#basic-filter)**: Switch between filter types
 
 ---
-*Part of the [Permut8 Cookbook](../index.md) series*
+*Part of the [Permut8 Cookbook](#permut8-cookbook) series*

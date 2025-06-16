@@ -13,9 +13,9 @@ This tutorial translates essential audio engineering concepts into programming l
 - **Dynamic range management** (like data type overflow handling)
 - **Professional audio practices** (like defensive programming for audio)
 
-**Prerequisites**: [How DSP Affects Sound](../user-guides/cookbook/fundamentals/how-dsp-affects-sound.md), [Your First Distortion Effect](../user-guides/cookbook/fundamentals/simplest-distortion.md)  
+**Prerequisites**: [How DSP Affects Sound](#how-dsp-affects-sound), [Your First Distortion Effect](#simplest-distortion)  
 **Time**: 25 minutes reading + hands-on examples  
-**Next Tutorial**: [Waveshaper Distortion](../user-guides/cookbook/audio-effects/waveshaper-distortion.md)
+**Next Tutorial**: [Waveshaper Distortion](#waveshaper-distortion)
 
 ---
 
@@ -562,19 +562,19 @@ This example demonstrates **every professional audio engineering concept**:
 ## What's Next?
 
 ### **Immediate Applications**:
-1. **[Waveshaper Distortion](../user-guides/cookbook/audio-effects/waveshaper-distortion.md)** - Apply these concepts to advanced distortion
-2. **[Parameter Mapping](../user-guides/cookbook/parameters/parameter-mapping.md)** - Professional parameter design
-3. **[Compressor Basic](../user-guides/cookbook/audio-effects/compressor-basic.md)** - Dynamic range processing
+1. **[Waveshaper Distortion](#waveshaper-distortion)** - Apply these concepts to advanced distortion
+2. **[Parameter Mapping](#parameter-mapping)** - Professional parameter design
+3. **[Compressor Basic](#compressor-basic)** - Dynamic range processing
 
 ### **Professional Development**:
-- **[Complete Development Workflow](../user-guides/tutorials/complete-development-workflow.md)** - Professional practices
-- **[Debug Your Plugin](../user-guides/tutorials/debug-your-plugin.md)** - Systematic troubleshooting
-- **[Optimization Basics](../performance/optimization-basics.md)** - Performance improvement
+- **[Complete Development Workflow](#complete-development-workflow)** - Professional practices
+- **[Debug Your Plugin](#debug-your-plugin)** - Systematic troubleshooting
+- **[Optimization Basics](#optimization-basics)** - Performance improvement
 
 ### **Advanced Audio Engineering**:
-- **[Memory Patterns](../performance/memory-patterns.md)** - Efficient audio memory management
-- **[Real-time Safety](../advanced/real-time-safety.md)** - Professional real-time programming
-- **[Advanced Memory Management](../advanced/advanced-memory-management.md)** - Complex audio systems
+- **[Memory Patterns](#memory-patterns)** - Efficient audio memory management
+- **[Real-time Safety](#real-time-safety)** - Professional real-time programming
+- **[Advanced Memory Management](#advanced-memory-management)** - Complex audio systems
 
 ---
 
@@ -616,4 +616,4 @@ You now understand the essential audio engineering concepts needed for professio
 
 ---
 
-*Next: [Waveshaper Distortion](../user-guides/cookbook/audio-effects/waveshaper-distortion.md) - Apply these concepts to advanced mathematical distortion techniques*
+*Next: [Waveshaper Distortion](#waveshaper-distortion) - Apply these concepts to advanced mathematical distortion techniques*

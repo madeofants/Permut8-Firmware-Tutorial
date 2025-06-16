@@ -155,9 +155,9 @@ The feedback control mixes a percentage of the delayed signal back into the dela
 The memory addressing uses separate regions for left and right channels (`delayIndex` vs `delayIndex + maxDelayTime`) to prevent interference between stereo channels while maintaining proper circular buffer behavior for both channels.
 
 ## Related Techniques
-- **[Chorus Effect](chorus-effect.md)**: Uses multiple short delays for thickening
-- **[Sync to Tempo](../timing/sync-to-tempo.md)**: Tempo-synchronized delay timing
-- **[Memory Basics](../fundamentals/memory-basics.md)**: Memory read/write fundamentals
+- **[Chorus Effect](#chorus-effect)**: Uses multiple short delays for thickening
+- **[Sync to Tempo](#sync-to-tempo)**: Tempo-synchronized delay timing
+- **[Memory Basics](#memory-basics)**: Memory read/write fundamentals
 
 ---
-*Part of the [Permut8 Cookbook](../index.md) series*
+*Part of the [Permut8 Cookbook](#permut8-cookbook) series*

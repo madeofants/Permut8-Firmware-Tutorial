@@ -106,7 +106,7 @@
         
         <div class="generation-info">
             <strong>📖 Complete Tutorial</strong><br>
-            Generated: June 16, 2025 at 12:50 AM<br>
+            Generated: June 16, 2025 at 05:10 PM<br>
             Complete firmware tutorial and reference combined into a single HTML document for offline use.
         </div>
 
@@ -437,7 +437,7 @@ Permut8 is <strong>both</strong> a sophisticated delay manipulation system <stro
 <ul><li>What audio samples are and how numbers become sound</li><li>How changing numbers in code changes what you hear</li><li>The fundamental relationship between programming and audio effects</li><li>Your first working sound modification</li></ul></p>
 <strong>Prerequisites</strong>: None - this is for complete audio programming beginners  
 <strong>Time</strong>: 20 minutes reading + 5 minutes hands-on  
-<strong>Next Tutorial</strong>: <a href="getting-audio-in-and-out.md">Getting Audio In and Out</a>
+<strong>Next Tutorial</strong>: <a href="#getting-audio-in-and-out">Getting Audio In and Out</a>
 <p>---</p>
 <h2>Part 1: Numbers Become Sound (5 minutes)</h2>
 <h3>The Magic Translation</h3>
@@ -579,11 +579,11 @@ global array displayLEDs[4]</p>
 <h2>What's Next?</h2>
 <p>Now that you understand how code affects sound, you're ready for:</p>
 <h3><strong>Immediate Next Steps</strong>:</h3>
-1. <strong><a href="getting-audio-in-and-out.md">Getting Audio In and Out</a></strong> - Learn the basic I/O structure
-2. <strong><a href="simplest-distortion.md">Your First Distortion Effect</a></strong> - Build a working guitar effect
-3. <strong><a href="../../../fundamentals/audio-engineering-for-programmers.md">Audio Engineering for Programmers</a></strong> - Professional concepts
+1. <strong><a href="#getting-audio-in-and-out">Getting Audio In and Out</a></strong> - Learn the basic I/O structure
+2. <strong><a href="#simplest-distortion">Your First Distortion Effect</a></strong> - Build a working guitar effect
+3. <strong><a href="#audio-engineering-for-programmers">Audio Engineering for Programmers</a></strong> - Professional concepts
 <h3><strong>Advanced Learning Path</strong>:</h3>
-<ul><li><strong><a href="../../parameters/read-knobs.md">Control Something with Knobs</a></strong> - Hardware interface</li><li><strong><a href="../../tutorials/complete-development-workflow.md">Complete Development Workflow</a></strong> - Professional practices</li><li><strong><a href="../../tutorials/debug-your-plugin.md">Debug Your Plugin</a></strong> - Troubleshooting skills</li></ul>
+<ul><li><strong><a href="#read-knobs">Control Something with Knobs</a></strong> - Hardware interface</li><li><strong><a href="#complete-development-workflow">Complete Development Workflow</a></strong> - Professional practices</li><li><strong><a href="#debug-your-plugin">Debug Your Plugin</a></strong> - Troubleshooting skills</li></ul>
 <p>---</p>
 <h2>Quick Reference</h2>
 <h3><strong>Essential Pattern for All Effects</strong>:</h3>
@@ -605,7 +605,7 @@ global array displayLEDs[4]</p>
 <ul><li><strong>Every effect</strong> is just different math applied to audio samples</li><li><strong>Code changes</strong> immediately become <strong>sound changes</strong></li><li><strong>Start simple</strong> and build complexity gradually</li><li><strong>Real-time</strong> means your code affects every sample as it flows through</li></ul>
 <p>You now understand the fundamental relationship between programming and audio. Every professional audio effect started with these same basic concepts!</p>
 <p>---</p>
-<em>Next: <a href="getting-audio-in-and-out.md">Getting Audio In and Out</a> - Learn the foundational I/O structure for building effects</em>
+<em>Next: <a href="#getting-audio-in-and-out">Getting Audio In and Out</a> - Learn the foundational I/O structure for building effects</em>
 </div>
 
 
@@ -817,9 +817,9 @@ function process()
 <ul><li>Compiling plugins with PikaCmd</li><li>Loading plugins into Permut8</li><li>Testing audio modifications</li><li>Basic audio sample manipulation</li></ul>
 <h3>8.2 Ready For Next Steps</h3>
 <strong>Continue with Custom Firmware:</strong>
-<ul><li>📖 <a href="make-your-first-sound.md">Make Your First Sound</a> - Generate audio instead of just modifying it</li><li>📖 <a href="control-something-with-knobs.md">Control Something with Knobs</a> - Use hardware knobs to control your effects</li><li>📖 <a href="light-up-leds.md">Light Up LEDs</a> - Advanced LED patterns and feedback</li><li>📖 <a href="build-your-first-filter.md">Build Your First Filter</a> - Create your first real audio effect</li></ul>
+<ul><li>📖 <a href="#make-your-first-sound">Make Your First Sound</a> - Generate audio instead of just modifying it</li><li>📖 <a href="#control-something-with-knobs">Control Something with Knobs</a> - Use hardware knobs to control your effects</li><li>📖 <a href="#light-up-leds">Light Up LEDs</a> - Advanced LED patterns and feedback</li><li>📖 <a href="#build-your-first-filter">Build Your First Filter</a> - Create your first real audio effect</li></ul>
 <strong>Learn Permut8's Original System:</strong>
-<ul><li>📖 <a href="understanding-permut8-operators.md">Understanding Permut8 Operators</a> - Master the instruction system and memory manipulation (25 min)</li></ul>
+<ul><li>📖 <a href="#understanding-permut8-operators">Understanding Permut8 Operators</a> - Master the instruction system and memory manipulation (25 min)</li></ul>
 <h3>8.3 Experiment Ideas</h3>
 <strong>Try these modifications:</strong></code></pre>impala
 // Different volume levels
@@ -849,9 +849,9 @@ displayLEDs[0] = 0x0F       // First 4 LEDs
 <h2>What You'll Build</h2>
 <p>By the end of this tutorial, you'll have:
 <ul><li>A working distortion effect that sounds like a real guitar pedal</li><li>Understanding of how different math creates different distortion sounds</li><li>Control over distortion amount using hardware knobs</li><li>Foundation for building any distortion-based effect</li></ul></p>
-<strong>Prerequisites</strong>: <a href="how-dsp-affects-sound.md">How DSP Affects Sound</a>, <a href="getting-audio-in-and-out.md">Getting Audio In and Out</a>  
+<strong>Prerequisites</strong>: <a href="#how-dsp-affects-sound">How DSP Affects Sound</a>, <a href="#getting-audio-in-and-out">Getting Audio In and Out</a>  
 <strong>Time</strong>: 15 minutes hands-on  
-<strong>Next Tutorial</strong>: <a href="../../../fundamentals/audio-engineering-for-programmers.md">Audio Engineering for Programmers</a>
+<strong>Next Tutorial</strong>: <a href="#audio-engineering-for-programmers">Audio Engineering for Programmers</a>
 <p>---</p>
 <h2>The Journey: Clean → Harsh → Musical</h2>
 <p>We'll build distortion in three progressive steps:</p>
@@ -1071,13 +1071,13 @@ int stage2 = softClip(stage1 * gain2, threshold2);</code></pre>
 <p>---</p>
 <h2>What's Next?</h2>
 <h3><strong>Immediate Next Steps</strong>:</h3>
-1. <strong><a href="../../../fundamentals/audio-engineering-for-programmers.md">Audio Engineering for Programmers</a></strong> - Professional concepts
-2. <strong><a href="../audio-effects/waveshaper-distortion.md">Waveshaper Distortion</a></strong> - Advanced mathematical approaches
-3. <strong><a href="../../parameters/parameter-mapping.md">Parameter Mapping</a></strong> - Professional parameter design
+1. <strong><a href="#audio-engineering-for-programmers">Audio Engineering for Programmers</a></strong> - Professional concepts
+2. <strong><a href="#waveshaper-distortion">Waveshaper Distortion</a></strong> - Advanced mathematical approaches
+3. <strong><a href="#parameter-mapping">Parameter Mapping</a></strong> - Professional parameter design
 <h3><strong>Building on Distortion</strong>:</h3>
-<ul><li><strong><a href="../audio-effects/multi-band-compressor.md">Multi-band Compressor</a></strong> - Frequency-specific processing</li><li><strong><a href="../audio-effects/chorus-effect.md">Chorus Effect</a></strong> - Modulation-based effects</li><li><strong><a href="../../tutorials/complete-development-workflow.md">Complete Development Workflow</a></strong> - Professional practices</li></ul>
+<ul><li><strong><a href="#multi-band-compressor">Multi-band Compressor</a></strong> - Frequency-specific processing</li><li><strong><a href="#chorus-effect">Chorus Effect</a></strong> - Modulation-based effects</li><li><strong><a href="#complete-development-workflow">Complete Development Workflow</a></strong> - Professional practices</li></ul>
 <h3><strong>Advanced Distortion</strong>:</h3>
-<ul><li><strong><a href="../../../performance/optimization-basics.md">Optimization Basics</a></strong> - Performance improvement</li><li><strong><a href="../../../advanced/advanced-memory-management.md">Advanced Memory Management</a></strong> - Complex algorithms</li></ul>
+<ul><li><strong><a href="#optimization-basics">Optimization Basics</a></strong> - Performance improvement</li><li><strong><a href="#advanced-memory-management">Advanced Memory Management</a></strong> - Complex algorithms</li></ul>
 <p>---</p>
 <h2>Quick Reference</h2>
 <h3><strong>Basic Distortion Pattern</strong>:</h3>
@@ -1103,7 +1103,7 @@ signal[0] = clipped;</code></pre></p>
 <ul><li><strong>Drive/Gain</strong>: How much signal hits the distortion</li><li><strong>Tone/Threshold</strong>: Where and how distortion begins  </li><li><strong>Output Level</strong>: Final volume control</li><li><strong>Safety Limiting</strong>: Prevent damage</li></ul>
 <p>You now understand the fundamentals of distortion and have built a professional-quality effect! This knowledge applies to all overdrive, distortion, and saturation effects.</p>
 <p>---</p>
-<em>Next: <a href="../../../fundamentals/audio-engineering-for-programmers.md">Audio Engineering for Programmers</a> - Essential audio concepts in programming terms</em>
+<em>Next: <a href="#audio-engineering-for-programmers">Audio Engineering for Programmers</a> - Essential audio concepts in programming terms</em>
 </div>
 
 
@@ -1402,13 +1402,13 @@ function update() {
 <p>---</p>
 <h2>See Also</h2>
 <strong>📚 Complete Documentation:</strong>
-<ul><li><strong><a href="language-syntax-reference.md">Complete Language Syntax Reference</a></strong> - Full syntax guide with all operators and constructs</li><li><strong><a href="../reference/memory_management.md">Memory Management Reference</a></strong> - Delay lines, read/write operations, position arrays</li><li><strong><a href="../reference/utilities_reference.md">Utilities Reference</a></strong> - Native functions, math, strings, debugging</li><li><strong><a href="../../../Impala Snippets.txt">Impala Snippets</a></strong> - Copy-paste utility functions and math library</li></ul>
+<ul><li><strong><a href="language-syntax-reference.html">Complete Language Syntax Reference</a></strong> - Full syntax guide with all operators and constructs</li><li><strong><a href="../reference/memory_management.html">Memory Management Reference</a></strong> - Delay lines, read/write operations, position arrays</li><li><strong><a href="../reference/utilities_reference.html">Utilities Reference</a></strong> - Native functions, math, strings, debugging</li><li><strong><a href="../../../Impala Snippets.txt">Impala Snippets</a></strong> - Copy-paste utility functions and math library</li></ul>
 <strong>📦 Bank Integration:</strong>
-<ul><li><strong><a href="../architecture/p8bank-format.md">P8Bank Format</a></strong> - Complete firmware packaging</li><li><strong><a href="../user-guides/tutorials/creating-firmware-banks.md">Creating Firmware Banks</a></strong> - Distribution workflow</li><li><strong><a href="../user-guides/cookbook/advanced/firmware-patterns.md">Official Firmware Patterns</a></strong> - Beatrick/FooBar patterns</li></ul>
+<ul><li><strong><a href="../architecture/p8bank-format.html">P8Bank Format</a></strong> - Complete firmware packaging</li><li><strong><a href="../user-guides/tutorials/creating-firmware-banks.html">Creating Firmware Banks</a></strong> - Distribution workflow</li><li><strong><a href="../user-guides/cookbook/advanced/firmware-patterns.html">Official Firmware Patterns</a></strong> - Beatrick/FooBar patterns</li></ul>
 <strong>🍳 Cookbook Examples:</strong>
-<ul><li><strong><a href="../user-guides/cookbook/fundamentals/basic-oscillator.md">Basic Oscillator</a></strong> - Simple sine wave generation</li><li><strong><a href="../user-guides/cookbook/audio-effects/make-a-delay.md">Make a Delay</a></strong> - Basic delay effect implementation</li><li><strong><a href="../user-guides/cookbook/fundamentals/parameter-mapping.md">Parameter Mapping</a></strong> - Knob and switch handling</li></ul>
+<ul><li><strong><a href="../user-guides/cookbook/fundamentals/basic-oscillator.html">Basic Oscillator</a></strong> - Simple sine wave generation</li><li><strong><a href="../user-guides/cookbook/audio-effects/make-a-delay.html">Make a Delay</a></strong> - Basic delay effect implementation</li><li><strong><a href="../user-guides/cookbook/fundamentals/parameter-mapping.html">Parameter Mapping</a></strong> - Knob and switch handling</li></ul>
 <strong>🏗️ Architecture:</strong>
-<ul><li><strong><a href="../architecture/memory-model.md">Memory Model</a></strong> - Understanding Permut8's memory system</li><li><strong><a href="../architecture/processing-order.md">Processing Order</a></strong> - When functions are called</li><li><strong><a href="../architecture/mod-vs-full.md">Mod vs Full Patches</a></strong> - Choosing the right patch type</li></ul>
+<ul><li><strong><a href="../architecture/memory-model.html">Memory Model</a></strong> - Understanding Permut8's memory system</li><li><strong><a href="../architecture/processing-order.html">Processing Order</a></strong> - When functions are called</li><li><strong><a href="../architecture/mod-vs-full.html">Mod vs Full Patches</a></strong> - Choosing the right patch type</li></ul>
 </div>
 
 
@@ -1770,13 +1770,13 @@ global array displayLEDs[4]        // LED displays</p>
 <p>---</p>
 <h2>See Also</h2>
 <strong>📚 Essential References:</strong>
-<ul><li><strong><a href="core_language_reference.md">Core Language Reference</a></strong> - Quick start guide with minimal examples</li><li><strong><a href="../reference/memory_management.md">Memory Management Reference</a></strong> - Delay lines, read/write operations, advanced patterns</li><li><strong><a href="../reference/utilities_reference.md">Utilities Reference</a></strong> - Native functions, math library, debugging tools</li><li><strong><a href="../../../Impala Snippets.txt">Impala Snippets</a></strong> - Copy-paste utility functions and advanced math</li></ul>
+<ul><li><strong><a href="core_language_reference.html">Core Language Reference</a></strong> - Quick start guide with minimal examples</li><li><strong><a href="../reference/memory_management.html">Memory Management Reference</a></strong> - Delay lines, read/write operations, advanced patterns</li><li><strong><a href="../reference/utilities_reference.html">Utilities Reference</a></strong> - Native functions, math library, debugging tools</li><li><strong><a href="../../../Impala Snippets.txt">Impala Snippets</a></strong> - Copy-paste utility functions and advanced math</li></ul>
 <strong>🍳 Practical Examples:</strong>
-<ul><li><strong><a href="../user-guides/QUICKSTART.md">QUICKSTART Guide</a></strong> - 30-minute firmware tutorial</li><li><strong><a href="../user-guides/cookbook/fundamentals/">Cookbook Fundamentals</a></strong> - Basic building blocks</li><li><strong><a href="../user-guides/cookbook/audio-effects/">Audio Effects Cookbook</a></strong> - Complete effect implementations</li></ul>
+<ul><li><strong><a href="../user-guides/QUICKSTART.html">QUICKSTART Guide</a></strong> - 30-minute firmware tutorial</li><li><strong><a href="../user-guides/cookbook/fundamentals/">Cookbook Fundamentals</a></strong> - Basic building blocks</li><li><strong><a href="../user-guides/cookbook/audio-effects/">Audio Effects Cookbook</a></strong> - Complete effect implementations</li></ul>
 <strong>🏗️ System Architecture:</strong>
-<ul><li><strong><a href="../architecture/memory-model.md">Memory Model</a></strong> - Static allocation, delay lines, position arrays</li><li><strong><a href="../architecture/processing-order.md">Processing Order</a></strong> - Function call sequence and timing</li><li><strong><a href="../architecture/state-management.md">State Management</a></strong> - Global variables and persistence</li></ul>
+<ul><li><strong><a href="../architecture/memory-model.html">Memory Model</a></strong> - Static allocation, delay lines, position arrays</li><li><strong><a href="../architecture/processing-order.html">Processing Order</a></strong> - Function call sequence and timing</li><li><strong><a href="../architecture/state-management.html">State Management</a></strong> - Global variables and persistence</li></ul>
 <strong>🔧 Development:</strong>
-<ul><li><strong><a href="../user-guides/tutorials/build-your-first-filter.md">Build Your First Filter</a></strong> - Step-by-step tutorial</li><li><strong><a href="../user-guides/tutorials/debug-your-plugin.md">Debug Your Plugin</a></strong> - Debugging and troubleshooting</li><li><strong><a href="../user-guides/tutorials/test-your-plugin.md">Test Your Plugin</a></strong> - Validation and testing</li></ul>
+<ul><li><strong><a href="../user-guides/tutorials/build-your-first-filter.html">Build Your First Filter</a></strong> - Step-by-step tutorial</li><li><strong><a href="../user-guides/tutorials/debug-your-plugin.html">Debug Your Plugin</a></strong> - Debugging and troubleshooting</li><li><strong><a href="../user-guides/tutorials/test-your-plugin.html">Test Your Plugin</a></strong> - Validation and testing</li></ul>
 </div>
 
 
@@ -5085,7 +5085,7 @@ Heavy Mode:   Operator1: "7", Operand1High: "0xFF"</code></pre>
 <strong>Solution</strong>:
 <ul><li>Verify <code>process()</code> function exists and calls <code>yield()</code></li><li>Check signal processing logic</li><li>Ensure proper parameter handling</li></ul>
 <h2>See Also</h2>
-<ul><li><strong><a href="../user-guides/tutorials/creating-firmware-banks.md">Creating Firmware Banks</a></strong> - Step-by-step bank creation</li><li><strong><a href="../language/core_language_reference.md">Core Language Reference</a></strong> - Bank-compatible firmware patterns</li><li><strong><a href="../user-guides/cookbook/advanced/firmware-patterns.md">Official Firmware Patterns</a></strong> - Beatrick/FooBar examples</li><li><strong><a href="../user-guides/QUICKSTART.md">QUICKSTART Tutorial</a></strong> - Hands-on bank creation example</li></ul>
+<ul><li><strong><a href="../user-guides/tutorials/creating-firmware-banks.html">Creating Firmware Banks</a></strong> - Step-by-step bank creation</li><li><strong><a href="../language/core_language_reference.html">Core Language Reference</a></strong> - Bank-compatible firmware patterns</li><li><strong><a href="../user-guides/cookbook/advanced/firmware-patterns.html">Official Firmware Patterns</a></strong> - Beatrick/FooBar examples</li><li><strong><a href="../user-guides/QUICKSTART.html">QUICKSTART Tutorial</a></strong> - Hands-on bank creation example</li></ul>
 </div>
 
 
@@ -5697,7 +5697,7 @@ jobs:
 <p>By the end of this tutorial, you'll master:
 <ul><li>Complete development workflow from concept to deployment</li><li>Professional project organization and planning</li><li>Compilation process and build tools</li><li>Testing and validation strategies</li><li>Debugging techniques and troubleshooting</li><li>Performance optimization workflow</li><li>Version management and documentation</li></ul></p>
 <strong>Prerequisites</strong>: 
-<ul><li><a href="understanding-impala-fundamentals.md">Understanding Impala Language Fundamentals</a></li><li>Basic understanding of firmware architecture concepts</li></ul>
+<ul><li><a href="#understanding-impala-fundamentals">Understanding Impala Language Fundamentals</a></li><li>Basic understanding of firmware architecture concepts</li></ul>
 <strong>Time Required</strong>: 60-90 minutes  
 <strong>Difficulty</strong>: Intermediate
 <h2>Chapter 1: Development Workflow Overview</h2>
@@ -5945,7 +5945,7 @@ PikaCmd.exe is actually a <strong>Pika language interpreter</strong>, not a stan
 <strong>Build Process Flow</strong>:
 1. <strong>Source Code</strong> (.impala) → <strong>Pika Interpreter</strong> → <strong>GAZL Assembly</strong> (.gazl)
 2. <strong>GAZL Assembly</strong> → <strong>Permut8 Plugin</strong> → <strong>Audio Output</strong>
-<strong>For detailed troubleshooting</strong>: See <a href="compiler-troubleshooting-guide.md">Compiler Troubleshooting Guide</a>
+<strong>For detailed troubleshooting</strong>: See <a href="#compiler-troubleshooting-guide">Compiler Troubleshooting Guide</a>
 <h3>Step 2: Compilation Workflow</h3>
 <strong>Manual Compilation Process</strong>:
 <pre><code><h1>1. Navigate to your project directory</h1>
@@ -6701,12 +6701,12 @@ Timeline: [If accepted, when to implement]</code></pre></p>
    - Start with a basic gain/volume effect
    - Follow each step methodically
    - Document your experience</p>
-<p>2. <strong>Study Advanced Techniques</strong>: <a href="../../assembly/gazl-assembly-introduction.md">Assembly Integration Guide</a>
+<p>2. <strong>Study Advanced Techniques</strong>: <a href="#gazl-assembly-introduction">Assembly Integration Guide</a>
    - Learn GAZL assembly for maximum performance
    - Advanced debugging and profiling techniques</p>
 <p>3. <strong>Explore Complex Algorithms</strong>: Study cookbook recipes
-   - <a href="../cookbook/spectral-processing/">Spectral Processing</a> for frequency domain work
-   - <a href="../cookbook/audio-effects/">Audio Effects</a> for classic DSP algorithms</p>
+   - <a href="#spectral-processing">Spectral Processing</a> for frequency domain work
+   - <a href="#audio-effects">Audio Effects</a> for classic DSP algorithms</p>
 <h3>Development Environment Setup</h3>
 <strong>Recommended Tools</strong>:
 <ul><li><strong>Text Editor</strong>: VS Code, Notepad++, or similar with syntax highlighting</li><li><strong>File Management</strong>: Organize projects in dedicated folders</li><li><strong>Build Automation</strong>: Create batch files for repetitive tasks</li><li><strong>Documentation</strong>: Markdown for user manuals and notes</li><li><strong>Testing</strong>: Audio files for consistent testing scenarios</li></ul>
@@ -7885,9 +7885,9 @@ params[3] = 255;  // Full wet
 <h2>What You'll Build</h2>
 <p>By the end of this tutorial, you'll have:
 <ul><li>A working distortion effect that sounds like a real guitar pedal</li><li>Understanding of how different math creates different distortion sounds</li><li>Control over distortion amount using hardware knobs</li><li>Foundation for building any distortion-based effect</li></ul></p>
-<strong>Prerequisites</strong>: <a href="how-dsp-affects-sound.md">How DSP Affects Sound</a>, <a href="getting-audio-in-and-out.md">Getting Audio In and Out</a>  
+<strong>Prerequisites</strong>: <a href="#how-dsp-affects-sound">How DSP Affects Sound</a>, <a href="#getting-audio-in-and-out">Getting Audio In and Out</a>  
 <strong>Time</strong>: 15 minutes hands-on  
-<strong>Next Tutorial</strong>: <a href="../../../fundamentals/audio-engineering-for-programmers.md">Audio Engineering for Programmers</a>
+<strong>Next Tutorial</strong>: <a href="#audio-engineering-for-programmers">Audio Engineering for Programmers</a>
 <p>---</p>
 <h2>The Journey: Clean → Harsh → Musical</h2>
 <p>We'll build distortion in three progressive steps:</p>
@@ -8107,13 +8107,13 @@ int stage2 = softClip(stage1 * gain2, threshold2);</code></pre>
 <p>---</p>
 <h2>What's Next?</h2>
 <h3><strong>Immediate Next Steps</strong>:</h3>
-1. <strong><a href="../../../fundamentals/audio-engineering-for-programmers.md">Audio Engineering for Programmers</a></strong> - Professional concepts
-2. <strong><a href="../audio-effects/waveshaper-distortion.md">Waveshaper Distortion</a></strong> - Advanced mathematical approaches
-3. <strong><a href="../../parameters/parameter-mapping.md">Parameter Mapping</a></strong> - Professional parameter design
+1. <strong><a href="#audio-engineering-for-programmers">Audio Engineering for Programmers</a></strong> - Professional concepts
+2. <strong><a href="#waveshaper-distortion">Waveshaper Distortion</a></strong> - Advanced mathematical approaches
+3. <strong><a href="#parameter-mapping">Parameter Mapping</a></strong> - Professional parameter design
 <h3><strong>Building on Distortion</strong>:</h3>
-<ul><li><strong><a href="../audio-effects/multi-band-compressor.md">Multi-band Compressor</a></strong> - Frequency-specific processing</li><li><strong><a href="../audio-effects/chorus-effect.md">Chorus Effect</a></strong> - Modulation-based effects</li><li><strong><a href="../../tutorials/complete-development-workflow.md">Complete Development Workflow</a></strong> - Professional practices</li></ul>
+<ul><li><strong><a href="#multi-band-compressor">Multi-band Compressor</a></strong> - Frequency-specific processing</li><li><strong><a href="#chorus-effect">Chorus Effect</a></strong> - Modulation-based effects</li><li><strong><a href="#complete-development-workflow">Complete Development Workflow</a></strong> - Professional practices</li></ul>
 <h3><strong>Advanced Distortion</strong>:</h3>
-<ul><li><strong><a href="../../../performance/optimization-basics.md">Optimization Basics</a></strong> - Performance improvement</li><li><strong><a href="../../../advanced/advanced-memory-management.md">Advanced Memory Management</a></strong> - Complex algorithms</li></ul>
+<ul><li><strong><a href="#optimization-basics">Optimization Basics</a></strong> - Performance improvement</li><li><strong><a href="#advanced-memory-management">Advanced Memory Management</a></strong> - Complex algorithms</li></ul>
 <p>---</p>
 <h2>Quick Reference</h2>
 <h3><strong>Basic Distortion Pattern</strong>:</h3>
@@ -8139,7 +8139,7 @@ signal[0] = clipped;</code></pre></p>
 <ul><li><strong>Drive/Gain</strong>: How much signal hits the distortion</li><li><strong>Tone/Threshold</strong>: Where and how distortion begins  </li><li><strong>Output Level</strong>: Final volume control</li><li><strong>Safety Limiting</strong>: Prevent damage</li></ul>
 <p>You now understand the fundamentals of distortion and have built a professional-quality effect! This knowledge applies to all overdrive, distortion, and saturation effects.</p>
 <p>---</p>
-<em>Next: <a href="../../../fundamentals/audio-engineering-for-programmers.md">Audio Engineering for Programmers</a> - Essential audio concepts in programming terms</em>
+<em>Next: <a href="#audio-engineering-for-programmers">Audio Engineering for Programmers</a> - Essential audio concepts in programming terms</em>
 </div>
 
 
@@ -8400,9 +8400,9 @@ The delay effect stores incoming audio samples in memory using the <code>read()<
 <p>The feedback control mixes a percentage of the delayed signal back into the delay buffer itself, creating multiple repeats that gradually fade away. This feedback loop is carefully limited to 90% to prevent mathematical runaway that would cause infinite amplification.</p>
 <p>The memory addressing uses separate regions for left and right channels (<code>delayIndex</code> vs <code>delayIndex + maxDelayTime</code>) to prevent interference between stereo channels while maintaining proper circular buffer behavior for both channels.</p>
 <h2>Related Techniques</h2>
-<ul><li><strong><a href="chorus-effect.md">Chorus Effect</a></strong>: Uses multiple short delays for thickening</li><li><strong><a href="../timing/sync-to-tempo.md">Sync to Tempo</a></strong>: Tempo-synchronized delay timing</li><li><strong><a href="../fundamentals/memory-basics.md">Memory Basics</a></strong>: Memory read/write fundamentals</li></ul>
+<ul><li><strong><a href="#chorus-effect">Chorus Effect</a></strong>: Uses multiple short delays for thickening</li><li><strong><a href="#sync-to-tempo">Sync to Tempo</a></strong>: Tempo-synchronized delay timing</li><li><strong><a href="#memory-basics">Memory Basics</a></strong>: Memory read/write fundamentals</li></ul>
 <p>---
-<em>Part of the <a href="../index.md">Permut8 Cookbook</a> series</em></p>
+<em>Part of the <a href="#permut8-cookbook">Permut8 Cookbook</a> series</em></p>
 </div>
 
         <div style="margin-top: 60px; padding-top: 20px; border-top: 2px solid #ecf0f1; text-align: center; color: #7f8c8d;">

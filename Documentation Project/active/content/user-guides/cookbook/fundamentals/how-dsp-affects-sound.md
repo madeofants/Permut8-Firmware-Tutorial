@@ -14,7 +14,7 @@ By the end of this tutorial, you'll understand:
 
 **Prerequisites**: None - this is for complete audio programming beginners  
 **Time**: 20 minutes reading + 5 minutes hands-on  
-**Next Tutorial**: [Getting Audio In and Out](getting-audio-in-and-out.md)
+**Next Tutorial**: [Getting Audio In and Out](#getting-audio-in-and-out)
 
 ---
 
@@ -267,14 +267,14 @@ The volume control you just built uses the same fundamental principles as profes
 Now that you understand how code affects sound, you're ready for:
 
 ### **Immediate Next Steps**:
-1. **[Getting Audio In and Out](getting-audio-in-and-out.md)** - Learn the basic I/O structure
-2. **[Your First Distortion Effect](simplest-distortion.md)** - Build a working guitar effect
-3. **[Audio Engineering for Programmers](../../../fundamentals/audio-engineering-for-programmers.md)** - Professional concepts
+1. **[Getting Audio In and Out](#getting-audio-in-and-out)** - Learn the basic I/O structure
+2. **[Your First Distortion Effect](#simplest-distortion)** - Build a working guitar effect
+3. **[Audio Engineering for Programmers](#audio-engineering-for-programmers)** - Professional concepts
 
 ### **Advanced Learning Path**:
-- **[Control Something with Knobs](../../parameters/read-knobs.md)** - Hardware interface
-- **[Complete Development Workflow](../../tutorials/complete-development-workflow.md)** - Professional practices
-- **[Debug Your Plugin](../../tutorials/debug-your-plugin.md)** - Troubleshooting skills
+- **[Control Something with Knobs](#read-knobs)** - Hardware interface
+- **[Complete Development Workflow](#complete-development-workflow)** - Professional practices
+- **[Debug Your Plugin](#debug-your-plugin)** - Troubleshooting skills
 
 ---
 
@@ -308,4 +308,4 @@ You now understand the fundamental relationship between programming and audio. E
 
 ---
 
-*Next: [Getting Audio In and Out](getting-audio-in-and-out.md) - Learn the foundational I/O structure for building effects*
+*Next: [Getting Audio In and Out](#getting-audio-in-and-out) - Learn the foundational I/O structure for building effects*

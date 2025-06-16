@@ -195,9 +195,9 @@ params[2] = 120;  // Balanced mix
 
 ## Related Techniques
 
-- **[Circular Buffer Guide](circular-buffer-guide.md)**: Advanced circular buffer techniques
-- **[Basic Oscillator](basic-oscillator.md)**: Wavetable synthesis with lookup tables
-- **[Parameter Mapping](parameter-mapping.md)**: Efficient parameter scaling
+- **[Circular Buffer Guide](#circular-buffer-guide)**: Advanced circular buffer techniques
+- **[Basic Oscillator](#basic-oscillator)**: Wavetable synthesis with lookup tables
+- **[Parameter Mapping](#parameter-mapping)**: Efficient parameter scaling
 
 ---
-*Part of the [Permut8 Cookbook](../index.md) series*
+*Part of the [Permut8 Cookbook](#permut8-cookbook) series*

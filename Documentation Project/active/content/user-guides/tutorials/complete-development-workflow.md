@@ -16,7 +16,7 @@ By the end of this tutorial, you'll master:
 - Version management and documentation
 
 **Prerequisites**: 
-- [Understanding Impala Language Fundamentals](understanding-impala-fundamentals.md)
+- [Understanding Impala Language Fundamentals](#understanding-impala-fundamentals)
 - Basic understanding of firmware architecture concepts
 
 **Time Required**: 60-90 minutes  
@@ -341,7 +341,7 @@ PikaCmd.exe is actually a **Pika language interpreter**, not a standalone compil
 1. **Source Code** (.impala) → **Pika Interpreter** → **GAZL Assembly** (.gazl)
 2. **GAZL Assembly** → **Permut8 Plugin** → **Audio Output**
 
-**For detailed troubleshooting**: See [Compiler Troubleshooting Guide](compiler-troubleshooting-guide.md)
+**For detailed troubleshooting**: See [Compiler Troubleshooting Guide](#compiler-troubleshooting-guide)
 
 ### Step 2: Compilation Workflow
 
@@ -1342,13 +1342,13 @@ Timeline: [If accepted, when to implement]
    - Follow each step methodically
    - Document your experience
 
-2. **Study Advanced Techniques**: [Assembly Integration Guide](../../assembly/gazl-assembly-introduction.md)
+2. **Study Advanced Techniques**: [Assembly Integration Guide](#gazl-assembly-introduction)
    - Learn GAZL assembly for maximum performance
    - Advanced debugging and profiling techniques
 
 3. **Explore Complex Algorithms**: Study cookbook recipes
-   - [Spectral Processing](../cookbook/spectral-processing/) for frequency domain work
-   - [Audio Effects](../cookbook/audio-effects/) for classic DSP algorithms
+   - [Spectral Processing](#spectral-processing) for frequency domain work
+   - [Audio Effects](#audio-effects) for classic DSP algorithms
 
 ### Development Environment Setup
 

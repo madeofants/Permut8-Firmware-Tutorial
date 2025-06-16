@@ -332,13 +332,13 @@ function process()
 ### 8.2 Ready For Next Steps
 
 **Continue with Custom Firmware:**
-- 📖 [Make Your First Sound](make-your-first-sound.md) - Generate audio instead of just modifying it
-- 📖 [Control Something with Knobs](control-something-with-knobs.md) - Use hardware knobs to control your effects
-- 📖 [Light Up LEDs](light-up-leds.md) - Advanced LED patterns and feedback
-- 📖 [Build Your First Filter](build-your-first-filter.md) - Create your first real audio effect
+- 📖 [Make Your First Sound](#make-your-first-sound) - Generate audio instead of just modifying it
+- 📖 [Control Something with Knobs](#control-something-with-knobs) - Use hardware knobs to control your effects
+- 📖 [Light Up LEDs](#light-up-leds) - Advanced LED patterns and feedback
+- 📖 [Build Your First Filter](#build-your-first-filter) - Create your first real audio effect
 
 **Learn Permut8's Original System:**
-- 📖 [Understanding Permut8 Operators](understanding-permut8-operators.md) - Master the instruction system and memory manipulation (25 min)
+- 📖 [Understanding Permut8 Operators](#understanding-permut8-operators) - Master the instruction system and memory manipulation (25 min)
 
 ### 8.3 Experiment Ideas
 **Try these modifications:**

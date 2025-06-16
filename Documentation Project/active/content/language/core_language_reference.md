@@ -397,22 +397,22 @@ function update() {
 ## See Also
 
 **📚 Complete Documentation:**
-- **[Complete Language Syntax Reference](language-syntax-reference.md)** - Full syntax guide with all operators and constructs
-- **[Memory Management Reference](../reference/memory_management.md)** - Delay lines, read/write operations, position arrays
-- **[Utilities Reference](../reference/utilities_reference.md)** - Native functions, math, strings, debugging
+- **<a href="language-syntax-reference.html">Complete Language Syntax Reference</a>** - Full syntax guide with all operators and constructs
+- **<a href="../reference/memory_management.html">Memory Management Reference</a>** - Delay lines, read/write operations, position arrays
+- **<a href="../reference/utilities_reference.html">Utilities Reference</a>** - Native functions, math, strings, debugging
 - **[Impala Snippets](../../../Impala Snippets.txt)** - Copy-paste utility functions and math library
 
 **📦 Bank Integration:**
-- **[P8Bank Format](../architecture/p8bank-format.md)** - Complete firmware packaging
-- **[Creating Firmware Banks](../user-guides/tutorials/creating-firmware-banks.md)** - Distribution workflow
-- **[Official Firmware Patterns](../user-guides/cookbook/advanced/firmware-patterns.md)** - Beatrick/FooBar patterns
+- **<a href="../architecture/p8bank-format.html">P8Bank Format</a>** - Complete firmware packaging
+- **<a href="../user-guides/tutorials/creating-firmware-banks.html">Creating Firmware Banks</a>** - Distribution workflow
+- **<a href="../user-guides/cookbook/advanced/firmware-patterns.html">Official Firmware Patterns</a>** - Beatrick/FooBar patterns
 
 **🍳 Cookbook Examples:**
-- **[Basic Oscillator](../user-guides/cookbook/fundamentals/basic-oscillator.md)** - Simple sine wave generation
-- **[Make a Delay](../user-guides/cookbook/audio-effects/make-a-delay.md)** - Basic delay effect implementation
-- **[Parameter Mapping](../user-guides/cookbook/fundamentals/parameter-mapping.md)** - Knob and switch handling
+- **<a href="../user-guides/cookbook/fundamentals/basic-oscillator.html">Basic Oscillator</a>** - Simple sine wave generation
+- **<a href="../user-guides/cookbook/audio-effects/make-a-delay.html">Make a Delay</a>** - Basic delay effect implementation
+- **<a href="../user-guides/cookbook/fundamentals/parameter-mapping.html">Parameter Mapping</a>** - Knob and switch handling
 
 **🏗️ Architecture:**
-- **[Memory Model](../architecture/memory-model.md)** - Understanding Permut8's memory system
-- **[Processing Order](../architecture/processing-order.md)** - When functions are called
-- **[Mod vs Full Patches](../architecture/mod-vs-full.md)** - Choosing the right patch type
+- **<a href="../architecture/memory-model.html">Memory Model</a>** - Understanding Permut8's memory system
+- **<a href="../architecture/processing-order.html">Processing Order</a>** - When functions are called
+- **<a href="../architecture/mod-vs-full.html">Mod vs Full Patches</a>** - Choosing the right patch type

@@ -155,9 +155,9 @@ params[2] = 16;   // Very slow smoothing
 
 ## Related Techniques
 
-- **[Parameter Mapping](parameter-mapping.md)**: Advanced parameter curve shaping
-- **[dB Gain Control](db-gain-control.md)**: Professional decibel-based volume
-- **[Output Limiting](output-limiting.md)**: Prevent clipping with limiting
+- **[Parameter Mapping](#parameter-mapping)**: Advanced parameter curve shaping
+- **[dB Gain Control](#db-gain-control)**: Professional decibel-based volume
+- **[Output Limiting](#output-limiting)**: Prevent clipping with limiting
 
 ---
-*Part of the [Permut8 Cookbook](../index.md) series*
+*Part of the [Permut8 Cookbook](#permut8-cookbook) series*

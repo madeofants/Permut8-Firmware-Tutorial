@@ -12,9 +12,9 @@ By the end of this tutorial, you'll have:
 - Control over distortion amount using hardware knobs
 - Foundation for building any distortion-based effect
 
-**Prerequisites**: [How DSP Affects Sound](how-dsp-affects-sound.md), [Getting Audio In and Out](getting-audio-in-and-out.md)  
+**Prerequisites**: [How DSP Affects Sound](#how-dsp-affects-sound), [Getting Audio In and Out](#getting-audio-in-and-out)  
 **Time**: 15 minutes hands-on  
-**Next Tutorial**: [Audio Engineering for Programmers](../../../fundamentals/audio-engineering-for-programmers.md)
+**Next Tutorial**: [Audio Engineering for Programmers](#audio-engineering-for-programmers)
 
 ---
 
@@ -361,18 +361,18 @@ You now understand how different approaches create different sounds:
 ## What's Next?
 
 ### **Immediate Next Steps**:
-1. **[Audio Engineering for Programmers](../../../fundamentals/audio-engineering-for-programmers.md)** - Professional concepts
-2. **[Waveshaper Distortion](../audio-effects/waveshaper-distortion.md)** - Advanced mathematical approaches
-3. **[Parameter Mapping](../../parameters/parameter-mapping.md)** - Professional parameter design
+1. **[Audio Engineering for Programmers](#audio-engineering-for-programmers)** - Professional concepts
+2. **[Waveshaper Distortion](#waveshaper-distortion)** - Advanced mathematical approaches
+3. **[Parameter Mapping](#parameter-mapping)** - Professional parameter design
 
 ### **Building on Distortion**:
-- **[Multi-band Compressor](../audio-effects/multi-band-compressor.md)** - Frequency-specific processing
-- **[Chorus Effect](../audio-effects/chorus-effect.md)** - Modulation-based effects
-- **[Complete Development Workflow](../../tutorials/complete-development-workflow.md)** - Professional practices
+- **[Multi-band Compressor](#multi-band-compressor)** - Frequency-specific processing
+- **[Chorus Effect](#chorus-effect)** - Modulation-based effects
+- **[Complete Development Workflow](#complete-development-workflow)** - Professional practices
 
 ### **Advanced Distortion**:
-- **[Optimization Basics](../../../performance/optimization-basics.md)** - Performance improvement
-- **[Advanced Memory Management](../../../advanced/advanced-memory-management.md)** - Complex algorithms
+- **[Optimization Basics](#optimization-basics)** - Performance improvement
+- **[Advanced Memory Management](#advanced-memory-management)** - Complex algorithms
 
 ---
 
@@ -416,4 +416,4 @@ You now understand the fundamentals of distortion and have built a professional-
 
 ---
 
-*Next: [Audio Engineering for Programmers](../../../fundamentals/audio-engineering-for-programmers.md) - Essential audio concepts in programming terms*
+*Next: [Audio Engineering for Programmers](#audio-engineering-for-programmers) - Essential audio concepts in programming terms*

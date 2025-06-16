@@ -521,22 +521,22 @@ This syntax reference reflects the actual Impala language as implemented in the 
 ## See Also
 
 **📚 Essential References:**
-- **[Core Language Reference](core_language_reference.md)** - Quick start guide with minimal examples
-- **[Memory Management Reference](../reference/memory_management.md)** - Delay lines, read/write operations, advanced patterns
-- **[Utilities Reference](../reference/utilities_reference.md)** - Native functions, math library, debugging tools
+- **<a href="core_language_reference.html">Core Language Reference</a>** - Quick start guide with minimal examples
+- **<a href="../reference/memory_management.html">Memory Management Reference</a>** - Delay lines, read/write operations, advanced patterns
+- **<a href="../reference/utilities_reference.html">Utilities Reference</a>** - Native functions, math library, debugging tools
 - **[Impala Snippets](../../../Impala Snippets.txt)** - Copy-paste utility functions and advanced math
 
 **🍳 Practical Examples:**
-- **[QUICKSTART Guide](../user-guides/QUICKSTART.md)** - 30-minute firmware tutorial
+- **<a href="../user-guides/QUICKSTART.html">QUICKSTART Guide</a>** - 30-minute firmware tutorial
 - **[Cookbook Fundamentals](../user-guides/cookbook/fundamentals/)** - Basic building blocks
 - **[Audio Effects Cookbook](../user-guides/cookbook/audio-effects/)** - Complete effect implementations
 
 **🏗️ System Architecture:**
-- **[Memory Model](../architecture/memory-model.md)** - Static allocation, delay lines, position arrays
-- **[Processing Order](../architecture/processing-order.md)** - Function call sequence and timing
-- **[State Management](../architecture/state-management.md)** - Global variables and persistence
+- **<a href="../architecture/memory-model.html">Memory Model</a>** - Static allocation, delay lines, position arrays
+- **<a href="../architecture/processing-order.html">Processing Order</a>** - Function call sequence and timing
+- **<a href="../architecture/state-management.html">State Management</a>** - Global variables and persistence
 
 **🔧 Development:**
-- **[Build Your First Filter](../user-guides/tutorials/build-your-first-filter.md)** - Step-by-step tutorial
-- **[Debug Your Plugin](../user-guides/tutorials/debug-your-plugin.md)** - Debugging and troubleshooting
-- **[Test Your Plugin](../user-guides/tutorials/test-your-plugin.md)** - Validation and testing
+- **<a href="../user-guides/tutorials/build-your-first-filter.html">Build Your First Filter</a>** - Step-by-step tutorial
+- **<a href="../user-guides/tutorials/debug-your-plugin.html">Debug Your Plugin</a>** - Debugging and troubleshooting
+- **<a href="../user-guides/tutorials/test-your-plugin.html">Test Your Plugin</a>** - Validation and testing
