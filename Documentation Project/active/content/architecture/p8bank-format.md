@@ -254,7 +254,7 @@ Heavy Mode:   Operator1: "7", Operand1High: "0xFF"
 
 ## See Also
 
-- **[Creating Firmware Banks](../user-guides/tutorials/creating-firmware-banks.md)** - Step-by-step bank creation
-- **[Core Language Reference](../language/core_language_reference.md)** - Bank-compatible firmware patterns
-- **[Official Firmware Patterns](../user-guides/cookbook/advanced/firmware-patterns.md)** - Beatrick/FooBar examples
-- **[QUICKSTART Tutorial](../user-guides/QUICKSTART.md)** - Hands-on bank creation example
+- **<a href="../user-guides/tutorials/creating-firmware-banks.html">Creating Firmware Banks</a>** - Step-by-step bank creation
+- **<a href="../language/core_language_reference.html">Core Language Reference</a>** - Bank-compatible firmware patterns
+- **<a href="../user-guides/cookbook/advanced/firmware-patterns.html">Official Firmware Patterns</a>** - Beatrick/FooBar examples
+- **<a href="../user-guides/QUICKSTART.html">QUICKSTART Tutorial</a>** - Hands-on bank creation example

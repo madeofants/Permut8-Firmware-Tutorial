@@ -27,7 +27,10 @@ function process() {
     int i = 0;
     loop {
         if (i >= BLOCK_SIZE) break;
-        signal[i] = applySaturation(signal[i]);
+        // SAFETY: Ensure array bounds are respected
+        if (i >= 0 && i < 2) {  // signal array has 2 elements [left, right]
+            signal[i] = applySaturation(signal[i]);
+        }
         i = i + 1;
     }
 }
@@ -62,10 +65,13 @@ function applySaturationBatch(int start_index, int count) {
         int idx = start_index + j;
         if (idx >= BLOCK_SIZE) break;
         
-        if (signal[idx] > 2000) {
-            signal[idx] = 2000;
-        } else if (signal[idx] < -2000) {
-            signal[idx] = -2000;
+        // SAFETY: Validate array bounds before access
+        if (idx >= 0 && idx < 2) {  // signal array bounds check
+            if (signal[idx] > 2000) {
+                signal[idx] = 2000;
+            } else if (signal[idx] < -2000) {
+                signal[idx] = -2000;
+            }
         }
         j = j + 1;
     }
@@ -128,7 +134,10 @@ function operate1() {
         int i = 0;
         loop {
             if (i >= (end - start)) break;
-            temp[i] = signal[start + i];
+            // SAFETY: Validate both source and destination bounds
+            if (i >= 0 && i < 8 && (start + i) >= 0 && (start + i) < 2) {
+                temp[i] = signal[start + i];
+            }
             i = i + 1;
         }
         
@@ -139,7 +148,10 @@ function operate1() {
         i = 0;
         loop {
             if (i >= (end - start)) break;
-            signal[start + i] = temp[i];
+            // SAFETY: Validate both source and destination bounds
+            if (i >= 0 && i < 8 && (start + i) >= 0 && (start + i) < 2) {
+                signal[start + i] = temp[i];
+            }
             i = i + 1;
         }
         
@@ -172,14 +184,62 @@ function processBatchDelay(int start_idx, int count, float delay, float fb) {
         int idx = start_idx + j;
         if (idx >= BLOCK_SIZE) break;
         
-        float delayed = read(delay);
-        float output = signal[idx] + delayed * fb;
-        write(output);
-        signal[idx] = output;
+        // SAFETY: Validate signal array bounds before access
+        if (idx >= 0 && idx < 2) {  // signal array bounds check
+            float delayed = read(delay);
+            float output = signal[idx] + delayed * fb;
+            write(output);
+            signal[idx] = output;
+        }
         j = j + 1;
     }
 }
 ```
+
+## Safety Guidelines
+
+**⚠️ CRITICAL: Always Validate Array Bounds**
+
+Batch processing performance optimizations must never compromise memory safety. All array access operations require explicit bounds checking to prevent crashes and undefined behavior.
+
+**Required Safety Pattern:**
+```impala
+// SAFE: Always check bounds before array access
+if (index >= 0 && index < ARRAY_SIZE) {
+    array[index] = value;
+} else {
+    // Handle error gracefully - don't ignore bounds violations
+    trace("Array bounds violation prevented");
+}
+```
+
+**Common Safety Mistakes:**
+```impala
+// DANGEROUS: No bounds checking
+for (i = 0 to batch_size) {
+    buffer[i] = process(buffer[i]);  // Could overflow if batch_size > buffer length
+}
+
+// SAFE: Proper bounds validation
+for (i = 0 to min(batch_size, BUFFER_MAX_SIZE)) {
+    if (i >= 0 && i < BUFFER_SIZE) {
+        buffer[i] = process(buffer[i]);
+    }
+}
+```
+
+**Why This Matters:**
+- **Memory corruption**: Out-of-bounds writes can corrupt other variables
+- **Crashes**: Invalid memory access causes firmware crashes
+- **Unpredictable behavior**: Reading invalid memory returns garbage values
+- **Security risk**: Buffer overflows can be exploited
+
+**Safety Checklist for Batch Processing:**
+- [ ] All array indices validated before use
+- [ ] Batch size limits enforced
+- [ ] Buffer boundaries respected
+- [ ] Error handling for invalid indices
+- [ ] Test with boundary conditions (empty buffers, maximum sizes)
 
 ## Performance Guidelines
 
