@@ -120,13 +120,13 @@ function process() {
 ### Try the Controlled Version
 
 1. **Compile and load** this new version
-2. **Turn Knob 1** from left (clean) to right (distorted)
+2. **Turn Clock Frequency Knob** from left (clean) to right (distorted)
 3. **Listen** to how the distortion becomes predictable and controlled
 
 **What You'll Hear**: 
-- **Knob left**: Clean audio (1x gain, no clipping)
-- **Knob middle**: Mild distortion (moderate gain, some clipping)
-- **Knob right**: Heavy distortion (high gain, lots of clipping)
+- **Clock Frequency Knob left**: Clean audio (1x gain, no clipping)
+- **Clock Frequency Knob middle**: Mild distortion (moderate gain, some clipping)
+- **Clock Frequency Knob right**: Heavy distortion (high gain, lots of clipping)
 
 ### Why This Is Better
 
@@ -222,8 +222,8 @@ function process() {
 
 1. **Compile and load** the soft clipping version
 2. **Experiment with both knobs**:
-   - **Knob 1** (Drive): Amount of distortion
-   - **Knob 2** (Tone): Character of distortion
+   - **Clock Frequency Knob** (Drive): Amount of distortion
+   - **Mode Switches** (Tone): Character of distortion
 3. **Listen** for the warm, musical quality
 
 **What You'll Hear**:
@@ -260,8 +260,8 @@ if (signal > 1000) {
 
 You now have a professional-quality distortion effect with:
 
-1. **Drive Control** (Knob 1): How much distortion
-2. **Tone Control** (Knob 2): Character of distortion  
+1. **Drive Control** (Clock Frequency Knob): How much distortion
+2. **Tone Control** (Mode Switches): Character of distortion  
 3. **Soft Clipping**: Musical, warm sound
 4. **Safety Limiting**: No damage or surprises
 5. **Visual Feedback**: LED shows settings

@@ -148,9 +148,9 @@ locals int i, int angle, int sine_sample
 **State Management**: Track processing state over time using counters and flags. Essential for oscillators and sequencers.
 
 **Parameter Control**:
-- **Knob 1**: Delay time (1-128 samples)
-- **Knob 2**: Feedback amount (0-255)
-- **Knob 3**: Wet/dry mix (0-255)
+- **Control 1**: Delay time (1-128 samples)
+- **Control 2**: Feedback amount (0-255)
+- **Control 3**: Wet/dry mix (0-255)
 
 ## Try These Settings
 

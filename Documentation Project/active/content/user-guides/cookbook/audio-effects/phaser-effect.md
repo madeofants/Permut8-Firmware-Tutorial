@@ -154,10 +154,10 @@ locals int output
 **Phase Relationship**: All-pass filters maintain amplitude while shifting phase, creating the classic phaser "notch" effect when mixed with the original signal.
 
 **Parameter Control**:
-- **Knob 1**: LFO rate (faster = quicker sweeps)
-- **Knob 2**: Modulation depth (higher = wider sweeps)
-- **Knob 3**: Feedback (higher = more resonance)
-- **Knob 4**: Dry/wet mix (blend original with phased)
+- **Control 1**: LFO rate (faster = quicker sweeps)
+- **Control 2**: Modulation depth (higher = wider sweeps)
+- **Control 3**: Feedback (higher = more resonance)
+- **Control 4**: Dry/wet mix (blend original with phased)
 
 ## Try These Settings
 

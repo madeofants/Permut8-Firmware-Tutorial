@@ -160,10 +160,10 @@ locals int smooth_factor
 **Simple Smoothing**: Reduces glitches by interpolating between samples.
 
 **Parameter Control**:
-- **Knob 1**: Pitch shift (128 = normal, <128 = lower, >128 = higher)
-- **Knob 2**: Buffer size (larger = better quality, more latency)  
-- **Knob 3**: Smoothing (higher = smoother but less responsive, limited to reasonable range)
-- **Knob 4**: Dry/wet mix (blend original with pitch-shifted)
+- **Control 1**: Pitch shift (128 = normal, <128 = lower, >128 = higher)
+- **Control 2**: Buffer size (larger = better quality, more latency)  
+- **Control 3**: Smoothing (higher = smoother but less responsive, limited to reasonable range)
+- **Control 4**: Dry/wet mix (blend original with pitch-shifted)
 
 **Stereo Processing**: Left and right channels processed independently for true stereo pitch shifting.
 

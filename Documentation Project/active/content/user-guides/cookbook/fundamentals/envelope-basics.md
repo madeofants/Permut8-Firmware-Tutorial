@@ -136,10 +136,10 @@ locals int attack, int decay, int sustain, int release, int stage_time, int targ
 **Level Interpolation**: Each stage smoothly moves toward its target level using simple low-pass filtering.
 
 **Parameter Control**:
-- **Knob 1**: Attack time (lower = faster attack)
-- **Knob 2**: Decay time (lower = faster decay)
-- **Knob 3**: Sustain level (higher = louder sustain)
-- **Knob 4**: Release time (lower = faster release)
+- **Control 1**: Attack time (lower = faster attack)
+- **Control 2**: Decay time (lower = faster decay)
+- **Control 3**: Sustain level (higher = louder sustain)
+- **Control 4**: Release time (lower = faster release)
 - **Knob 5**: Gate trigger (above 128 = note on, below 128 = note off)
 
 ## Try These Settings

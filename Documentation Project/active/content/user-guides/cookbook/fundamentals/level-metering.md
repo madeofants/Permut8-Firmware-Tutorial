@@ -134,9 +134,9 @@ locals int sensitivity, int meter_mode, int hold_time, int left_level, int right
 - LED 4: Warning light for near-clipping levels
 
 **Parameter Control**:
-- **Knob 1**: Meter sensitivity (higher = more responsive)
-- **Knob 2**: Display mode (peak, average, peak hold, or combined)
-- **Knob 3**: Peak hold time (how long peaks are displayed)
+- **Control 1**: Meter sensitivity (higher = more responsive)
+- **Control 2**: Display mode (peak, average, peak hold, or combined)
+- **Control 3**: Peak hold time (how long peaks are displayed)
 
 ## Try These Settings
 

@@ -123,10 +123,10 @@ locals int drive, int dist_type, int output_level, int mix, int input, int drive
 **Output Compensation**: Adjusts level after distortion to maintain consistent volume.
 
 **Parameter Control**:
-- **Knob 1**: Drive (higher = more distortion)
-- **Knob 2**: Type (0-63=soft, 64-127=hard, 128-191=bit, 192-255=fold)
-- **Knob 3**: Output level (compensate for volume changes)
-- **Knob 4**: Dry/wet mix (blend clean with distorted)
+- **Control 1**: Drive (higher = more distortion)
+- **Control 2**: Type (0-63=soft, 64-127=hard, 128-191=bit, 192-255=fold)
+- **Control 3**: Output level (compensate for volume changes)
+- **Control 4**: Dry/wet mix (blend clean with distorted)
 
 ## Try These Settings
 

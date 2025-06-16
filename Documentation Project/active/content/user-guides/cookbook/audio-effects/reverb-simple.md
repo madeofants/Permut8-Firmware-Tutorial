@@ -128,10 +128,10 @@ locals int room_size, int decay, int damping, int mix, int delay1_time, int dela
 **Simple Damping**: A low-pass filter reduces high frequencies over time, simulating natural absorption.
 
 **Parameter Control**:
-- **Knob 1**: Room size (larger = longer delays, bigger space feel)
-- **Knob 2**: Decay time (higher = longer reverb tail)
-- **Knob 3**: Damping (higher = darker, more natural sound)
-- **Knob 4**: Dry/wet mix (blend original with reverb)
+- **Control 1**: Room size (larger = longer delays, bigger space feel)
+- **Control 2**: Decay time (higher = longer reverb tail)
+- **Control 3**: Damping (higher = darker, more natural sound)
+- **Control 4**: Dry/wet mix (blend original with reverb)
 
 ## Try These Settings
 

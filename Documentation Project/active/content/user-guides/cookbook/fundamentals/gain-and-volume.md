@@ -108,9 +108,9 @@ locals int volume_target, int balance_target, int smoothing_speed, int left_samp
 **LED Display**: Shows current volume, balance position, and individual channel gains for visual feedback.
 
 **Parameter Control**:
-- **Knob 1**: Master volume (0-255 → 0-2040 range)
-- **Knob 2**: Stereo balance (0-255, 128=center)
-- **Knob 3**: Smoothing speed (0-255 → 1-16 rate)
+- **Control 1**: Master volume (0-255 → 0-2040 range)
+- **Control 2**: Stereo balance (0-255, 128=center)
+- **Control 3**: Smoothing speed (0-255 → 1-16 rate)
 
 ## Try These Settings
 

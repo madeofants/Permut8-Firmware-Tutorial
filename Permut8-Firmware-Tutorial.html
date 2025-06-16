@@ -106,7 +106,7 @@
         
         <div class="generation-info">
             <strong>📖 Complete Tutorial</strong><br>
-            Generated: June 15, 2025 at 05:52 PM<br>
+            Generated: June 15, 2025 at 11:45 PM<br>
             Complete firmware tutorial and reference combined into a single HTML document for offline use.
         </div>
 
@@ -175,60 +175,105 @@ Open a command prompt/terminal in this directory and run:
 4. Select A0 preset
 <strong>You just loaded custom firmware!</strong> The ring modulator is now running.
 <h2>Your First Firmware (15 minutes)</h2>
-<p>Let's create a simple bit crusher and understand how Permut8's operator system works.</p>
+<p>Let's create a <strong>simple delay effect</strong> that shows the <strong>direct connection</strong> between Permut8's operator system and custom firmware.</p>
 <h3><strong>Understanding Permut8's Core System</strong></h3>
 <p>Before we build, let's understand what makes Permut8 special:</p>
 <strong>The Heart</strong>: 128 kilowords of delay memory with moving read/write heads
-<ul><li><strong>Write position (red dot)</strong>: Where incoming audio is stored</li><li><strong>Read positions (green dots)</strong>: Where audio is played back from</li><li><strong>Two instructions</strong>: Manipulate the read positions to create effects</li></ul>
-<strong>How Effects Work</strong>: All Permut8 effects come from creatively moving where audio is read from memory:
-<ul><li><strong>Delays</strong>: Read from behind the write position</li><li><strong>Pitch effects</strong>: Read at different speeds than writing  </li><li><strong>Modulation</strong>: Constantly move the read positions</li><li><strong>Our bitcrusher</strong>: Will use <strong>custom firmware</strong> to bypass this system and process audio directly</li></ul>
-<strong>Original vs Custom Firmware</strong>:
-<ul><li><strong>Original</strong>: Use operators (AND, MUL, OSC, etc.) + operands to manipulate read positions</li><li><strong>Custom</strong>: Take complete control and implement any algorithm you want</li></ul>
+<ul><li><strong>Write position (red dot)</strong>: Where incoming audio is stored continuously</li><li><strong>Read positions (green dots)</strong>: Where audio is played back from </li><li><strong>Two instructions</strong>: Manipulate the read positions to create effects</li></ul>
+<strong>How Delays Work in Permut8</strong>:
+<pre><code>Audio Input → [Write to memory] → [Read from memory at offset] → Audio Output + Original</code></pre>
+<ul><li><strong>Write</strong>: Current audio goes into memory at write position</li><li><strong>Read</strong>: Audio from X samples ago comes out of memory </li><li><strong>Mix</strong>: Delayed audio + original audio = echo effect</li></ul>
+<strong>Original vs Custom Approach</strong> (Same Effect, Different Methods):
+<p>#### <strong>Original: SUB Operator (Built-in)</strong>
+<ul><li><strong>Instruction 1</strong>: SUB operator with delay time operand</li><li><strong>Hardware manages</strong>: Memory read/write automatically</li><li><strong>Interface</strong>: Set delay time via switches/LED displays</li><li><strong>Efficiency</strong>: Hardware-optimized, very fast</li></ul></p>
+<p>#### <strong>Custom: Manual Implementation (What We'll Build)</strong>
+<ul><li><strong>Our firmware</strong>: Manually manage memory read/write</li><li><strong>Direct control</strong>: Every aspect of the delay algorithm</li><li><strong>Interface</strong>: Custom knob labels and behaviors</li><li><strong>Learning</strong>: See exactly how delays work inside</li></ul></p>
 <h3>1. Create a New File</h3>
-Create <code>bitcrush.impala</code> with this code:
-<strong>Bit Crusher - Your First Permut8 Firmware</strong>
+Create <code>custom_delay.impala</code> with this code:
+<strong>Custom Delay - Shows Connection to SUB Operator</strong>
 <pre><code>const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
-<p>extern native yield</p>
-<p>readonly array panelTextRows[8] = {
+<p>extern native yield
+extern native read
+extern native write</p>
+<p>// Interface override: Transform operator interface into custom delay controls
+readonly array panelTextRows[8] = {
     "",
     "",
     "",
-    "BIT |------ CRUSH AMOUNT (INSTRUCTION 1) ------|",
+    "DELAY |---- TIME (INSTRUCTION 1 HIGH) ----|",
     "",
     "",
     "",
-    ""
+    "DELAY |-- FEEDBACK (INSTRUCTION 1 LOW) --|"
 }</p>
 <p>global array signal[2]
 global array params[8]
 global array displayLEDs[4]</p>
+<p>// Delay state (what SUB operator manages automatically)
+global int writePosition = 0
+global array tempBuffer[2]</p>
 <p>function process()
-locals int bits, int shift, int mask
+locals int delayTime, int feedback, int input, int delayed, int output
 {
     loop {
-        bits = ((int) global params[3] >> 5) + 1;
-        shift = 12 - bits;
-        mask = 0xFFF0 << shift;
+        // Same parameters that SUB operator uses, but with custom control
+        delayTime = ((int)global params[3] * 500 / 255) + 50;  // 50-550 samples (Instruction 1 High)
+        feedback = ((int)global params[4] * 200 / 255);         // 0-200 feedback (Instruction 1 Low)
         
-        global displayLEDs[0] = 1 << (bits - 1);
+        // Manual delay processing (what SUB operator does automatically)
+        input = (int)global signal[0];
         
-        global signal[0] = ((int) global signal[0]) & mask;
-        global signal[1] = ((int) global signal[1]) & mask;
+        // Read delayed sample from memory (read position = write position - delay time)
+        int readPosition = global writePosition - delayTime;
+        if (readPosition < 0) readPosition += 65536;  // Wrap around
+        
+        read(readPosition, 1, global tempBuffer);
+        delayed = global tempBuffer[0];
+        
+        // Create echo: original + delayed signal
+        output = input + (delayed * feedback / 255);
+        
+        // Prevent clipping
+        if (output > 2047) output = 2047;
+        if (output < -2047) output = -2047;
+        
+        // Write current input + feedback to memory for next cycle
+        global tempBuffer[0] = input + (delayed * feedback / 255);
+        write(global writePosition, 1, global tempBuffer);
+        
+        // Advance write position (what hardware manages automatically)
+        global writePosition = (global writePosition + 1) % 65536;
+        
+        // Output the echo
+        global signal[0] = output;
+        global signal[1] = output;  // Mono delay
+        
+        // Visual feedback showing delay activity
+        global displayLEDs[0] = delayTime >> 2;        // Show delay time
+        global displayLEDs[1] = feedback;              // Show feedback amount
+        global displayLEDs[2] = (delayed > 0) ? 0xFF : 0x00;  // Activity indicator
+        global displayLEDs[3] = (global writePosition >> 8) & 0xFF;  // Position indicator
         
         yield();
     }
 }</code></pre></p>
-<strong>Interface Architecture</strong>: This custom firmware demonstrates Permut8's interface override system:
-<ul><li><strong>Original Interface</strong>: Instruction 1 High Operand (<code>params[3]</code>) set via switches/LED display (0-255)</li><li><strong>Custom Override</strong>: Same parameter becomes direct knob control with custom label</li><li><strong>Visual Transform</strong>: <code>panelTextRows[3]</code> replaces hex display with "CRUSH AMOUNT" </li><li><strong>Data Flow</strong>: User knob → <code>params[3]</code> → bit depth calculation → LED feedback</li></ul>
-<p>The parameter access is identical (<code>params[3]</code>), but the user experience is completely transformed.</p>
+<h3><strong>The Operator Connection - Same Parameters, Different Approach</strong></h3>
+<p>This firmware shows the <strong>direct relationship</strong> between custom firmware and Permut8's built-in operators:</p>
+<p>#### <strong>What SUB Operator Does Automatically</strong>:
+<ul><li><strong>Memory Management</strong>: Hardware tracks write position automatically</li><li><strong>Read Positioning</strong>: SUB operand directly controls read offset  </li><li><strong>Efficiency</strong>: Optimized in hardware, very fast</li></ul></p>
+<p>#### <strong>What Our Custom Firmware Does Manually</strong>:
+<ul><li><strong>Manual Memory</strong>: We track <code>writePosition</code> ourselves</li><li><strong>Manual Reading</strong>: We calculate <code>readPosition = writePosition - delayTime</code></li><li><strong>Same Parameters</strong>: <code>params[3]</code> (Instruction 1 High) controls delay time in both approaches</li><li><strong>Same Effect</strong>: Both create delay, just different implementations</li></ul></p>
+<p>#### <strong>Interface Transformation</strong>:
+<ul><li><strong>Original</strong>: <code>params[3]</code> controlled via switches/LED display showing hex values</li><li><strong>Custom</strong>: Same <code>params[3]</code> becomes direct "DELAY TIME" knob via <code>panelTextRows</code></li><li><strong>User Experience</strong>: Intuitive delay control instead of abstract operand values</li></ul></p>
+<strong>The Key Insight</strong>: Both approaches use the <strong>same parameter system</strong> (<code>params[3]</code>, <code>params[4]</code>), but custom firmware gives you complete control over what those parameters mean and how they're processed.
 <h3>2. Compile Your Firmware</h3>
-<pre><code>PikaCmd.exe -compile bitcrush.impala</code></pre>
+<pre><code>PikaCmd.exe -compile custom_delay.impala</code></pre>
 <strong>If that doesn't work</strong>, use the full command:
-<pre><code>.\PikaCmd.exe impala.pika compile bitcrush.impala bitcrush.gazl</code></pre>
+<pre><code>.\PikaCmd.exe impala.pika compile custom_delay.impala custom_delay.gazl</code></pre>
 <h3>3. Create Firmware Bank</h3>
 <strong>Step 3a: Clean the GAZL File</strong>
 Before creating the bank, you need to clean the compiled GAZL file:
-<p>1. <strong>Open <code>bitcrush.gazl</code></strong> in a text editor
+<p>1. <strong>Open <code>custom_delay.gazl</code></strong> in a text editor
 2. <strong>Remove the compiler comment line</strong> (if present):
    <pre><code>   ; Compiled with Impala version 1.0
    ``<code>
@@ -238,17 +283,17 @@ Before creating the bank, you need to clean the compiled GAZL file:
    </code>`<code>
 4. <strong>Keep only the pure assembly code</strong></p>
 <strong>Step 3b: Create the Bank File</strong>
-Create </code>bitcrush.p8bank<code> with this <strong>exact format</strong> (note the header):</code></pre>
+Create </code>custom_delay.p8bank<code> with this <strong>exact format</strong> (note the header):</code></pre>
 Permut8BankV2: {
     CurrentProgram: A0
     Programs: {
-        A0: { Name: "Subtle Bit Reduction", Operator1: "2" }
-        A1: { Name: "Lo-Fi Crunch", Operator1: "6" }
-        A2: { Name: "Extreme Decimation", Operator1: "8" }
-        A3: { Name: "Clean High-Res", Operator1: "0" }
+        A0: { Name: "Short Slap Delay", Operator1: "8" }
+        A1: { Name: "Medium Echo", Operator1: "8" }
+        A2: { Name: "Long Ambient", Operator1: "8" }
+        A3: { Name: "Feedback Madness", Operator1: "8" }
     }
     Firmware: {
-        Name: "bitcrush"
+        Name: "custom_delay"
         Code: {
 [PASTE YOUR CLEANED GAZL CONTENT HERE]
  }
@@ -256,49 +301,51 @@ Permut8BankV2: {
 }
 <pre><code>
 <h3><strong>Understanding the Operators in Your Presets</strong></h3>
-<p>You might notice each preset has an </code>Operator1<code> value. Here's what they do:</p>
-<strong>What These Numbers Mean</strong>:
-<ul><li>These are <strong>operator codes</strong> that would normally control how Permut8 manipulates read positions</li><li><strong>Our custom firmware ignores them</strong> - we're doing direct audio processing instead</li><li><strong>They're required</strong> for proper bank format, but won't affect our bitcrusher</li></ul>
-<strong>Normal Permut8 Operators</strong>:
-<ul><li><strong>Operator1: "0"</strong> = NOP (No Operation - bypass)</li><li><strong>Operator1: "2"</strong> = MUL (Multiply - changes pitch/speed)  </li><li><strong>Operator1: "6"</strong> = XOR (Bit manipulation of read positions)</li><li><strong>Operator1: "8"</strong> = SUB (Subtract - creates delays)</li></ul>
-<strong>Why This Matters</strong>: Understanding these helps you:
-1. <strong>Design better custom firmware</strong> - Know what users expect
-2. <strong>Mix approaches</strong> - Combine original operators with custom processing
-3. <strong>Learn effect building</strong> - See how Permut8 naturally thinks about audio
-<h3>3. Prepare GAZL for Bank</h3>
-<strong>Remove the first line</strong> from your compiled </code>bitcrush.gazl<code>:
-1. Open </code>bitcrush.gazl<code> in any text editor
-2. Delete the first line: </code>; Compiled with Impala version 1.0<code>
-3. Save the file
-<h3>4. Load and Test Your Bitcrusher</h3>
-<p>1. <strong>Load the bank</strong>: File → Load Bank → </code>bitcrush.p8bank<code>
+<p>You might notice each preset has </code>Operator1: "8"<code>. This is <strong>significant</strong> - here's why:</p>
+<strong>What "8" Means</strong>:
+<ul><li><strong>Operator1: "8"</strong> = <strong>SUB operator</strong> (Subtract - creates delays)</li><li>This is the <strong>same operator</strong> that would create delays using the built-in system</li><li><strong>Our custom firmware ignores it</strong> - we're implementing delay manually instead</li><li><strong>But the connection is clear</strong>: We're doing the same job as SUB operator</li></ul>
+<strong>The Operator Connection</strong>:
+<ul><li><strong>Built-in SUB</strong>: </code>Operator1: "8"<code> + operand values create automatic delays</li><li><strong>Our Custom</strong>: Manual implementation of what SUB does automatically</li><li><strong>Same Parameters</strong>: Both use </code>params[3]<code> for delay time, </code>params[4]<code> for feedback</li><li><strong>Same Result</strong>: Both create delay effects, just different approaches</li></ul>
+<strong>Why Use SUB "8" in Presets?</strong>:
+1. <strong>Shows Intent</strong>: Makes it clear this is a delay effect
+2. <strong>User Expectation</strong>: Users familiar with SUB will understand immediately  
+3. <strong>Learning Connection</strong>: Demonstrates relationship between operators and custom code
+4. <strong>Future Compatibility</strong>: Could switch to built-in SUB by removing custom firmware
+<strong>The Bigger Picture</strong>: This demonstrates how custom firmware can <strong>replace</strong> or <strong>enhance</strong> built-in operators while using the same parameter system and interface concepts.
+<h3>4. Load and Test Your Custom Delay</h3>
+<p>1. <strong>Load the bank</strong>: File → Load Bank → </code>custom_delay.p8bank<code>
 2. <strong>Select a preset</strong> to start with
 3. <strong>Play audio</strong> through Permut8
-4. <strong>Turn the knob</strong> to hear the bitcrushing effect!</p>
-<h2>How to Use Your Bitcrusher</h2>
+4. <strong>Turn the operator knobs</strong> to hear the delay effect!</p>
+<h2>How to Use Your Custom Delay</h2>
 <h3><strong>What Just Happened?</strong></h3>
-Your custom firmware <strong>completely bypassed</strong> Permut8's normal operator system:
-<strong>Normal Permut8 Flow</strong>:</code></pre>
-Audio Input → Delay Memory → [Operators manipulate read positions] → Audio Output
+Your custom firmware <strong>manually implemented</strong> what the SUB operator does automatically:
+<strong>Normal SUB Operator Flow</strong>:</code></pre>
+Audio Input → Delay Memory → [SUB operator subtracts offset] → Audio Output + Original
 <pre><code>
-<strong>Your Custom Bitcrusher Flow</strong>:</code></pre>
-Audio Input → [Direct bit manipulation in code] → Audio Output
+<strong>Your Custom Delay Flow</strong>:</code></pre>
+Audio Input → [Manual memory read/write with offset] → Audio Output + Original
 <pre><code>
-<strong>Why This Matters</strong>: You took <strong>complete control</strong> of the audio processing instead of using Permut8's built-in read/write head manipulation system.
+<strong>Same Result, Different Method</strong>: Both create delay effects, but now you understand exactly how delays work inside Permut8's memory system.
 <h3><strong>Interface Transformation</strong></h3>
-<ul><li><strong>Normal</strong>: Instruction 1 High Operand set by switches (for operators like MUL, AND, etc.)</li><li><strong>Your Firmware</strong>: Same parameter becomes direct "bit depth" knob control</li><li><strong>Visual</strong>: LED display shows "CRUSH AMOUNT" instead of hex operand value</li></ul>
+<ul><li><strong>Original</strong>: Instruction 1 operands set by switches/LED displays showing hex values</li><li><strong>Your Firmware</strong>: Same parameters become intuitive "DELAY TIME" and "FEEDBACK" controls</li><li><strong>Visual</strong>: Clear labels instead of abstract hex operand values</li></ul>
+<h3><strong>The Memory Connection</strong></h3>
+Your code manually does what SUB operator handles automatically:
+<ul><li><strong>Write Position</strong>: You track </code>writePosition<code> manually vs. hardware automatic</li><li><strong>Read Position</strong>: You calculate </code>writePosition - delayTime<code> vs. SUB operand subtraction</li><li><strong>Memory Management</strong>: You use </code>read()<code> and </code>write()<code> vs. hardware optimization</li></ul>
 <h3><strong>Preset Guide</strong></h3>
-<ul><li><strong>A0 "Subtle Bit Reduction"</strong>: Start here - gentle lo-fi character, maintains clarity</li><li><strong>A1 "Lo-Fi Crunch"</strong>: Classic 90s digital sound, crunchy but musical  </li><li><strong>A2 "Extreme Decimation"</strong>: Aggressive digital distortion, harsh and pixelated</li><li><strong>A3 "Clean High-Res"</strong>: Minimal processing, slight coloration</li></ul>
-<h3><strong>Sound Guide</strong></h3>
-<ul><li><strong>Full left (1-2 bits)</strong>: Harsh, pixelated, extreme digital distortion</li><li><strong>Center (4-5 bits)</strong>: Classic lo-fi sound, crunchy but musical</li><li><strong>Full right (7-8 bits)</strong>: Subtle warmth, barely noticeable effect</li></ul>
+<ul><li><strong>A0 "Short Slap Delay"</strong>: Quick echo, good for drums and percussion</li><li><strong>A1 "Medium Echo"</strong>: Classic delay, perfect for vocals and instruments</li><li><strong>A2 "Long Ambient"</strong>: Spacious delays for atmospheric effects</li><li><strong>A3 "Feedback Madness"</strong>: High feedback for experimental sounds</li></ul>
+<h3><strong>Control Guide</strong></h3>
+<ul><li><strong>Control 1 (Delay Time)</strong>: Adjust Instruction 1 High Operand position for delay time</li><li><strong>Control 2 (Feedback)</strong>: Adjust Instruction 1 Low Operand position for feedback amount</li><li><strong>LED Display</strong>: Shows delay time, feedback amount, and activity</li></ul>
+<strong>Note</strong>: This custom firmware transforms the operand controls (normally set via LED displays and switches) into direct effect controls. The <strong>Operator Control 1</strong> and <strong>Operator Control 2</strong> are not used.
 <h3><strong>Tips for New Users</strong></h3>
-1. <strong>Start with preset A0</strong> and turn the knob slowly
-2. <strong>Watch the LED display</strong> - it shows you the current bit depth visually
-3. <strong>Try with different input levels</strong> - louder input makes the effect more obvious
-4. <strong>Combine with other effects</strong> - bitcrushing works great before reverb or delay
-<h3><strong>Expected Behavior</strong></h3>
-<ul><li><strong>Immediate response</strong>: Effect changes in real-time as you turn the knob</li><li><strong>LED feedback</strong>: Display pattern changes to show current bit depth</li><li><strong>Audio range</strong>: From subtle lo-fi warmth to extreme digital destruction</li></ul>
-<strong>Congratulations!</strong> You just created working DSP firmware with a custom interface that converts complex operand controls into an intuitive effect knob.
+1. <strong>Start with A0</strong> and adjust Control 1 (Instruction 1 High Operand) slowly to hear delay time changes
+2. <strong>Add feedback</strong> with Control 2 (Instruction 1 Low Operand) to create multiple echoes
+3. <strong>Watch LEDs</strong> - they show delay parameters and memory activity
+4. <strong>Compare to built-in</strong>: Try the same settings with SUB operator
+<h3><strong>The Learning Connection</strong></h3>
+This delay effect shows you:
+<ul><li><strong>How delay memory works</strong> - the foundation of all Permut8 effects</li><li><strong>Parameter relationships</strong> - same </code>params[3]<code> and </code>params[4]<code> as SUB operator</li><li><strong>Custom vs. built-in</strong> - both approaches, same results</li><li><strong>Interface control</strong> - how to make complex parameters user-friendly</li></ul>
+<strong>Congratulations!</strong> You just created a delay effect that manually implements what Permut8's SUB operator does automatically, showing the direct connection between operators and custom firmware.
 <h2>Modify Existing Firmware (15 minutes)</h2>
 <p>Let's add LED animation to the ring modulator.</p>
 <h3>1. Copy the Original</h3>
@@ -400,8 +447,18 @@ Permut8 is <strong>both</strong> a sophisticated delay manipulation system <stro
 <pre><code>Positive numbers → Speaker pushes out → You hear sound
 Negative numbers → Speaker pulls in → You hear sound  
 Zero → Speaker stays still → Silence</code></pre>
-<h3>In Permut8 Firmware</h3>
-<p>In Impala, audio samples are integers from <strong>-2047 to +2047</strong>:</p>
+<h3>Permut8's Two Approaches to Audio</h3>
+<strong>Before we dive into code</strong>, it's important to understand that Permut8 has <strong>two fundamentally different ways</strong> to affect sound:
+<p>#### <strong>Approach 1: Original Operator System</strong>
+<pre><code>Audio Input → 128k Delay Memory → [Operators manipulate read positions] → Audio Output</code></pre>
+<ul><li><strong>How it works</strong>: Audio is stored in memory, operators control where and how it's read back</li><li><strong>Effects</strong>: Delays, pitch shifting, modulation, granular textures</li><li><strong>Examples</strong>: Using MUL operator for pitch, OSC for flanging, SUB for delays</li></ul></p>
+<p>#### <strong>Approach 2: Custom Firmware (Direct Processing)</strong>  
+<pre><code>Audio Input → [Your code processes samples directly] → Audio Output</code></pre>
+<ul><li><strong>How it works</strong>: Bypass the delay system, process audio samples with your own algorithms</li><li><strong>Effects</strong>: Distortion, filtering, compression, bit crushing, anything you can code</li><li><strong>Examples</strong>: Mathematical effects, custom algorithms, novel processors</li></ul></p>
+<h3><strong>Both Are Powerful - This Tutorial Shows Approach 2</strong></h3>
+<p>This tutorial focuses on <strong>direct audio processing</strong> (Approach 2) because it's easier to understand the immediate relationship between code and sound. Once you master this, you can learn the operator system for more complex time-based effects.</p>
+<h3><strong>Direct Processing with Custom Firmware</strong></h3>
+<p>In custom firmware (Approach 2), audio samples are integers from <strong>-2047 to +2047</strong>:</p>
 <pre><code>const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 extern native yield
 <p>global array signal[2]  // [left channel, right channel]
@@ -466,7 +523,7 @@ global array displayLEDs[4]</p>
         int leftInput = signal[0];
         int rightInput = signal[1];
         
-        // CHANGE THE SOUND: Make it quieter using Knob 1
+        // CHANGE THE SOUND: Make it quieter using Clock Frequency Knob
         int volumeKnob = params[0];  // 0-255 from hardware
         int volumeAmount = volumeKnob + 1;  // 1-256 (never zero)
         
@@ -482,7 +539,7 @@ global array displayLEDs[4]</p>
 }</code></pre></p>
 <h3>What This Code Does</h3>
 <p>1. <strong>Reads</strong> the incoming audio samples
-2. <strong>Reads</strong> Knob 1 position (0-255)
+2. <strong>Reads</strong> Clock Frequency Knob position (0-255)
 3. <strong>Calculates</strong> a volume multiplier (1-256)
 4. <strong>Multiplies</strong> each audio sample by the volume amount
 5. <strong>Shows</strong> the current volume on the LED display
@@ -492,7 +549,7 @@ global array displayLEDs[4]</p>
 2. <strong>Create and load bank</strong>: File → Load Bank → <code>volume_control.p8bank</code>
 3. <strong>Select A0 preset</strong>
 4. <strong>Play</strong> some audio through Permut8
-5. <strong>Turn Knob 1</strong> and hear the volume change in real-time!</p>
+5. <strong>Turn Clock Frequency Knob</strong> and hear the volume change in real-time!</p>
 <strong>You just modified sound with code!</strong> Turn the knob left (quieter) and right (louder). The LED display shows exactly what's happening.
 <p>---</p>
 <h2>Understanding What Just Happened</h2>
@@ -564,7 +621,19 @@ Create the simplest possible working plugin that proves your Permut8 setup is wo
 <strong>Difficulty</strong>: Absolute Beginner
 <p>---</p>
 <h2>Step 1: Understanding the Goal</h2>
-<h3>1.1 What We're Building</h3>
+<h3>1.1 Permut8's Two Approaches to Audio</h3>
+<strong>Before we build</strong>, it's important to understand that Permut8 has <strong>two fundamentally different ways</strong> to process audio:
+<p>#### <strong>Approach 1: Original Operator System</strong>
+<pre><code>Audio Input → 128k Delay Memory → [Operators manipulate read positions] → Audio Output</code></pre>
+<ul><li><strong>How it works</strong>: Audio is stored in memory, operators control where and how it's read back</li><li><strong>Effects</strong>: Delays, pitch shifting, modulation, granular textures</li><li><strong>Interface</strong>: Operators (AND, MUL, OSC, etc.) + operands set via switches/LED displays</li></ul></p>
+<p>#### <strong>Approach 2: Custom Firmware (What This Tutorial Teaches)</strong>  
+<pre><code>Audio Input → [Your code processes samples directly] → Audio Output</code></pre>
+<ul><li><strong>How it works</strong>: Bypass the delay system, process audio samples with your own algorithms</li><li><strong>Effects</strong>: Distortion, filtering, compression, bit crushing, anything you can code</li><li><strong>Interface</strong>: Direct knob control with custom labels and behaviors</li></ul></p>
+<h3>1.2 Why Start with Custom Firmware?</h3>
+<p>This tutorial uses <strong>Approach 2 (custom firmware)</strong> because:
+<ul><li><strong>Immediate feedback</strong>: Code changes directly affect what you hear</li><li><strong>Easier to understand</strong>: Clear relationship between code and audio</li><li><strong>Foundation building</strong>: Concepts apply to any audio programming</li><li><strong>Learning progression</strong>: Master direct processing before complex memory manipulation</li></ul></p>
+<p>Once you understand custom firmware, you can learn the operator system for more advanced time-based effects.</p>
+<h3>1.3 What We're Building</h3>
 A plugin that:
 <ul><li>✅ Loads successfully into Permut8</li><li>✅ Passes audio through unchanged</li><li>✅ Proves your development environment works</li><li>✅ Gives you the foundation for all future plugins</li></ul>
 <h3>1.2 Success Criteria</h3>
@@ -747,8 +816,10 @@ function process()
 <strong>Foundation Skills:</strong>
 <ul><li>Compiling plugins with PikaCmd</li><li>Loading plugins into Permut8</li><li>Testing audio modifications</li><li>Basic audio sample manipulation</li></ul>
 <h3>8.2 Ready For Next Steps</h3>
-<strong>Build on this foundation:</strong>
+<strong>Continue with Custom Firmware:</strong>
 <ul><li>📖 <a href="make-your-first-sound.md">Make Your First Sound</a> - Generate audio instead of just modifying it</li><li>📖 <a href="control-something-with-knobs.md">Control Something with Knobs</a> - Use hardware knobs to control your effects</li><li>📖 <a href="light-up-leds.md">Light Up LEDs</a> - Advanced LED patterns and feedback</li><li>📖 <a href="build-your-first-filter.md">Build Your First Filter</a> - Create your first real audio effect</li></ul>
+<strong>Learn Permut8's Original System:</strong>
+<ul><li>📖 <a href="understanding-permut8-operators.md">Understanding Permut8 Operators</a> - Master the instruction system and memory manipulation (25 min)</li></ul>
 <h3>8.3 Experiment Ideas</h3>
 <strong>Try these modifications:</strong></code></pre>impala
 // Different volume levels
@@ -852,10 +923,10 @@ global array displayLEDs[4]</p>
 }</code></pre></p>
 <h3>Try the Controlled Version</h3>
 <p>1. <strong>Compile and load</strong> this new version
-2. <strong>Turn Knob 1</strong> from left (clean) to right (distorted)
+2. <strong>Turn Clock Frequency Knob</strong> from left (clean) to right (distorted)
 3. <strong>Listen</strong> to how the distortion becomes predictable and controlled</p>
 <strong>What You'll Hear</strong>: 
-<ul><li><strong>Knob left</strong>: Clean audio (1x gain, no clipping)</li><li><strong>Knob middle</strong>: Mild distortion (moderate gain, some clipping)</li><li><strong>Knob right</strong>: Heavy distortion (high gain, lots of clipping)</li></ul>
+<ul><li><strong>Clock Frequency Knob left</strong>: Clean audio (1x gain, no clipping)</li><li><strong>Clock Frequency Knob middle</strong>: Mild distortion (moderate gain, some clipping)</li><li><strong>Clock Frequency Knob right</strong>: Heavy distortion (high gain, lots of clipping)</li></ul>
 <h3>Why This Is Better</h3>
 <ul><li><strong>Predictable</strong>: You control exactly when distortion starts</li><li><strong>Safe</strong>: Never damages speakers or ears with unexpected volume spikes</li><li><strong>Musical</strong>: Distortion amount follows your knob movements</li><li><strong>Visual</strong>: LED shows current distortion setting</li></ul>
 <strong>Key Insight</strong>: Professional distortion effects control the clipping instead of letting it happen randomly.
@@ -928,8 +999,8 @@ global array displayLEDs[4]</p>
 <h3>Try Your Musical Distortion</h3>
 <p>1. <strong>Compile and load</strong> the soft clipping version
 2. <strong>Experiment with both knobs</strong>:
-   - <strong>Knob 1</strong> (Drive): Amount of distortion
-   - <strong>Knob 2</strong> (Tone): Character of distortion
+   - <strong>Clock Frequency Knob</strong> (Drive): Amount of distortion
+   - <strong>Mode Switches</strong> (Tone): Character of distortion
 3. <strong>Listen</strong> for the warm, musical quality</p>
 <strong>What You'll Hear</strong>:
 <ul><li><strong>Low drive</strong>: Clean or very mild overdrive</li><li><strong>High drive</strong>: Rich, warm distortion like vintage tube amps</li><li><strong>Low tone</strong>: Gentle, smooth clipping</li><li><strong>High tone</strong>: Brighter, more aggressive clipping</li></ul>
@@ -948,8 +1019,8 @@ if (signal > 1000) {
 <h2>Understanding Your Distortion Pedal</h2>
 <h3>What You Built</h3>
 <p>You now have a professional-quality distortion effect with:</p>
-<p>1. <strong>Drive Control</strong> (Knob 1): How much distortion
-2. <strong>Tone Control</strong> (Knob 2): Character of distortion  
+<p>1. <strong>Drive Control</strong> (Clock Frequency Knob): How much distortion
+2. <strong>Tone Control</strong> (Mode Switches): Character of distortion  
 3. <strong>Soft Clipping</strong>: Musical, warm sound
 4. <strong>Safety Limiting</strong>: No damage or surprises
 5. <strong>Visual Feedback</strong>: LED shows settings</p>
@@ -1761,7 +1832,7 @@ trace(pointer string)</code></pre>
 <strong>Debug Usage:</strong>
 <pre><code>function update() {
     trace("Parameters updated")
-    trace("Knob 1 value changed")
+    trace("Control 1 value changed")
 }</code></pre>
 <h2>Mathematical Operations</h2>
 <h3>Basic Arithmetic</h3>
@@ -3791,6 +3862,14 @@ global array guardSuffix[16]</p>
 <h2>Introduction</h2>
 <p>Impala's memory model is specifically designed for real-time audio processing on resource-constrained hardware. Understanding how Impala manages memory is crucial for developing efficient, reliable, and performant firmware for the Permut8 platform.</p>
 <strong>Core Philosophy</strong>: Predictable, deterministic memory behavior with zero-overhead abstractions for real-time audio requirements.
+<h3><strong>Permut8's Unique Memory Architecture</strong></h3>
+<p>Beyond standard memory management, Permut8 provides a specialized <strong>128-kiloword delay memory system</strong> that is central to its audio processing capabilities:</p>
+<strong>128k Delay Memory</strong>:
+<ul><li><strong>Dedicated audio buffer</strong> separate from program memory</li><li><strong>Hardware-managed write position</strong> (red dot) - where incoming audio is stored</li><li><strong>Operator-controlled read positions</strong> (green dots) - where audio is played back from  </li><li><strong>Foundation of all effects</strong> - delays, pitch shifting, modulation, granular processing</li></ul>
+<strong>Two Approaches to Memory</strong>:
+1. <strong>Original Operator System</strong>: Use hardware-managed delay memory with built-in operators
+2. <strong>Custom Firmware</strong>: Manage your own memory regions with manual allocation
+<p>This document covers general Impala memory management. For delay memory specifics, see <a href="../user-guides/tutorials/understanding-permut8-operators.md">Understanding Permut8 Operators</a>.</p>
 <h2>Memory Architecture Overview</h2>
 <h3>Impala Memory Regions</h3>
 <p>Impala organizes memory into distinct regions, each optimized for specific usage patterns in real-time audio processing:</p>
@@ -5241,7 +5320,7 @@ Code: {
   - C1: "Extreme" - Maximum processing
   - C2: "Experimental" - Special effects
 <h2>Parameters</h2>
-<ul><li>Knob 1: [Primary effect parameter]</li><li>Knob 2: [Secondary parameter]</li><li>Knob 3: [Modulation/mix parameter] </li><li>Knob 4: [Special feature parameter]</li></ul>
+<ul><li>Control 1: [Primary effect parameter]</li><li>Control 2: [Secondary parameter]</li><li>Control 3: [Modulation/mix parameter] </li><li>Control 4: [Special feature parameter]</li></ul>
 <h2>Tips</h2>
 <ul><li>Start with A0 preset for subtle effects</li><li>Use B presets for creative processing</li><li>C presets are for special effects and sound design</li><li>All parameters respond in real-time</li></ul>
 <pre><code>
@@ -6448,8 +6527,8 @@ returns int value
 // Memory Usage: 88KB delay buffer + 2KB state
 <p>const int PRAWN_FIRMWARE_PATCH_FORMAT = 2</p>
 <p>// === ALGORITHM PARAMETERS ===
-// Delay time: 50ms to 2000ms (mapped from knob 0-255)
-// Feedback: 0% to 120% (mapped from knob 0-255)
+// Delay time: 50ms to 2000ms (mapped from Control 1, 0-255)
+// Feedback: 0% to 120% (mapped from Control 2, 0-255)
 // Tape age: 0% to 100% (controls saturation amount)
 // Wow/flutter: 0% to 10% (tape speed variation)</p>
 <p>// === GLOBAL STATE VARIABLES ===
@@ -6517,7 +6596,7 @@ PATCH: Bug fixes, small optimizations</p>
 <h2>Description</h2>
 Brief description of what the effect does and its intended use.
 <h2>Parameters</h2>
-<ul><li><strong>Knob 1 (Time)</strong>: Delay time from 50ms to 2 seconds</li><li><strong>Knob 2 (Feedback)</strong>: Feedback amount from 0% to 120%</li><li><strong>Knob 3 (Character)</strong>: Tape age simulation from new to vintage</li><li><strong>Knob 4 (Flutter)</strong>: Wow and flutter from stable to warped</li></ul>
+<ul><li><strong>Control 1 (Time)</strong>: Delay time from 50ms to 2 seconds</li><li><strong>Control 2 (Feedback)</strong>: Feedback amount from 0% to 120%</li><li><strong>Control 3 (Character)</strong>: Tape age simulation from new to vintage</li><li><strong>Control 4 (Flutter)</strong>: Wow and flutter from stable to warped</li></ul>
 <h2>LED Display</h2>
 <ul><li><strong>LEDs 1-4</strong>: Show delay time as moving dot pattern</li><li><strong>LEDs 5-8</strong>: Show feedback level as bar graph</li></ul>
 <h2>Usage Tips</h2>
@@ -7025,16 +7104,28 @@ if (params[3] != lastParam) {
 
 <div class="file-section" id="mod-vs-full-architecture-guide">
     <div class="file-title">📄 Mod Vs Full Architecture Guide</div>
-    <h1>Mod vs Full Patch Architecture Decision Guide</h1>
-<strong>Choose the right firmware architecture for your project</strong>
-<p>One of the most important decisions in Permut8 firmware development is choosing between <strong>Mod patches</strong> and <strong>Full patches</strong>. This choice affects everything from development complexity to performance characteristics. This guide will help you make the right architectural decision for your specific project.</p>
+    <h1>Permut8 Architecture Decision Guide</h1>
+<strong>Choose the right approach for your project: Original Operators, Custom Firmware, or Operator Modification</strong>
+<p>Permut8 offers <strong>three distinct approaches</strong> to creating audio effects, each with different capabilities and complexity levels. Understanding these approaches is essential for making the right architectural decision for your specific project.</p>
 <h2>What You'll Learn</h2>
 <p>By the end of this guide, you'll understand:
-<ul><li>The fundamental differences between Mod and Full patches</li><li>When to choose each architecture type</li><li>Trade-offs and limitations of each approach</li><li>How to implement each type correctly</li><li>Migration strategies between architectures</li></ul></p>
+<ul><li>Permut8's three architecture approaches and their fundamental differences</li><li>The operator system vs custom firmware paradigms</li><li>When to choose original operators vs custom code</li><li>Trade-offs and limitations of each approach</li><li>How to implement each architecture correctly</li><li>Migration strategies between approaches</li></ul></p>
 <strong>Prerequisites</strong>: <a href="understanding-impala-fundamentals.md">Understanding Impala Language Fundamentals</a>  
 <strong>Time Required</strong>: 30-45 minutes  
 <strong>Difficulty</strong>: Beginner to Intermediate
-<h2>Chapter 1: Understanding the Two Architectures</h2>
+<h2>Chapter 1: Understanding Permut8's Three Approaches</h2>
+<h3><strong>The Foundation: 128k Delay Memory System</strong></h3>
+<p>Before diving into architecture choices, understand that <strong>all Permut8 effects</strong> come from manipulating where and how audio is read from a <strong>128-kiloword delay memory buffer</strong>:</p>
+<ul><li><strong>Write position (red dot)</strong>: Where incoming audio is stored</li><li><strong>Read positions (green dots)</strong>: Where audio is played back from (left/right channels)</li><li><strong>Two instructions</strong>: Process sequentially to create complex effects</li></ul>
+<strong>This is the core concept that distinguishes Permut8 from other audio processors.</strong>
+<h3><strong>Approach 1: Original Operator System</strong></h3>
+<pre><code>Audio Input → 128k Delay Memory → [Operators manipulate read positions] → Audio Output</code></pre>
+<strong>How It Works</strong>:
+<ul><li>Audio is continuously written to delay memory</li><li><strong>Eight built-in operators</strong> (AND, MUL, OSC, RND, OR, XOR, MSK, SUB, NOP) manipulate read positions</li><li><strong>Two instructions</strong> process sequentially: Instruction 1 → Instruction 2</li><li><strong>Operands</strong> (0-255 values) control operator behavior via switches/LED displays</li></ul>
+<strong>Effects Created</strong>: Delays, pitch shifting, modulation, granular textures, rhythmic patterns
+<strong>Interface</strong>: Users select operators via presets, adjust operands via hardware switches
+<strong>No Custom Code Required</strong> - Use existing interface and built-in operators
+<h3><strong>Approach 2: Custom Firmware (Full Patches)</strong></h3>
 <h3>Full Patches: Complete Audio Processing Chain</h3>
 <strong>Full patches</strong> replace Permut8's entire audio processing chain with your custom code.
 <pre><code>// === FULL PATCH EXAMPLE ===
@@ -7652,6 +7743,15 @@ Reasoning: ________________________</code></pre></p>
 <em>Shape frequency content with simple digital filters</em>
 <h2>What This Does</h2>
 <p>Filters selectively reduce or emphasize certain frequencies in audio signals. Use them to remove unwanted frequencies, shape tone character, or create classic synthesizer effects like resonant sweeps.</p>
+<h3><strong>Approach: Custom Firmware (Direct Processing)</strong></h3>
+<p>This recipe demonstrates <strong>Approach 2: Custom Firmware</strong> - implementing digital filter algorithms with direct sample-by-sample processing.</p>
+<strong>Why This Approach?</strong>:
+<ul><li><strong>Filter algorithms</strong> require precise mathematical operations on audio samples</li><li><strong>State management</strong> - filters need to remember previous values for recursive processing</li><li><strong>Custom interface</strong> - intuitive cutoff/resonance/type controls</li><li><strong>Educational</strong> - shows how digital filters work at the algorithm level</li></ul>
+<strong>How It Works</strong>:
+<pre><code>Audio Input → [Custom filter algorithm with state variables] → Audio Output</code></pre>
+<ul><li>Direct sample processing with recursive filter equations</li><li>Custom state variables store filter memory between samples</li><li>Multiple filter types selectable via parameter</li></ul>
+<strong>Alternative Approaches</strong>:
+<ul><li><strong>Original operators</strong>: No direct filtering operators, but could combine for effect</li><li><strong>Operator modification</strong>: Replace operator with custom filter (hybrid approach)</li><li><strong>Hardware assistance</strong>: Some filter operations could use bit manipulation operators</li></ul>
 <h2>Quick Reference</h2>
 <strong>Essential Parameters:</strong>
 <ul><li><code>params[0]</code>: Cutoff frequency (0-255, controls filter frequency)</li><li><code>params[1]</code>: Resonance (0-255, emphasis at cutoff)</li><li><code>params[2]</code>: Filter type (0-255, low/high/band-pass)</li><li><code>params[3]</code>: Dry/wet mix (0-255, blend control)</li></ul>
@@ -7740,7 +7840,7 @@ locals int cutoff, int resonance, int filter_type, int mix, int input, int filte
 <strong>Cutoff Control</strong>: Lower cutoff values = stronger filtering, higher values = more transparent.
 <strong>Resonance</strong>: Adds feedback to emphasize frequencies near the cutoff point.
 <strong>Parameter Control</strong>:
-<ul><li><strong>Knob 1</strong>: Cutoff frequency (lower = more filtering)</li><li><strong>Knob 2</strong>: Resonance (higher = more emphasis)</li><li><strong>Knob 3</strong>: Filter type (0-63=low, 64-127=high, 128-191=band, 192-255=bypass)</li><li><strong>Knob 4</strong>: Dry/wet mix (blend filtered with original)</li></ul>
+<ul><li><strong>Control 1</strong>: Cutoff frequency (lower = more filtering)</li><li><strong>Control 2</strong>: Resonance (higher = more emphasis)</li><li><strong>Control 3</strong>: Filter type (0-63=low, 64-127=high, 128-191=band, 192-255=bypass)</li><li><strong>Control 4</strong>: Dry/wet mix (blend filtered with original)</li></ul>
 <h2>Try These Settings</h2>
 <pre><code>// Warm low-pass
 params[0] = 128;  // Medium cutoff
@@ -7859,10 +7959,10 @@ global array displayLEDs[4]</p>
 }</code></pre></p>
 <h3>Try the Controlled Version</h3>
 <p>1. <strong>Compile and load</strong> this new version
-2. <strong>Turn Knob 1</strong> from left (clean) to right (distorted)
+2. <strong>Turn Clock Frequency Knob</strong> from left (clean) to right (distorted)
 3. <strong>Listen</strong> to how the distortion becomes predictable and controlled</p>
 <strong>What You'll Hear</strong>: 
-<ul><li><strong>Knob left</strong>: Clean audio (1x gain, no clipping)</li><li><strong>Knob middle</strong>: Mild distortion (moderate gain, some clipping)</li><li><strong>Knob right</strong>: Heavy distortion (high gain, lots of clipping)</li></ul>
+<ul><li><strong>Clock Frequency Knob left</strong>: Clean audio (1x gain, no clipping)</li><li><strong>Clock Frequency Knob middle</strong>: Mild distortion (moderate gain, some clipping)</li><li><strong>Clock Frequency Knob right</strong>: Heavy distortion (high gain, lots of clipping)</li></ul>
 <h3>Why This Is Better</h3>
 <ul><li><strong>Predictable</strong>: You control exactly when distortion starts</li><li><strong>Safe</strong>: Never damages speakers or ears with unexpected volume spikes</li><li><strong>Musical</strong>: Distortion amount follows your knob movements</li><li><strong>Visual</strong>: LED shows current distortion setting</li></ul>
 <strong>Key Insight</strong>: Professional distortion effects control the clipping instead of letting it happen randomly.
@@ -7935,8 +8035,8 @@ global array displayLEDs[4]</p>
 <h3>Try Your Musical Distortion</h3>
 <p>1. <strong>Compile and load</strong> the soft clipping version
 2. <strong>Experiment with both knobs</strong>:
-   - <strong>Knob 1</strong> (Drive): Amount of distortion
-   - <strong>Knob 2</strong> (Tone): Character of distortion
+   - <strong>Clock Frequency Knob</strong> (Drive): Amount of distortion
+   - <strong>Mode Switches</strong> (Tone): Character of distortion
 3. <strong>Listen</strong> for the warm, musical quality</p>
 <strong>What You'll Hear</strong>:
 <ul><li><strong>Low drive</strong>: Clean or very mild overdrive</li><li><strong>High drive</strong>: Rich, warm distortion like vintage tube amps</li><li><strong>Low tone</strong>: Gentle, smooth clipping</li><li><strong>High tone</strong>: Brighter, more aggressive clipping</li></ul>
@@ -7955,8 +8055,8 @@ if (signal > 1000) {
 <h2>Understanding Your Distortion Pedal</h2>
 <h3>What You Built</h3>
 <p>You now have a professional-quality distortion effect with:</p>
-<p>1. <strong>Drive Control</strong> (Knob 1): How much distortion
-2. <strong>Tone Control</strong> (Knob 2): Character of distortion  
+<p>1. <strong>Drive Control</strong> (Clock Frequency Knob): How much distortion
+2. <strong>Tone Control</strong> (Mode Switches): Character of distortion  
 3. <strong>Soft Clipping</strong>: Musical, warm sound
 4. <strong>Safety Limiting</strong>: No damage or surprises
 5. <strong>Visual Feedback</strong>: LED shows settings</p>
@@ -8049,6 +8149,12 @@ signal[0] = clipped;</code></pre></p>
 <em>Create digital distortion effects through bit depth reduction and sample rate downsampling</em>
 <h2>What This Does</h2>
 <p>Generates digital distortion by reducing the bit depth and sample rate of audio signals, creating characteristic lo-fi artifacts, digital stepping, and harmonic distortion. Perfect for vintage sampler emulation and modern digital textures.</p>
+<h3><strong>Approach: Custom Firmware (Direct Processing)</strong></h3>
+<p>This recipe demonstrates <strong>Approach 2: Custom Firmware</strong> - completely bypassing Permut8's delay memory system to process audio samples directly with bit manipulation algorithms.</p>
+<strong>Why This Approach?</strong>:
+<ul><li><strong>Bit crushing</strong> requires sample-by-sample mathematical processing</li><li><strong>Direct control</strong> over quantization and sample rate algorithms  </li><li><strong>Custom interface</strong> needed for intuitive bit depth and rate controls</li><li><strong>Real-time processing</strong> without delay memory dependencies</li></ul>
+<strong>Alternative Approaches</strong>:
+<ul><li><strong>Original operators</strong>: Could use AND operator for bit masking, but lacks sample rate control</li><li><strong>Operator modification</strong>: Could enhance AND operator, but custom firmware provides better control</li></ul>
 <h3><strong>Interface Architecture</strong></h3>
 <p>This effect uses all four instruction operands as custom knob controls:</p>
 <strong>Original Interface</strong>: Each operand controlled via scrollable LED displays + bit switches  
@@ -8163,7 +8269,7 @@ locals int output_right
 <strong>Dry/Wet Mixing</strong>: Blends original signal with crushed signal for controlled intensity.
 <strong>Output Gain</strong>: Compensates for level changes caused by bit reduction and provides creative gain staging.
 <strong>Parameter Control</strong>:
-<ul><li><strong>Knob 1</strong>: Bit depth (1-16 effective bits) </li><li><strong>Knob 2</strong>: Sample rate reduction (1-32x)</li><li><strong>Knob 3</strong>: Dry/wet mix (0% = clean, 100% = crushed)</li><li><strong>Knob 4</strong>: Output gain (compensate for level changes)</li></ul>
+<ul><li><strong>Control 1</strong>: Bit depth (1-16 effective bits) </li><li><strong>Control 2</strong>: Sample rate reduction (1-32x)</li><li><strong>Control 3</strong>: Dry/wet mix (0% = clean, 100% = crushed)</li><li><strong>Control 4</strong>: Output gain (compensate for level changes)</li></ul>
 <strong>LED Feedback</strong>: Shows bit depth, rate reduction, mix level, and output gain.
 <h2>Try These Settings</h2>
 <pre><code>// Vintage lo-fi (moderate crushing)
@@ -8184,9 +8290,21 @@ params[3] = 255;  // Maximum gain</code></pre></p>
     <h1>Make a Delay</h1>
 <h2>What This Does</h2>
 Creates a simple delay effect with adjustable delay time and feedback amount. The delayed signal is mixed with the original to create echo effects ranging from short slap-back delays to long ambient trails.
+<h3><strong>Approach: Custom Firmware (Manual Memory Management)</strong></h3>
+<p>This recipe demonstrates <strong>Approach 2: Custom Firmware</strong> - manually implementing delay using custom memory management instead of using Permut8's built-in SUB operator.</p>
+<strong>Why This Approach?</strong>:
+<ul><li><strong>Educational</strong> - shows how delays work at the memory level</li><li><strong>Custom control</strong> - full control over delay algorithm and feedback  </li><li><strong>Learning foundation</strong> - understand delay concepts before using operators</li><li><strong>Flexibility</strong> - can implement delay variations not possible with standard operators</li></ul>
+<strong>How It Works</strong>:
+<pre><code>Audio Input → [Custom code manages delay buffer] → Audio Output</code></pre>
+<ul><li>Custom code manually reads/writes to delay memory using <code>read()</code> and <code>write()</code></li><li>Manual circular buffer management with <code>delayIndex</code> tracking</li><li>Custom feedback mixing and clipping control</li></ul>
+<strong>Recommended Alternative - Original Operators</strong>:
+For most delay effects, use <strong>Approach 1: Original Operators</strong>:
+<ul><li><strong>Instruction 1</strong>: SUB operator with delay time operands (more efficient)</li><li><strong>Instruction 2</strong>: NOP or additional modulation operators</li><li><strong>Interface</strong>: Set delay time via switches/LED displays or knob override</li><li><strong>Benefits</strong>: Hardware-optimized, automatic memory management, can combine with other operators</li></ul>
+<strong>When to Use Custom Firmware</strong>:
+<ul><li>Learning how delays work internally</li><li>Need custom delay algorithms (multi-tap, modulated, etc.)</li><li>Want to combine delay with non-delay processing</li></ul>
 <h2>Quick Reference</h2>
 <strong>Parameters</strong>:
-<ul><li><strong>Knob 1 (params[0])</strong>: Delay time (1-1000 samples, timing varies with sample rate)</li><li><strong>Knob 2 (params[1])</strong>: Feedback amount (0-90% to prevent runaway)</li><li><strong>Knob 3 (params[5])</strong>: [Available for expansion]</li><li><strong>Knob 4 (params[6])</strong>: [Available for expansion]</li></ul>
+<ul><li><strong>Control 1 (params[0])</strong>: Delay time (1-1000 samples, timing varies with sample rate)</li><li><strong>Control 2 (params[1])</strong>: Feedback amount (0-90% to prevent runaway)</li><li><strong>Control 3 (params[5])</strong>: [Available for expansion]</li><li><strong>Control 4 (params[6])</strong>: [Available for expansion]</li></ul>
 <strong>Key Concepts</strong>: Memory read/write operations, feedback loops, circular buffering
 <h2>Complete Code</h2>
 <pre><code>const int PRAWN_FIRMWARE_PATCH_FORMAT = 2

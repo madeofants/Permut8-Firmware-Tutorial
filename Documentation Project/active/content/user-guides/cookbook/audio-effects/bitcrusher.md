@@ -6,6 +6,20 @@
 
 Generates digital distortion by reducing the bit depth and sample rate of audio signals, creating characteristic lo-fi artifacts, digital stepping, and harmonic distortion. Perfect for vintage sampler emulation and modern digital textures.
 
+### **Approach: Custom Firmware (Direct Processing)**
+
+This recipe demonstrates **Approach 2: Custom Firmware** - completely bypassing Permut8's delay memory system to process audio samples directly with bit manipulation algorithms.
+
+**Why This Approach?**:
+- **Bit crushing** requires sample-by-sample mathematical processing
+- **Direct control** over quantization and sample rate algorithms  
+- **Custom interface** needed for intuitive bit depth and rate controls
+- **Real-time processing** without delay memory dependencies
+
+**Alternative Approaches**:
+- **Original operators**: Could use AND operator for bit masking, but lacks sample rate control
+- **Operator modification**: Could enhance AND operator, but custom firmware provides better control
+
 ### **Interface Architecture**
 
 This effect uses all four instruction operands as custom knob controls:
@@ -150,10 +164,10 @@ locals int output_right
 **Output Gain**: Compensates for level changes caused by bit reduction and provides creative gain staging.
 
 **Parameter Control**:
-- **Knob 1**: Bit depth (1-16 effective bits) 
-- **Knob 2**: Sample rate reduction (1-32x)
-- **Knob 3**: Dry/wet mix (0% = clean, 100% = crushed)
-- **Knob 4**: Output gain (compensate for level changes)
+- **Control 1**: Bit depth (1-16 effective bits) 
+- **Control 2**: Sample rate reduction (1-32x)
+- **Control 3**: Dry/wet mix (0% = clean, 100% = crushed)
+- **Control 4**: Output gain (compensate for level changes)
 
 **LED Feedback**: Shows bit depth, rate reduction, mix level, and output gain.
 

@@ -6,6 +6,29 @@
 
 Generates basic audio waveforms - sine, square, sawtooth, and triangle waves. These are the building blocks of synthesis, providing raw tones that filters and effects can shape into complex sounds.
 
+### **Approach: Custom Firmware (Direct Synthesis)**
+
+This recipe demonstrates **Approach 2: Custom Firmware** - implementing oscillator algorithms with direct waveform generation and phase accumulation.
+
+**Why This Approach?**:
+- **Precise waveform control** - exact mathematical generation of different wave shapes
+- **Multiple waveform types** - custom algorithm for sine, square, sawtooth, triangle
+- **Custom interface** - intuitive frequency/waveform/amplitude controls
+- **Audio generation** - creating audio rather than processing existing audio
+
+**How It Works**:
+```
+No Audio Input → [Custom oscillator algorithm generates samples] → Audio Output
+```
+- Phase accumulator tracks position in waveform cycle
+- Mathematical functions convert phase to different wave shapes
+- Direct sample generation without input processing
+
+**Alternative Approaches**:
+- **Original operators**: OSC operator provides triangular modulation, but limited to modulation use
+- **Operator modification**: Could enhance OSC operator for audio-rate synthesis
+- **Hybrid approach**: Use custom firmware oscillator to modulate original operator parameters
+
 ## Quick Reference
 
 **Essential Parameters:**
@@ -123,10 +146,10 @@ locals int frequency, int wave_type, int amplitude, int fine_tune, int phase_inc
 **Frequency Control**: The phase increment determines pitch. Doubling the increment doubles the frequency (one octave up).
 
 **Parameter Control**:
-- **Knob 1**: Frequency (higher = higher pitch)
-- **Knob 2**: Waveform (0-63=sine, 64-127=square, 128-191=saw, 192-255=triangle)
-- **Knob 3**: Amplitude (higher = louder)
-- **Knob 4**: Fine tune (128 = center, adjust for precise tuning)
+- **Control 1**: Frequency (higher = higher pitch)
+- **Control 2**: Waveform (0-63=sine, 64-127=square, 128-191=saw, 192-255=triangle)
+- **Control 3**: Amplitude (higher = louder)
+- **Control 4**: Fine tune (128 = center, adjust for precise tuning)
 
 ## Try These Settings
 

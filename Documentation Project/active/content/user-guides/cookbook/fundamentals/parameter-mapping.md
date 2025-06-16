@@ -157,9 +157,9 @@ locals int cutoff_target, int resonance_target, int mix_target, int filtered_sig
 **Range Mapping**: Converting 0-255 knob values into useful ranges like 200-2000 for filter cutoff frequencies.
 
 **Parameter Control**:
-- **Knob 1**: Mix level (0-255 → 0-2040 linear mapping)
-- **Knob 2**: Cutoff frequency (0-255 → 200-2000 exponential mapping)  
-- **Knob 3**: Resonance (0-255 → 256-1792 linear with offset)
+- **Control 1**: Mix level (0-255 → 0-2040 linear mapping)
+- **Control 2**: Cutoff frequency (0-255 → 200-2000 exponential mapping)  
+- **Control 3**: Resonance (0-255 → 256-1792 linear with offset)
 
 ## Try These Settings
 

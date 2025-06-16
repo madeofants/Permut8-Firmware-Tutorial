@@ -34,9 +34,33 @@ Negative numbers → Speaker pulls in → You hear sound
 Zero → Speaker stays still → Silence
 ```
 
-### In Permut8 Firmware
+### Permut8's Two Approaches to Audio
 
-In Impala, audio samples are integers from **-2047 to +2047**:
+**Before we dive into code**, it's important to understand that Permut8 has **two fundamentally different ways** to affect sound:
+
+#### **Approach 1: Original Operator System**
+```
+Audio Input → 128k Delay Memory → [Operators manipulate read positions] → Audio Output
+```
+- **How it works**: Audio is stored in memory, operators control where and how it's read back
+- **Effects**: Delays, pitch shifting, modulation, granular textures
+- **Examples**: Using MUL operator for pitch, OSC for flanging, SUB for delays
+
+#### **Approach 2: Custom Firmware (Direct Processing)**  
+```
+Audio Input → [Your code processes samples directly] → Audio Output
+```
+- **How it works**: Bypass the delay system, process audio samples with your own algorithms
+- **Effects**: Distortion, filtering, compression, bit crushing, anything you can code
+- **Examples**: Mathematical effects, custom algorithms, novel processors
+
+### **Both Are Powerful - This Tutorial Shows Approach 2**
+
+This tutorial focuses on **direct audio processing** (Approach 2) because it's easier to understand the immediate relationship between code and sound. Once you master this, you can learn the operator system for more complex time-based effects.
+
+### **Direct Processing with Custom Firmware**
+
+In custom firmware (Approach 2), audio samples are integers from **-2047 to +2047**:
 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
@@ -148,7 +172,7 @@ function process() {
         int leftInput = signal[0];
         int rightInput = signal[1];
         
-        // CHANGE THE SOUND: Make it quieter using Knob 1
+        // CHANGE THE SOUND: Make it quieter using Clock Frequency Knob
         int volumeKnob = params[0];  // 0-255 from hardware
         int volumeAmount = volumeKnob + 1;  // 1-256 (never zero)
         
@@ -167,7 +191,7 @@ function process() {
 ### What This Code Does
 
 1. **Reads** the incoming audio samples
-2. **Reads** Knob 1 position (0-255)
+2. **Reads** Clock Frequency Knob position (0-255)
 3. **Calculates** a volume multiplier (1-256)
 4. **Multiplies** each audio sample by the volume amount
 5. **Shows** the current volume on the LED display
@@ -179,7 +203,7 @@ function process() {
 2. **Create and load bank**: File → Load Bank → `volume_control.p8bank`
 3. **Select A0 preset**
 4. **Play** some audio through Permut8
-5. **Turn Knob 1** and hear the volume change in real-time!
+5. **Turn Clock Frequency Knob** and hear the volume change in real-time!
 
 **You just modified sound with code!** Turn the knob left (quieter) and right (louder). The LED display shows exactly what's happening.
 

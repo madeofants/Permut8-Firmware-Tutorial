@@ -129,9 +129,9 @@ locals int pan_position, int stereo_width, int channel_mode, int left_input, int
 **Channel Routing**: Different processing modes handle various stereo tasks - panning mono signals, adjusting width of stereo signals, swapping channels, or monitoring mid/side content.
 
 **Parameter Control**:
-- **Knob 1**: Pan position or processing parameter
-- **Knob 2**: Stereo width or processing mode
-- **Knob 3**: Processing mode or channel routing
+- **Control 1**: Pan position or processing parameter
+- **Control 2**: Stereo width or processing mode
+- **Control 3**: Processing mode or channel routing
 
 ## Try These Settings
 

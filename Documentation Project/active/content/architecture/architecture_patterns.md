@@ -3,20 +3,56 @@
 ## What This Is
 Architectural design patterns, lifecycle management, and performance strategies for Permut8 firmware development. Essential concepts for building robust, efficient audio processing systems.
 
-## Patch Architecture Overview
+## Permut8's Three-Approach Architecture
 
-### Full Patch Architecture
-**Purpose**: Complete audio processing replacement  
-**Control**: Total control over audio signal chain  
-**Complexity**: Higher - must handle all audio processing  
-**Performance**: Higher CPU usage, but maximum flexibility
+### **Understanding Permut8's Core System**
+
+Permut8 has **128 kilowords of 12-bit delay memory** with moving read/write heads. All effects come from manipulating where and how audio is read from this memory buffer. There are **three distinct approaches** to working with this system:
+
+### **Approach 1: Original Operator System**
+```
+Audio Input → 128k Delay Memory → [Operators manipulate read positions] → Audio Output
+```
+
+**How It Works**:
+- Audio is continuously written to delay memory
+- **Eight operators** (AND, MUL, OSC, RND, OR, XOR, MSK, SUB, NOP) manipulate read positions  
+- **Two instructions** process sequentially to create complex effects
+- **Operands** (0-255 values) control operator behavior
+
+**Effects Created**: Delays, pitch shifting, modulation, granular textures, rhythmic patterns
+
+**Interface**: Operators selected via presets, operands controlled via switches/LED displays
+
+### **Approach 2: Custom Firmware (Full Patches)**
+```
+Audio Input → [Your code processes samples directly] → Audio Output
+```
+
+**How It Works**:
+- **Completely bypass** the delay memory system
+- **Direct sample processing** with your own algorithms
+- **Total control** over every aspect of audio processing
+- **Parameter override** - same `params[]` array, custom meanings
+
+**Effects Created**: Distortion, filtering, compression, bit crushing, any algorithm you can code
+
+**Interface**: Custom knob labels via `panelTextRows`, direct parameter mapping
 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 global array signal[2]      // Direct audio I/O
-global array params[8]      // Parameter control
+global array params[8]      // Parameter control (custom meanings)
 global array displayLEDs[4] // Visual feedback
+
+readonly array panelTextRows[8] = {
+    "",
+    "",
+    "",
+    "CUSTOM |------ EFFECT CONTROL (KNOB) ------|",
+    // Override original interface with custom labels
+};
 
 function process() {
     loop {
@@ -33,29 +69,31 @@ function process() {
 }
 ```
 
-**When to Use Full Patches**:
-- Complex multi-stage effects (reverb, vocoder, granular)
-- Real-time analysis and resynthesis
-- Complete signal replacement needed
-- Custom envelope followers or dynamics
-- Advanced modulation routing
+### **Approach 3: Operator Modification (Mod Patches)**  
+```
+Audio Input → 128k Delay Memory → [Modified operators] → Audio Output
+```
 
-### Mod Patch Architecture  
-**Purpose**: Modify existing operators  
-**Control**: Indirect via memory position manipulation  
-**Complexity**: Lower - Permut8 handles audio processing  
-**Performance**: Lower CPU usage, leverages hardware optimizations
+**How It Works**:
+- **Replace specific operators** with custom code
+- **Keep delay memory system** but customize how read positions are calculated
+- **Hybrid approach** - leverage hardware efficiency with custom logic
+- **Work within operator framework** but with custom behavior
+
+**Effects Created**: Custom delays, unique modulation patterns, novel position-based effects
+
+**Interface**: Standard operator interface, but with custom operator behavior
 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 global array positions[2]   // Memory position control
-global array params[8]      // Parameter control
+global array params[8]      // Parameter control (original meanings)
 global array displayLEDs[4] // Visual feedback
 
 function operate1() returns int processed {
-    // Modify delay line positions
-    int delayOffset = calculateDelay();
+    // Replace Instruction 1 operator with custom behavior
+    int delayOffset = calculateCustomDelay();
     
     positions[0] += delayOffset;  // Left channel
     positions[1] += delayOffset;  // Right channel
@@ -64,18 +102,30 @@ function operate1() returns int processed {
 }
 
 function operate2() returns int processed {
-    // Second operator can do different processing
-    // Often used for stereo effects or parallel processing
+    // Replace Instruction 2 operator with custom behavior
     return 1;
 }
 ```
 
-**When to Use Mod Patches**:
-- Simple delays and modulation
-- Stereo imaging effects  
-- Tempo-synced delays
-- Position-based effects (flanging, chorusing)
-- Lower CPU usage requirements
+## **Choosing the Right Approach**
+
+### **Use Original Operators When**:
+- Building standard delays, modulation, or pitch effects
+- Want maximum efficiency and hardware optimization
+- Learning how Permut8 naturally creates effects
+- Need familiar interface for users
+
+### **Use Custom Firmware When**:
+- Creating distortion, filtering, or mathematical effects
+- Need algorithms that don't fit the memory manipulation model
+- Want complete control over parameter interface
+- Building novel effects that require sample-by-sample processing
+
+### **Use Operator Modification When**:
+- Want to customize delay/modulation behavior
+- Need efficiency of hardware delay system with custom logic
+- Creating variations on standard operator types
+- Bridging between original system and custom approaches
 
 ## Lifecycle Management
 

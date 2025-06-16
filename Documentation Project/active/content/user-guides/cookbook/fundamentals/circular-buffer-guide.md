@@ -99,9 +99,9 @@ locals int delay_time, int feedback, int wet_mix, int read_pos, int delayed_samp
 **Wraparound Math**: When positions go negative, add the buffer size to wrap correctly.
 
 **Parameter Control**:
-- **Knob 1**: Delay time (higher = longer echo)
-- **Knob 2**: Feedback amount (higher = more repetitions)
-- **Knob 3**: Wet/dry mix (0 = dry only, 255 = wet only)
+- **Control 1**: Delay time (higher = longer echo)
+- **Control 2**: Feedback amount (higher = more repetitions)
+- **Control 3**: Wet/dry mix (0 = dry only, 255 = wet only)
 
 ## Try These Settings
 

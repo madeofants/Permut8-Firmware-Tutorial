@@ -130,10 +130,10 @@ locals int release_factor
 **Ratio Control**: Determines how much compression is applied to signals above the threshold.
 
 **Parameter Control**:
-- **Knob 1**: Threshold (higher = less compression)
-- **Knob 2**: Ratio (higher = more compression, 2:1 to 17:1 range)  
-- **Knob 3**: Attack (higher = slower attack, 1-8 speed range)
-- **Knob 4**: Release (higher = slower release, 1-8 speed range)
+- **Control 1**: Threshold (higher = less compression)
+- **Control 2**: Ratio (higher = more compression, 2:1 to 17:1 range)  
+- **Control 3**: Attack (higher = slower attack, 1-8 speed range)
+- **Control 4**: Release (higher = slower release, 1-8 speed range)
 
 **LED Feedback**: Shows gain reduction, input level, threshold setting, and compression ratio.
 

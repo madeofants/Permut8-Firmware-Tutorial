@@ -76,7 +76,7 @@ trace(pointer string)
 ```impala
 function update() {
     trace("Parameters updated")
-    trace("Knob 1 value changed")
+    trace("Control 1 value changed")
 }
 ```
 

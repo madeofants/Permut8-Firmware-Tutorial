@@ -42,7 +42,7 @@ abort()  // Kill firmware, restore normal operation
 - **Timing**: Must be called every sample period (≈20.8μs at 48kHz)
 - **State preservation**: Local variables and function position maintained
 - **Audio I/O**: `signal[]` array updated by hardware before next cycle
-- **Parameter updates**: `params[]` array refreshed with current knob/switch values
+- **Parameter updates**: `params[]` array refreshed with current control/switch values
 
 **Critical Usage Patterns**:
 ```impala
@@ -136,7 +136,7 @@ function update() {
     array buffer[64];
     array message[128];
     
-    // Monitor knob changes
+    // Monitor control changes
     strcpy(message, "Knob1=");
     strcat(message, intToString((int)params[OPERAND_1_HIGH_PARAM_INDEX], 10, 1, buffer));
     strcat(message, " Knob2=");
@@ -330,9 +330,9 @@ float quantize(float input, int steps) {
     return round(input * itof(steps)) / itof(steps);
 }
 
-// Usage: quantize knob to 8 steps
-float knobValue = itof((int)params[OPERAND_1_HIGH_PARAM_INDEX]) / 255.0;
-float stepped = quantize(knobValue, 8);
+// Usage: quantize control to 8 steps
+float controlValue = itof((int)params[OPERAND_1_HIGH_PARAM_INDEX]) / 255.0;
+float stepped = quantize(controlValue, 8);
 ```
 
 ### Min/Max Functions
@@ -404,7 +404,7 @@ function update() {
     array buffer[64];
     array message[128];
     
-    strcpy(message, "Knob 1: ");
+    strcpy(message, "Control 1: ");
     strcat(message, intToString((int)params[OPERAND_1_HIGH_PARAM_INDEX], 10, 1, buffer));
     trace(message);
 }
@@ -483,8 +483,8 @@ readonly array SEVEN_BIT_EXP_TABLE[128] = { /* 128 values */ };
 **Exponential parameter scaling:**
 ```impala
 function update() {
-    int knobRaw = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
-    int expValue = (int)EIGHT_BIT_EXP_TABLE[knobRaw];
+    int controlRaw = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
+    int expValue = (int)EIGHT_BIT_EXP_TABLE[controlRaw];
     
     // expValue now ranges from 0x0 to 0xFFFF with exponential curve
     global delayTime = expValue;
@@ -587,7 +587,7 @@ global int oscPhase = 0;
 global int oscFreq = 9;  // Frequency increment
 
 function update() {
-    // Convert knob to frequency increment (1Hz - 1000Hz)
+    // Convert control to frequency increment (1Hz - 1000Hz)
     int freqIndex = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
     int expValue = (int)EIGHT_BIT_EXP_TABLE[freqIndex];
     oscFreq = 1 + (expValue >> 7);  // Scale to 1-500 increment range

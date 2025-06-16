@@ -5,10 +5,10 @@ Creates a lush, thickening effect by adding multiple modulated delay lines that 
 
 ## Quick Reference
 **Parameters**:
-- **Knob 1 (params[3])**: LFO rate (0.1Hz to 5Hz, controls sweep speed)
-- **Knob 2 (params[4])**: Modulation depth (0-255, controls pitch variation amount)
-- **Knob 3 (params[5])**: Dry/wet mix (0% = dry signal, 100% = full chorus)
-- **Knob 4 (params[6])**: Stereo spread (0 = mono, 255 = maximum width)
+- **Control 1 (params[3])**: LFO rate (0.1Hz to 5Hz, controls sweep speed)
+- **Control 2 (params[4])**: Modulation depth (0-255, controls pitch variation amount)
+- **Control 3 (params[5])**: Dry/wet mix (0% = dry signal, 100% = full chorus)
+- **Control 4 (params[6])**: Stereo spread (0 = mono, 255 = maximum width)
 
 **Key Concepts**: Multiple delay lines, LFO modulation, stereo imaging, interpolation
 
@@ -49,10 +49,10 @@ locals int output_r
 {
     loop {
         // Read parameters
-        rate = ((int)global params[3] >> 4) + 1;     // Knob 1: LFO rate (1-16)
-        depth = ((int)global params[4] >> 3) + 1;    // Knob 2: Modulation depth (1-32 samples)
-        mix = (int)global params[5];                 // Knob 3: Dry/wet mix (0-255)
-        spread = (int)global params[6];              // Knob 4: Stereo spread (0-255)
+        rate = ((int)global params[3] >> 4) + 1;     // Control 1: LFO rate (1-16)
+        depth = ((int)global params[4] >> 3) + 1;    // Control 2: Modulation depth (1-32 samples)
+        mix = (int)global params[5];                 // Control 3: Dry/wet mix (0-255)
+        spread = (int)global params[6];              // Control 4: Stereo spread (0-255)
         
         // Triangle LFO for left channel
         global lfo_phase = (global lfo_phase + rate) & 255;

@@ -3,6 +3,85 @@
 ## What This Is
 The `params[]` array gives your firmware access to all knob positions, switch states, and system settings. Updated automatically by Permut8 when users turn knobs or flip switches.
 
+## 🎛️ **Permut8 Interface Architecture**
+
+### **Physical Controls (Actual Hardware)**
+
+#### **Operation Selection Knobs**
+- **Operator Control 1** (`params[2]`) - Physical knob that selects Instruction 1 operation type (AND, MUL, OSC, RND)
+- **Operator Control 2** (`params[5]`) - Physical knob that selects Instruction 2 operation type (OR, XOR, MSK, SUB, NOP)
+
+#### **Parameter Setting Interface**  
+- **Instruction 1 High Operand** (`params[3]`) - Set via LED display + switches (0-255)
+- **Instruction 1 Low Operand** (`params[4]`) - Set via LED display + switches (0-255)
+- **Instruction 2 High Operand** (`params[6]`) - Set via LED display + switches (0-255)
+- **Instruction 2 Low Operand** (`params[7]`) - Set via LED display + switches (0-255)
+
+#### **System Controls**
+- **Clock Frequency Knob** (`params[0]`) - Dedicated physical knob for tempo sync timing
+- **Mode Switches** (`params[1]`) - Five switches: SYNC, REV, Triplet, Dotted, Write Protect
+
+## 📋 **Standard Terminology Convention**
+
+### **✅ CORRECT Terminology Patterns**
+
+#### **Original Operator System References**
+- **"Operator Control 1"** - Only for the physical operation selection knob (`params[2]`)
+- **"Operator Control 2"** - Only for the physical operation selection knob (`params[5]`)
+- **"Instruction 1 High Operand"** - Parameter set via LED display/switches (`params[3]`)
+- **"Instruction 1 Low Operand"** - Parameter set via LED display/switches (`params[4]`)
+- **"Instruction 2 High Operand"** - Parameter set via LED display/switches (`params[6]`)
+- **"Instruction 2 Low Operand"** - Parameter set via LED display/switches (`params[7]`)
+
+#### **Custom Firmware Override References**
+- **"Control 1"** - Custom meaning for `params[3]` (was Instruction 1 High Operand)
+- **"Control 2"** - Custom meaning for `params[4]` (was Instruction 1 Low Operand)
+- **"Control 3"** - Custom meaning for `params[6]` (was Instruction 2 High Operand)
+- **"Control 4"** - Custom meaning for `params[7]` (was Instruction 2 Low Operand)
+
+### **❌ AVOID These Patterns**
+- **"Control 1/2/3/4"** - Preferred, refers to operand controls via params[0/1/3/4/6/7]
+- **"Operator Control 1" for operand controls** - Incorrect, operator controls select operations
+- **"Parameter knobs"** - Too vague, missing context
+- **"The delay knob"** - Not specific enough
+
+## 🔄 **Parameter Context: Original vs Custom Firmware**
+
+### **Original Operator System**
+Parameters directly control the built-in operator system:
+
+| Parameter | Physical Control | Function | Range |
+|-----------|-----------------|----------|-------|
+| `params[0]` | **Clock Frequency Knob** | Tempo sync timing | 0-255 |
+| `params[1]` | **Mode Switches** | Switch states bitmask | 0-31 |
+| `params[2]` | **Operator Control 1** | Instruction 1 operation type | 0-4 |
+| `params[3]` | **LED Display + Switches** | Instruction 1 High Operand | 0-255 |
+| `params[4]` | **LED Display + Switches** | Instruction 1 Low Operand | 0-255 |
+| `params[5]` | **Operator Control 2** | Instruction 2 operation type | 0-4 |
+| `params[6]` | **LED Display + Switches** | Instruction 2 High Operand | 0-255 |
+| `params[7]` | **LED Display + Switches** | Instruction 2 Low Operand | 0-255 |
+
+### **Custom Firmware Override**
+Same hardware, completely custom meanings:
+
+| Parameter | Original Interface | Custom Override | Typical Custom Use |
+|-----------|-------------------|-----------------|-------------------|
+| `params[0]` | Clock Frequency Knob | Usually unchanged | Tempo sync or custom timing |
+| `params[1]` | Mode Switches | Custom or ignored | Effect modes or unchanged |
+| `params[2]` | Operator Control 1 | Usually ignored | N/A (set to NOP in presets) |
+| `params[3]` | Instruction 1 High Operand | **Control 1** | Primary effect parameter |
+| `params[4]` | Instruction 1 Low Operand | **Control 2** | Secondary effect parameter |
+| `params[5]` | Operator Control 2 | Usually ignored | N/A (set to NOP in presets) |
+| `params[6]` | Instruction 2 High Operand | **Control 3** | Third effect parameter |
+| `params[7]` | Instruction 2 Low Operand | **Control 4** | Fourth effect parameter |
+
+### **Operator Modification (Hybrid)**
+Retains original meanings but with enhanced functionality:
+
+- **Operator Knobs**: Still select operation types, but operations are custom-coded
+- **Operand Controls**: Still set via LED displays/switches with original meanings
+- **Custom Logic**: Enhanced operator behavior while maintaining familiar interface
+
 ## Core Concepts
 
 ### Array Structure
@@ -29,12 +108,12 @@ params[7] = OPERAND_2_LOW_PARAM_INDEX   // Instruction 2 Low Operand (LED displa
 ### Basic Access
 ```impala
 function update() {
-    int knob1 = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
+    int control1 = (int)params[OPERAND_1_HIGH_PARAM_INDEX];  // Control 1 (custom firmware)
     int switches = (int)params[SWITCHES_PARAM_INDEX];
     
     // Always cast to int for calculations
-    if (knob1 > 127) {
-        // Do something when knob is past halfway
+    if (control1 > 127) {
+        // Do something when Control 1 is past halfway
     }
 }
 ```
@@ -139,10 +218,10 @@ This prevents `update()` from being called when clock frequency or operators cha
 ### Display Parameter Values
 ```impala
 function update() {
-    int knobValue = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
+    int controlValue = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
     
     // Convert to LED pattern (0-7 LEDs)
-    int ledCount = knobValue >> 5;  // Divide by 32
+    int ledCount = controlValue >> 5;  // Divide by 32
     displayLEDs[0] = (1 << ledCount) - 1;  // Light up 'ledCount' LEDs
 }
 ```
@@ -166,8 +245,8 @@ function process() {
     array localParams[PARAM_COUNT];
     copy(PARAM_COUNT from params to localParams);
     
-    int knob1 = localParams[OPERAND_1_HIGH_PARAM_INDEX];
-    int knob2 = localParams[OPERAND_1_LOW_PARAM_INDEX];
+    int control1 = localParams[OPERAND_1_HIGH_PARAM_INDEX];
+    int control2 = localParams[OPERAND_1_LOW_PARAM_INDEX];
     
     // Use local copies in calculations
 }
@@ -200,10 +279,10 @@ global float feedback;
 global int isReversed;
 
 function update() {
-    // Convert knob 1 to mix amount (0-255)
+    // Convert Control 1 to mix amount (0-255)
     mixAmount = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
     
-    // Convert knob 2 to feedback (0.0-0.95)
+    // Convert Control 2 to feedback (0.0-0.95)
     feedback = itof((int)params[OPERAND_1_LOW_PARAM_INDEX]) * 0.95 / 255.0;
     
     // Check reverse switch

@@ -3,12 +3,42 @@
 ## What This Does
 Creates a simple delay effect with adjustable delay time and feedback amount. The delayed signal is mixed with the original to create echo effects ranging from short slap-back delays to long ambient trails.
 
+### **Approach: Custom Firmware (Manual Memory Management)**
+
+This recipe demonstrates **Approach 2: Custom Firmware** - manually implementing delay using custom memory management instead of using Permut8's built-in SUB operator.
+
+**Why This Approach?**:
+- **Educational** - shows how delays work at the memory level
+- **Custom control** - full control over delay algorithm and feedback  
+- **Learning foundation** - understand delay concepts before using operators
+- **Flexibility** - can implement delay variations not possible with standard operators
+
+**How It Works**:
+```
+Audio Input → [Custom code manages delay buffer] → Audio Output
+```
+- Custom code manually reads/writes to delay memory using `read()` and `write()`
+- Manual circular buffer management with `delayIndex` tracking
+- Custom feedback mixing and clipping control
+
+**Recommended Alternative - Original Operators**:
+For most delay effects, use **Approach 1: Original Operators**:
+- **Instruction 1**: SUB operator with delay time operands (more efficient)
+- **Instruction 2**: NOP or additional modulation operators
+- **Interface**: Set delay time via switches/LED displays or knob override
+- **Benefits**: Hardware-optimized, automatic memory management, can combine with other operators
+
+**When to Use Custom Firmware**:
+- Learning how delays work internally
+- Need custom delay algorithms (multi-tap, modulated, etc.)
+- Want to combine delay with non-delay processing
+
 ## Quick Reference
 **Parameters**:
-- **Knob 1 (params[0])**: Delay time (1-1000 samples, timing varies with sample rate)
-- **Knob 2 (params[1])**: Feedback amount (0-90% to prevent runaway)
-- **Knob 3 (params[5])**: [Available for expansion]
-- **Knob 4 (params[6])**: [Available for expansion]
+- **Control 1 (params[0])**: Delay time (1-1000 samples, timing varies with sample rate)
+- **Control 2 (params[1])**: Feedback amount (0-90% to prevent runaway)
+- **Control 3 (params[5])**: [Available for expansion]
+- **Control 4 (params[6])**: [Available for expansion]
 
 **Key Concepts**: Memory read/write operations, feedback loops, circular buffering
 

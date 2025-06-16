@@ -340,10 +340,10 @@ Code: {
   - C2: "Experimental" - Special effects
 
 ## Parameters
-- Knob 1: [Primary effect parameter]
-- Knob 2: [Secondary parameter]
-- Knob 3: [Modulation/mix parameter] 
-- Knob 4: [Special feature parameter]
+- Control 1: [Primary effect parameter]
+- Control 2: [Secondary parameter]
+- Control 3: [Modulation/mix parameter] 
+- Control 4: [Special feature parameter]
 
 ## Tips
 - Start with A0 preset for subtle effects

@@ -126,9 +126,9 @@ locals int threshold, int release_speed, int strength, int left_peak, int right_
 **Gain Reduction**: Multiplies the audio signal by a factor less than 1.0 to reduce level.
 
 **Parameter Control**:
-- **Knob 1**: Threshold (higher = limiting starts later)
-- **Knob 2**: Release speed (higher = faster recovery)
-- **Knob 3**: Limiter strength (higher = more aggressive limiting)
+- **Control 1**: Threshold (higher = limiting starts later)
+- **Control 2**: Release speed (higher = faster recovery)
+- **Control 3**: Limiter strength (higher = more aggressive limiting)
 
 ## Try These Settings
 

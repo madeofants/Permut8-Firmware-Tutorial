@@ -157,10 +157,10 @@ locals int read_pos
 **Stereo Processing**: Independent left and right channel processing maintains stereo image during granular synthesis.
 
 **Parameter Control**:
-- **Knob 1**: Grain size (larger = smoother, smaller = more granular)
-- **Knob 2**: Read position (different timing relationships)
-- **Knob 3**: Trigger rate (faster = denser texture)
-- **Knob 4**: Dry/wet mix (blend original with granular)
+- **Control 1**: Grain size (larger = smoother, smaller = more granular)
+- **Control 2**: Read position (different timing relationships)
+- **Control 3**: Trigger rate (faster = denser texture)
+- **Control 4**: Dry/wet mix (blend original with granular)
 
 ## Try These Settings
 

@@ -141,10 +141,10 @@ locals int crossover, int low_thresh, int high_thresh, int output_gain, int inpu
 **Band Recombination**: Compressed bands are simply added back together.
 
 **Parameter Control**:
-- **Knob 1**: Low band threshold (higher = less bass compression)
-- **Knob 2**: High band threshold (higher = less treble compression)
-- **Knob 3**: Crossover frequency (higher = more bass in low band)
-- **Knob 4**: Output gain (compensate for compression)
+- **Control 1**: Low band threshold (higher = less bass compression)
+- **Control 2**: High band threshold (higher = less treble compression)
+- **Control 3**: Crossover frequency (higher = more bass in low band)
+- **Control 4**: Output gain (compensate for compression)
 
 **LED Feedback**: Shows gain reduction and levels for both bands.
 

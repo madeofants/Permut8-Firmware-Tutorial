@@ -160,9 +160,9 @@ locals int switch_input, int switch_pressed, int mode_select, int input_sample, 
 **Mode Selection**: Two methods - button cycling (advances through modes) or direct parameter selection (knob selects mode).
 
 **Parameter Control**:
-- **Knob 1**: Mode advance button (press to cycle)
-- **Knob 2**: Bypass switch (on/off)
-- **Knob 3**: Direct mode select (0-255 → mode 0-3)
+- **Control 1**: Mode advance button (press to cycle)
+- **Control 2**: Bypass switch (on/off)
+- **Control 3**: Direct mode select (0-255 → mode 0-3)
 
 ## Try These Settings
 

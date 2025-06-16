@@ -59,87 +59,148 @@ You should see `ringmod_code.gazl` created - that's your compiled firmware!
 
 ## Your First Firmware (15 minutes)
 
-Let's create a simple bit crusher and understand how Permut8's operator system works.
+Let's create a **simple delay effect** that shows the **direct connection** between Permut8's operator system and custom firmware.
 
 ### **Understanding Permut8's Core System**
 
 Before we build, let's understand what makes Permut8 special:
 
 **The Heart**: 128 kilowords of delay memory with moving read/write heads
-- **Write position (red dot)**: Where incoming audio is stored
-- **Read positions (green dots)**: Where audio is played back from
+- **Write position (red dot)**: Where incoming audio is stored continuously
+- **Read positions (green dots)**: Where audio is played back from 
 - **Two instructions**: Manipulate the read positions to create effects
 
-**How Effects Work**: All Permut8 effects come from creatively moving where audio is read from memory:
-- **Delays**: Read from behind the write position
-- **Pitch effects**: Read at different speeds than writing  
-- **Modulation**: Constantly move the read positions
-- **Our bitcrusher**: Will use **custom firmware** to bypass this system and process audio directly
+**How Delays Work in Permut8**:
+```
+Audio Input → [Write to memory] → [Read from memory at offset] → Audio Output + Original
+```
+- **Write**: Current audio goes into memory at write position
+- **Read**: Audio from X samples ago comes out of memory 
+- **Mix**: Delayed audio + original audio = echo effect
 
-**Original vs Custom Firmware**:
-- **Original**: Use operators (AND, MUL, OSC, etc.) + operands to manipulate read positions
-- **Custom**: Take complete control and implement any algorithm you want
+**Original vs Custom Approach** (Same Effect, Different Methods):
+
+#### **Original: SUB Operator (Built-in)**
+- **Instruction 1**: SUB operator with delay time operand
+- **Hardware manages**: Memory read/write automatically
+- **Interface**: Set delay time via switches/LED displays
+- **Efficiency**: Hardware-optimized, very fast
+
+#### **Custom: Manual Implementation (What We'll Build)**
+- **Our firmware**: Manually manage memory read/write
+- **Direct control**: Every aspect of the delay algorithm
+- **Interface**: Custom knob labels and behaviors
+- **Learning**: See exactly how delays work inside
 
 ### 1. Create a New File
-Create `bitcrush.impala` with this code:
+Create `custom_delay.impala` with this code:
 
-**Bit Crusher - Your First Permut8 Firmware**
+**Custom Delay - Shows Connection to SUB Operator**
 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 extern native yield
+extern native read
+extern native write
 
+// Interface override: Transform operator interface into custom delay controls
 readonly array panelTextRows[8] = {
     "",
     "",
     "",
-    "BIT |------ CRUSH AMOUNT (INSTRUCTION 1) ------|",
+    "DELAY |---- TIME (INSTRUCTION 1 HIGH) ----|",
     "",
     "",
     "",
-    ""
+    "DELAY |-- FEEDBACK (INSTRUCTION 1 LOW) --|"
 }
 
 global array signal[2]
 global array params[8]
 global array displayLEDs[4]
 
+// Delay state (what SUB operator manages automatically)
+global int writePosition = 0
+global array tempBuffer[2]
+
 function process()
-locals int bits, int shift, int mask
+locals int delayTime, int feedback, int input, int delayed, int output
 {
     loop {
-        bits = ((int) global params[3] >> 5) + 1;
-        shift = 12 - bits;
-        mask = 0xFFF0 << shift;
+        // Same parameters that SUB operator uses, but with custom control
+        delayTime = ((int)global params[3] * 500 / 255) + 50;  // 50-550 samples (Instruction 1 High)
+        feedback = ((int)global params[4] * 200 / 255);         // 0-200 feedback (Instruction 1 Low)
         
-        global displayLEDs[0] = 1 << (bits - 1);
+        // Manual delay processing (what SUB operator does automatically)
+        input = (int)global signal[0];
         
-        global signal[0] = ((int) global signal[0]) & mask;
-        global signal[1] = ((int) global signal[1]) & mask;
+        // Read delayed sample from memory (read position = write position - delay time)
+        int readPosition = global writePosition - delayTime;
+        if (readPosition < 0) readPosition += 65536;  // Wrap around
+        
+        read(readPosition, 1, global tempBuffer);
+        delayed = global tempBuffer[0];
+        
+        // Create echo: original + delayed signal
+        output = input + (delayed * feedback / 255);
+        
+        // Prevent clipping
+        if (output > 2047) output = 2047;
+        if (output < -2047) output = -2047;
+        
+        // Write current input + feedback to memory for next cycle
+        global tempBuffer[0] = input + (delayed * feedback / 255);
+        write(global writePosition, 1, global tempBuffer);
+        
+        // Advance write position (what hardware manages automatically)
+        global writePosition = (global writePosition + 1) % 65536;
+        
+        // Output the echo
+        global signal[0] = output;
+        global signal[1] = output;  // Mono delay
+        
+        // Visual feedback showing delay activity
+        global displayLEDs[0] = delayTime >> 2;        // Show delay time
+        global displayLEDs[1] = feedback;              // Show feedback amount
+        global displayLEDs[2] = (delayed > 0) ? 0xFF : 0x00;  // Activity indicator
+        global displayLEDs[3] = (global writePosition >> 8) & 0xFF;  // Position indicator
         
         yield();
     }
 }
 ```
 
-**Interface Architecture**: This custom firmware demonstrates Permut8's interface override system:
+### **The Operator Connection - Same Parameters, Different Approach**
 
-- **Original Interface**: Instruction 1 High Operand (`params[3]`) set via switches/LED display (0-255)
-- **Custom Override**: Same parameter becomes direct knob control with custom label
-- **Visual Transform**: `panelTextRows[3]` replaces hex display with "CRUSH AMOUNT" 
-- **Data Flow**: User knob → `params[3]` → bit depth calculation → LED feedback
+This firmware shows the **direct relationship** between custom firmware and Permut8's built-in operators:
 
-The parameter access is identical (`params[3]`), but the user experience is completely transformed.
+#### **What SUB Operator Does Automatically**:
+- **Memory Management**: Hardware tracks write position automatically
+- **Read Positioning**: SUB operand directly controls read offset  
+- **Efficiency**: Optimized in hardware, very fast
+
+#### **What Our Custom Firmware Does Manually**:
+- **Manual Memory**: We track `writePosition` ourselves
+- **Manual Reading**: We calculate `readPosition = writePosition - delayTime`
+- **Same Parameters**: `params[3]` (Instruction 1 High) controls delay time in both approaches
+- **Same Effect**: Both create delay, just different implementations
+
+#### **Interface Transformation**:
+- **Original**: `params[3]` controlled via switches/LED display showing hex values
+- **Custom**: Same `params[3]` becomes direct "DELAY TIME" knob via `panelTextRows`
+- **User Experience**: Intuitive delay control instead of abstract operand values
+
+**The Key Insight**: Both approaches use the **same parameter system** (`params[3]`, `params[4]`), but custom firmware gives you complete control over what those parameters mean and how they're processed.
 
 ### 2. Compile Your Firmware
 ```bash
-PikaCmd.exe -compile bitcrush.impala
+PikaCmd.exe -compile custom_delay.impala
 ```
 
 **If that doesn't work**, use the full command:
 ```bash
-.\PikaCmd.exe impala.pika compile bitcrush.impala bitcrush.gazl
+.\PikaCmd.exe impala.pika compile custom_delay.impala custom_delay.gazl
 ```
 
 ### 3. Create Firmware Bank
@@ -147,7 +208,7 @@ PikaCmd.exe -compile bitcrush.impala
 **Step 3a: Clean the GAZL File**
 Before creating the bank, you need to clean the compiled GAZL file:
 
-1. **Open `bitcrush.gazl`** in a text editor
+1. **Open `custom_delay.gazl`** in a text editor
 2. **Remove the compiler comment line** (if present):
    ```
    ; Compiled with Impala version 1.0
@@ -159,18 +220,18 @@ Before creating the bank, you need to clean the compiled GAZL file:
 4. **Keep only the pure assembly code**
 
 **Step 3b: Create the Bank File**
-Create `bitcrush.p8bank` with this **exact format** (note the header):
+Create `custom_delay.p8bank` with this **exact format** (note the header):
 ```
 Permut8BankV2: {
     CurrentProgram: A0
     Programs: {
-        A0: { Name: "Subtle Bit Reduction", Operator1: "2" }
-        A1: { Name: "Lo-Fi Crunch", Operator1: "6" }
-        A2: { Name: "Extreme Decimation", Operator1: "8" }
-        A3: { Name: "Clean High-Res", Operator1: "0" }
+        A0: { Name: "Short Slap Delay", Operator1: "8" }
+        A1: { Name: "Medium Echo", Operator1: "8" }
+        A2: { Name: "Long Ambient", Operator1: "8" }
+        A3: { Name: "Feedback Madness", Operator1: "8" }
     }
     Firmware: {
-        Name: "bitcrush"
+        Name: "custom_delay"
         Code: {
 [PASTE YOUR CLEANED GAZL CONTENT HERE]
  }
@@ -180,82 +241,90 @@ Permut8BankV2: {
 
 ### **Understanding the Operators in Your Presets**
 
-You might notice each preset has an `Operator1` value. Here's what they do:
+You might notice each preset has `Operator1: "8"`. This is **significant** - here's why:
 
-**What These Numbers Mean**:
-- These are **operator codes** that would normally control how Permut8 manipulates read positions
-- **Our custom firmware ignores them** - we're doing direct audio processing instead
-- **They're required** for proper bank format, but won't affect our bitcrusher
+**What "8" Means**:
+- **Operator1: "8"** = **SUB operator** (Subtract - creates delays)
+- This is the **same operator** that would create delays using the built-in system
+- **Our custom firmware ignores it** - we're implementing delay manually instead
+- **But the connection is clear**: We're doing the same job as SUB operator
 
-**Normal Permut8 Operators**:
-- **Operator1: "0"** = NOP (No Operation - bypass)
-- **Operator1: "2"** = MUL (Multiply - changes pitch/speed)  
-- **Operator1: "6"** = XOR (Bit manipulation of read positions)
-- **Operator1: "8"** = SUB (Subtract - creates delays)
+**The Operator Connection**:
+- **Built-in SUB**: `Operator1: "8"` + operand values create automatic delays
+- **Our Custom**: Manual implementation of what SUB does automatically
+- **Same Parameters**: Both use `params[3]` for delay time, `params[4]` for feedback
+- **Same Result**: Both create delay effects, just different approaches
 
-**Why This Matters**: Understanding these helps you:
-1. **Design better custom firmware** - Know what users expect
-2. **Mix approaches** - Combine original operators with custom processing
-3. **Learn effect building** - See how Permut8 naturally thinks about audio
+**Why Use SUB "8" in Presets?**:
+1. **Shows Intent**: Makes it clear this is a delay effect
+2. **User Expectation**: Users familiar with SUB will understand immediately  
+3. **Learning Connection**: Demonstrates relationship between operators and custom code
+4. **Future Compatibility**: Could switch to built-in SUB by removing custom firmware
 
-### 3. Prepare GAZL for Bank
-**Remove the first line** from your compiled `bitcrush.gazl`:
-1. Open `bitcrush.gazl` in any text editor
-2. Delete the first line: `; Compiled with Impala version 1.0`
-3. Save the file
+**The Bigger Picture**: This demonstrates how custom firmware can **replace** or **enhance** built-in operators while using the same parameter system and interface concepts.
 
-### 4. Load and Test Your Bitcrusher
+### 4. Load and Test Your Custom Delay
 
-1. **Load the bank**: File → Load Bank → `bitcrush.p8bank`
+1. **Load the bank**: File → Load Bank → `custom_delay.p8bank`
 2. **Select a preset** to start with
 3. **Play audio** through Permut8
-4. **Turn the knob** to hear the bitcrushing effect!
+4. **Turn the operator knobs** to hear the delay effect!
 
-## How to Use Your Bitcrusher
+## How to Use Your Custom Delay
 
 ### **What Just Happened?**
-Your custom firmware **completely bypassed** Permut8's normal operator system:
+Your custom firmware **manually implemented** what the SUB operator does automatically:
 
-**Normal Permut8 Flow**:
+**Normal SUB Operator Flow**:
 ```
-Audio Input → Delay Memory → [Operators manipulate read positions] → Audio Output
-```
-
-**Your Custom Bitcrusher Flow**:
-```
-Audio Input → [Direct bit manipulation in code] → Audio Output
+Audio Input → Delay Memory → [SUB operator subtracts offset] → Audio Output + Original
 ```
 
-**Why This Matters**: You took **complete control** of the audio processing instead of using Permut8's built-in read/write head manipulation system.
+**Your Custom Delay Flow**:
+```
+Audio Input → [Manual memory read/write with offset] → Audio Output + Original
+```
+
+**Same Result, Different Method**: Both create delay effects, but now you understand exactly how delays work inside Permut8's memory system.
 
 ### **Interface Transformation**
-- **Normal**: Instruction 1 High Operand set by switches (for operators like MUL, AND, etc.)
-- **Your Firmware**: Same parameter becomes direct "bit depth" knob control
-- **Visual**: LED display shows "CRUSH AMOUNT" instead of hex operand value
+- **Original**: Instruction 1 operands set by switches/LED displays showing hex values
+- **Your Firmware**: Same parameters become intuitive "DELAY TIME" and "FEEDBACK" controls
+- **Visual**: Clear labels instead of abstract hex operand values
+
+### **The Memory Connection**
+Your code manually does what SUB operator handles automatically:
+- **Write Position**: You track `writePosition` manually vs. hardware automatic
+- **Read Position**: You calculate `writePosition - delayTime` vs. SUB operand subtraction
+- **Memory Management**: You use `read()` and `write()` vs. hardware optimization
 
 ### **Preset Guide**
-- **A0 "Subtle Bit Reduction"**: Start here - gentle lo-fi character, maintains clarity
-- **A1 "Lo-Fi Crunch"**: Classic 90s digital sound, crunchy but musical  
-- **A2 "Extreme Decimation"**: Aggressive digital distortion, harsh and pixelated
-- **A3 "Clean High-Res"**: Minimal processing, slight coloration
+- **A0 "Short Slap Delay"**: Quick echo, good for drums and percussion
+- **A1 "Medium Echo"**: Classic delay, perfect for vocals and instruments
+- **A2 "Long Ambient"**: Spacious delays for atmospheric effects
+- **A3 "Feedback Madness"**: High feedback for experimental sounds
 
-### **Sound Guide**
-- **Full left (1-2 bits)**: Harsh, pixelated, extreme digital distortion
-- **Center (4-5 bits)**: Classic lo-fi sound, crunchy but musical
-- **Full right (7-8 bits)**: Subtle warmth, barely noticeable effect
+### **Control Guide**
+- **Control 1 (Delay Time)**: Adjust Instruction 1 High Operand position for delay time
+- **Control 2 (Feedback)**: Adjust Instruction 1 Low Operand position for feedback amount
+- **LED Display**: Shows delay time, feedback amount, and activity
+
+**Note**: This custom firmware transforms the operand controls (normally set via LED displays and switches) into direct effect controls. The **Operator Control 1** and **Operator Control 2** are not used.
 
 ### **Tips for New Users**
-1. **Start with preset A0** and turn the knob slowly
-2. **Watch the LED display** - it shows you the current bit depth visually
-3. **Try with different input levels** - louder input makes the effect more obvious
-4. **Combine with other effects** - bitcrushing works great before reverb or delay
+1. **Start with A0** and adjust Control 1 (Instruction 1 High Operand) slowly to hear delay time changes
+2. **Add feedback** with Control 2 (Instruction 1 Low Operand) to create multiple echoes
+3. **Watch LEDs** - they show delay parameters and memory activity
+4. **Compare to built-in**: Try the same settings with SUB operator
 
-### **Expected Behavior**
-- **Immediate response**: Effect changes in real-time as you turn the knob
-- **LED feedback**: Display pattern changes to show current bit depth
-- **Audio range**: From subtle lo-fi warmth to extreme digital destruction
+### **The Learning Connection**
+This delay effect shows you:
+- **How delay memory works** - the foundation of all Permut8 effects
+- **Parameter relationships** - same `params[3]` and `params[4]` as SUB operator
+- **Custom vs. built-in** - both approaches, same results
+- **Interface control** - how to make complex parameters user-friendly
 
-**Congratulations!** You just created working DSP firmware with a custom interface that converts complex operand controls into an intuitive effect knob.
+**Congratulations!** You just created a delay effect that manually implements what Permut8's SUB operator does automatically, showing the direct connection between operators and custom firmware.
 
 ## Modify Existing Firmware (15 minutes)
 

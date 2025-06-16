@@ -120,9 +120,9 @@ locals int gain_param, int curve_param, int smooth_speed, int gain_step, int out
 **Curve Shaping**: The curve parameter adjusts the response from more linear (professional) to more exponential (musical).
 
 **Parameter Control**:
-- **Knob 1**: Gain level (0 = mute, 128 = moderate, 255 = boost)
-- **Knob 2**: Response curve (0 = linear, 255 = exponential)
-- **Knob 3**: Smoothing speed (higher = faster changes)
+- **Control 1**: Gain level (0 = mute, 128 = moderate, 255 = boost)
+- **Control 2**: Response curve (0 = linear, 255 = exponential)
+- **Control 3**: Smoothing speed (higher = faster changes)
 
 ## Try These Settings
 

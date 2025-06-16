@@ -18,7 +18,37 @@ Create the simplest possible working plugin that proves your Permut8 setup is wo
 
 ## Step 1: Understanding the Goal
 
-### 1.1 What We're Building
+### 1.1 Permut8's Two Approaches to Audio
+
+**Before we build**, it's important to understand that Permut8 has **two fundamentally different ways** to process audio:
+
+#### **Approach 1: Original Operator System**
+```
+Audio Input → 128k Delay Memory → [Operators manipulate read positions] → Audio Output
+```
+- **How it works**: Audio is stored in memory, operators control where and how it's read back
+- **Effects**: Delays, pitch shifting, modulation, granular textures
+- **Interface**: Operators (AND, MUL, OSC, etc.) + operands set via switches/LED displays
+
+#### **Approach 2: Custom Firmware (What This Tutorial Teaches)**  
+```
+Audio Input → [Your code processes samples directly] → Audio Output
+```
+- **How it works**: Bypass the delay system, process audio samples with your own algorithms
+- **Effects**: Distortion, filtering, compression, bit crushing, anything you can code
+- **Interface**: Direct knob control with custom labels and behaviors
+
+### 1.2 Why Start with Custom Firmware?
+
+This tutorial uses **Approach 2 (custom firmware)** because:
+- **Immediate feedback**: Code changes directly affect what you hear
+- **Easier to understand**: Clear relationship between code and audio
+- **Foundation building**: Concepts apply to any audio programming
+- **Learning progression**: Master direct processing before complex memory manipulation
+
+Once you understand custom firmware, you can learn the operator system for more advanced time-based effects.
+
+### 1.3 What We're Building
 A plugin that:
 - ✅ Loads successfully into Permut8
 - ✅ Passes audio through unchanged
@@ -300,11 +330,15 @@ function process()
 - Basic audio sample manipulation
 
 ### 8.2 Ready For Next Steps
-**Build on this foundation:**
+
+**Continue with Custom Firmware:**
 - 📖 [Make Your First Sound](make-your-first-sound.md) - Generate audio instead of just modifying it
 - 📖 [Control Something with Knobs](control-something-with-knobs.md) - Use hardware knobs to control your effects
 - 📖 [Light Up LEDs](light-up-leds.md) - Advanced LED patterns and feedback
 - 📖 [Build Your First Filter](build-your-first-filter.md) - Create your first real audio effect
+
+**Learn Permut8's Original System:**
+- 📖 [Understanding Permut8 Operators](understanding-permut8-operators.md) - Master the instruction system and memory manipulation (25 min)
 
 ### 8.3 Experiment Ideas
 **Try these modifications:**

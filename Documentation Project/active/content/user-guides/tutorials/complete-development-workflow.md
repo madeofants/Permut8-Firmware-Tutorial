@@ -1079,8 +1079,8 @@ function setDelay1(int index, int value)
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 // === ALGORITHM PARAMETERS ===
-// Delay time: 50ms to 2000ms (mapped from knob 0-255)
-// Feedback: 0% to 120% (mapped from knob 0-255)
+// Delay time: 50ms to 2000ms (mapped from Control 1, 0-255)
+// Feedback: 0% to 120% (mapped from Control 2, 0-255)
 // Tape age: 0% to 100% (controls saturation amount)
 // Wow/flutter: 0% to 10% (tape speed variation)
 
@@ -1183,10 +1183,10 @@ v1.0.0 (2024-12-30)
 Brief description of what the effect does and its intended use.
 
 ## Parameters
-- **Knob 1 (Time)**: Delay time from 50ms to 2 seconds
-- **Knob 2 (Feedback)**: Feedback amount from 0% to 120%
-- **Knob 3 (Character)**: Tape age simulation from new to vintage
-- **Knob 4 (Flutter)**: Wow and flutter from stable to warped
+- **Control 1 (Time)**: Delay time from 50ms to 2 seconds
+- **Control 2 (Feedback)**: Feedback amount from 0% to 120%
+- **Control 3 (Character)**: Tape age simulation from new to vintage
+- **Control 4 (Flutter)**: Wow and flutter from stable to warped
 
 ## LED Display
 - **LEDs 1-4**: Show delay time as moving dot pattern

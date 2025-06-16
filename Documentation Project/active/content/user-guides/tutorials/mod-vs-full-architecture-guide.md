@@ -1,23 +1,53 @@
-# Mod vs Full Patch Architecture Decision Guide
+# Permut8 Architecture Decision Guide
 
-**Choose the right firmware architecture for your project**
+**Choose the right approach for your project: Original Operators, Custom Firmware, or Operator Modification**
 
-One of the most important decisions in Permut8 firmware development is choosing between **Mod patches** and **Full patches**. This choice affects everything from development complexity to performance characteristics. This guide will help you make the right architectural decision for your specific project.
+Permut8 offers **three distinct approaches** to creating audio effects, each with different capabilities and complexity levels. Understanding these approaches is essential for making the right architectural decision for your specific project.
 
 ## What You'll Learn
 
 By the end of this guide, you'll understand:
-- The fundamental differences between Mod and Full patches
-- When to choose each architecture type
+- Permut8's three architecture approaches and their fundamental differences
+- The operator system vs custom firmware paradigms
+- When to choose original operators vs custom code
 - Trade-offs and limitations of each approach
-- How to implement each type correctly
-- Migration strategies between architectures
+- How to implement each architecture correctly
+- Migration strategies between approaches
 
 **Prerequisites**: [Understanding Impala Language Fundamentals](understanding-impala-fundamentals.md)  
 **Time Required**: 30-45 minutes  
 **Difficulty**: Beginner to Intermediate
 
-## Chapter 1: Understanding the Two Architectures
+## Chapter 1: Understanding Permut8's Three Approaches
+
+### **The Foundation: 128k Delay Memory System**
+
+Before diving into architecture choices, understand that **all Permut8 effects** come from manipulating where and how audio is read from a **128-kiloword delay memory buffer**:
+
+- **Write position (red dot)**: Where incoming audio is stored
+- **Read positions (green dots)**: Where audio is played back from (left/right channels)
+- **Two instructions**: Process sequentially to create complex effects
+
+**This is the core concept that distinguishes Permut8 from other audio processors.**
+
+### **Approach 1: Original Operator System**
+```
+Audio Input → 128k Delay Memory → [Operators manipulate read positions] → Audio Output
+```
+
+**How It Works**:
+- Audio is continuously written to delay memory
+- **Eight built-in operators** (AND, MUL, OSC, RND, OR, XOR, MSK, SUB, NOP) manipulate read positions
+- **Two instructions** process sequentially: Instruction 1 → Instruction 2
+- **Operands** (0-255 values) control operator behavior via switches/LED displays
+
+**Effects Created**: Delays, pitch shifting, modulation, granular textures, rhythmic patterns
+
+**Interface**: Users select operators via presets, adjust operands via hardware switches
+
+**No Custom Code Required** - Use existing interface and built-in operators
+
+### **Approach 2: Custom Firmware (Full Patches)**
 
 ### Full Patches: Complete Audio Processing Chain
 

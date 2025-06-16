@@ -6,6 +6,22 @@ Impala's memory model is specifically designed for real-time audio processing on
 
 **Core Philosophy**: Predictable, deterministic memory behavior with zero-overhead abstractions for real-time audio requirements.
 
+### **Permut8's Unique Memory Architecture**
+
+Beyond standard memory management, Permut8 provides a specialized **128-kiloword delay memory system** that is central to its audio processing capabilities:
+
+**128k Delay Memory**:
+- **Dedicated audio buffer** separate from program memory
+- **Hardware-managed write position** (red dot) - where incoming audio is stored
+- **Operator-controlled read positions** (green dots) - where audio is played back from  
+- **Foundation of all effects** - delays, pitch shifting, modulation, granular processing
+
+**Two Approaches to Memory**:
+1. **Original Operator System**: Use hardware-managed delay memory with built-in operators
+2. **Custom Firmware**: Manage your own memory regions with manual allocation
+
+This document covers general Impala memory management. For delay memory specifics, see [Understanding Permut8 Operators](../user-guides/tutorials/understanding-permut8-operators.md).
+
 ## Memory Architecture Overview
 
 ### Impala Memory Regions

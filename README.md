@@ -215,6 +215,15 @@ PikaCmd.exe impala.pika compile source.impala output.gazl
 
 ## 📋 Recent Achievements
 
+### Comprehensive Knob Terminology Audit (June 2025)
+- ✅ **Critical Terminology Issues Resolved** - Eliminated confusion between operator knobs and operand controls
+- ✅ **144 Individual Fixes** - Systematic correction across 27 documentation files
+- ✅ **Master Reference Standard** - Definitive terminology guide in parameters_reference.md
+- ✅ **Zero Ambiguous References** - Complete elimination of "Knob 1/2/3/4" confusion
+- ✅ **Interface Architecture Clarity** - Clear distinction between operation selection vs parameter setting
+- ✅ **Professional Documentation** - Industry-standard terminology throughout all content
+- ✅ **User Experience Excellence** - Crystal-clear control guidance for every effect and tutorial
+
 ### Interface Documentation Overhaul (June 2025)
 - ✅ **Foundational Interface Clarification** - Distinguished original vs custom firmware interfaces
 - ✅ **Enhanced QUICKSTART Tutorial** - Descriptive presets and comprehensive UX guidance

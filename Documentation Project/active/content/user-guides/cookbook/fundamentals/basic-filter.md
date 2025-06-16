@@ -6,6 +6,29 @@
 
 Filters selectively reduce or emphasize certain frequencies in audio signals. Use them to remove unwanted frequencies, shape tone character, or create classic synthesizer effects like resonant sweeps.
 
+### **Approach: Custom Firmware (Direct Processing)**
+
+This recipe demonstrates **Approach 2: Custom Firmware** - implementing digital filter algorithms with direct sample-by-sample processing.
+
+**Why This Approach?**:
+- **Filter algorithms** require precise mathematical operations on audio samples
+- **State management** - filters need to remember previous values for recursive processing
+- **Custom interface** - intuitive cutoff/resonance/type controls
+- **Educational** - shows how digital filters work at the algorithm level
+
+**How It Works**:
+```
+Audio Input → [Custom filter algorithm with state variables] → Audio Output
+```
+- Direct sample processing with recursive filter equations
+- Custom state variables store filter memory between samples
+- Multiple filter types selectable via parameter
+
+**Alternative Approaches**:
+- **Original operators**: No direct filtering operators, but could combine for effect
+- **Operator modification**: Replace operator with custom filter (hybrid approach)
+- **Hardware assistance**: Some filter operations could use bit manipulation operators
+
 ## Quick Reference
 
 **Essential Parameters:**
@@ -118,10 +141,10 @@ locals int cutoff, int resonance, int filter_type, int mix, int input, int filte
 **Resonance**: Adds feedback to emphasize frequencies near the cutoff point.
 
 **Parameter Control**:
-- **Knob 1**: Cutoff frequency (lower = more filtering)
-- **Knob 2**: Resonance (higher = more emphasis)
-- **Knob 3**: Filter type (0-63=low, 64-127=high, 128-191=band, 192-255=bypass)
-- **Knob 4**: Dry/wet mix (blend filtered with original)
+- **Control 1**: Cutoff frequency (lower = more filtering)
+- **Control 2**: Resonance (higher = more emphasis)
+- **Control 3**: Filter type (0-63=low, 64-127=high, 128-191=band, 192-255=bypass)
+- **Control 4**: Dry/wet mix (blend filtered with original)
 
 ## Try These Settings
 
