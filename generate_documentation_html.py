@@ -44,60 +44,34 @@ def markdown_to_html(content):
     return '\n'.join(html_paragraphs)
 
 def get_file_order():
-    """Define the reading order for documentation files"""
-    return [
-        # Foundation
-        "Documentation Project/active/content/user-guides/QUICKSTART.md",
-        "Documentation Project/active/content/user-guides/cookbook/fundamentals/how-dsp-affects-sound.md",
-        "Documentation Project/active/content/user-guides/tutorials/getting-audio-in-and-out.md",
-        "Documentation Project/active/content/user-guides/cookbook/fundamentals/simplest-distortion.md",
-        
-        # Language Reference
-        "Documentation Project/active/content/language/core_language_reference.md",
-        "Documentation Project/active/content/language/language-syntax-reference.md",
-        "Documentation Project/active/content/language/standard-library-reference.md",
-        "Documentation Project/active/content/language/types-and-operators.md",
-        "Documentation Project/active/content/language/core-functions.md",
-        
-        # Architecture
-        "Documentation Project/active/content/architecture/memory-layout.md",
-        "Documentation Project/active/content/architecture/memory-model.md", 
-        "Documentation Project/active/content/architecture/processing-order.md",
-        "Documentation Project/active/content/architecture/state-management.md",
-        "Documentation Project/active/content/architecture/p8bank-format.md",
-        
-        # Tutorials
-        "Documentation Project/active/content/user-guides/tutorials/creating-firmware-banks.md",
-        "Documentation Project/active/content/user-guides/tutorials/compiler-troubleshooting-guide.md",
-        "Documentation Project/active/content/user-guides/tutorials/complete-development-workflow.md",
-        "Documentation Project/active/content/user-guides/tutorials/debug-your-plugin.md",
-        "Documentation Project/active/content/user-guides/tutorials/mod-vs-full-architecture-guide.md",
-        
-        # Cookbook - Fundamentals
-        "Documentation Project/active/content/user-guides/cookbook/fundamentals/basic-filter.md",
-        "Documentation Project/active/content/user-guides/cookbook/fundamentals/control-flow-patterns.md",
-        "Documentation Project/active/content/user-guides/cookbook/fundamentals/simplest-distortion.md",
-        
-        # Cookbook - Audio Effects
-        "Documentation Project/active/content/user-guides/cookbook/audio-effects/bitcrusher.md",
-        "Documentation Project/active/content/user-guides/cookbook/audio-effects/make-a-delay.md",
-        "Documentation Project/active/content/user-guides/cookbook/audio-effects/ring-modulation.md",
-        
-        # Cookbook - Parameters
-        "Documentation Project/active/content/user-guides/cookbook/parameters/parameter-smoothing.md",
-        "Documentation Project/active/content/user-guides/cookbook/parameters/knob-to-frequency.md",
-        
-        # Cookbook - Visual Feedback
-        "Documentation Project/active/content/user-guides/cookbook/visual-feedback/control-leds.md",
-        "Documentation Project/active/content/user-guides/cookbook/visual-feedback/display-patterns.md",
-        
-        # Cookbook - Timing
-        "Documentation Project/active/content/user-guides/cookbook/timing/sync-to-tempo.md",
-        
-        # Assembly and Advanced
-        "Documentation Project/active/content/assembly/gazl-assembly-guide.md",
-        "Documentation Project/active/content/assembly/gazl-instruction-reference.md",
+    """Discover and order all documentation files"""
+    files = []
+    base_path = "Documentation Project/active/content"
+    
+    # Priority order for key files
+    priority_files = [
+        "user-guides/QUICKSTART.md",
+        "fundamentals/audio-engineering-for-programmers.md",
+        "user-guides/tutorials/complete-development-workflow.md",
+        "user-guides/tutorials/debug-your-plugin.md",
+        "user-guides/tutorials/mod-vs-full-architecture-guide.md",
     ]
+    
+    # Add priority files first
+    for priority_file in priority_files:
+        full_path = os.path.join(base_path, priority_file)
+        if os.path.exists(full_path):
+            files.append(full_path)
+    
+    # Scan for all other markdown files
+    for root, dirs, filenames in os.walk(base_path):
+        for filename in sorted(filenames):
+            if filename.endswith('.md'):
+                full_path = os.path.join(root, filename)
+                if full_path not in files:  # Don't duplicate priority files
+                    files.append(full_path)
+    
+    return files
 
 def generate_html():
     """Generate the HTML documentation"""
@@ -223,6 +197,7 @@ def generate_html():
     file_order = get_file_order()
     toc_items = []
     sections = []
+    used_ids = set()
     
     for file_path in file_order:
         full_path = os.path.join(os.getcwd(), file_path)
@@ -233,7 +208,15 @@ def generate_html():
                 
                 # Create anchor ID from filename
                 filename = os.path.basename(file_path).replace('.md', '')
-                anchor_id = filename.lower().replace(' ', '-').replace('_', '-')
+                base_anchor_id = filename.lower().replace(' ', '-').replace('_', '-')
+                
+                # Ensure unique ID
+                anchor_id = base_anchor_id
+                counter = 1
+                while anchor_id in used_ids:
+                    anchor_id = f"{base_anchor_id}-{counter}"
+                    counter += 1
+                used_ids.add(anchor_id)
                 
                 # Add to TOC
                 display_name = filename.replace('-', ' ').replace('_', ' ').title()
