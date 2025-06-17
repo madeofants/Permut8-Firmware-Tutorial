@@ -16,7 +16,7 @@ By the end of this tutorial, you'll master:
 - Version management and documentation
 
 **Prerequisites**: 
-- [Understanding Impala Language Fundamentals](#understanding-impala-fundamentals)
+- [Understanding Impala Language Fundamentals](understanding-impala-fundamentals.md)
 - Basic understanding of firmware architecture concepts
 
 **Time Required**: 60-90 minutes  
@@ -323,25 +323,12 @@ locals int input, int output
 
 **Compilation Command Structure**:
 ```bash
-# Standard compilation
 PikaCmd.exe impala.pika compile source.impala output.gazl
-
-# If you get errors, use explicit path resolution
-.\PikaCmd.exe impala.pika compile source.impala output.gazl
 ```
 
-**Understanding PikaCmd.exe Architecture**:
-PikaCmd.exe is actually a **Pika language interpreter**, not a standalone compiler. The compilation process involves three layers:
-
-1. **Shell Layer**: Command resolution (`.\` prefix may be required)
-2. **Interpreter Layer**: PikaCmd.exe loads and executes `impala.pika` script
-3. **Script Layer**: The `impala.pika` script performs the actual compilation logic
-
 **Build Process Flow**:
-1. **Source Code** (.impala) → **Pika Interpreter** → **GAZL Assembly** (.gazl)
+1. **Source Code** (.impala) → **Pika Compiler** → **GAZL Assembly** (.gazl)
 2. **GAZL Assembly** → **Permut8 Plugin** → **Audio Output**
-
-**For detailed troubleshooting**: See [Compiler Troubleshooting Guide](#compiler-troubleshooting-guide)
 
 ### Step 2: Compilation Workflow
 
@@ -355,8 +342,6 @@ PikaCmd.exe impala.pika compile project-name.impala project-name.gazl
 
 # 3. Check for compilation errors
 # If successful, you'll see the .gazl file created
-# If you get "command not recognized", use .\PikaCmd.exe
-# If you get "Cannot open file for reading", ensure impala.pika is specified
 ```
 
 **Automated Build Script** (Windows batch file):
@@ -791,25 +776,18 @@ function process()
 **Loading Process**:
 1. **Compile** your .impala file to .gazl
 2. **Open** Permut8 plugin in your DAW
-3. **Create Firmware Bank**: Package .gazl into .p8bank with presets
-4. **Load Bank**: File → Load Bank → your-effect.p8bank
-5. **Select Preset**: Choose A0-C9 program
-6. **Test**: Verify firmware operation
+3. **Click** the console button (bottom right of Permut8)
+4. **Type**: `patch filename.gazl`
+5. **Press** Enter
 
-**Bank Creation Process**:
+**Console Commands Reference**:
 ```
-your-effect.p8bank: {
-    CurrentProgram: A0
-    Programs: {
-        A0: { Name: "Light Mode", Operator1: "1" }
-        A1: { Name: "Heavy Mode", Operator1: "4" }
-        A2: { Name: "Extreme", Operator1: "7" }
-    }
-    Firmware: {
-        Name: "your_effect"
-        Code: { /* compiled .gazl content */ }
-    }
-}
+patch filename.gazl     # Load your firmware
+patch factory          # Load factory firmware
+reset                  # Reset current firmware
+params                 # Show current parameter values
+trace on              # Enable trace output
+trace off             # Disable trace output
 ```
 
 ### Step 2: Interactive Testing
@@ -818,14 +796,11 @@ your-effect.p8bank: {
 ```
 1. Load a simple audio source (sine wave, white noise)
 2. Insert Permut8 plugin on the audio track
-3. Load your bank: File → Load Bank → your-effect.p8bank
-4. Test each preset (A0, A1, A2, etc.)
-5. Play audio and listen for your effect
-6. Adjust knobs to test parameter response
-7. Check LED display for visual feedback
-8. Test different input sources and levels
-9. Verify preset switching works smoothly
-10. Test bank loading/unloading process
+3. Load your firmware: patch your-effect.gazl
+4. Play audio and listen for your effect
+5. Adjust knobs to test parameter response
+6. Check LED display for visual feedback
+7. Test different input sources and levels
 ```
 
 **Parameter Testing Strategy**:
@@ -1079,8 +1054,8 @@ function setDelay1(int index, int value)
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 // === ALGORITHM PARAMETERS ===
-// Delay time: 50ms to 2000ms (mapped from Control 1, 0-255)
-// Feedback: 0% to 120% (mapped from Control 2, 0-255)
+// Delay time: 50ms to 2000ms (mapped from knob 0-255)
+// Feedback: 0% to 120% (mapped from knob 0-255)
 // Tape age: 0% to 100% (controls saturation amount)
 // Wow/flutter: 0% to 10% (tape speed variation)
 
@@ -1183,10 +1158,10 @@ v1.0.0 (2024-12-30)
 Brief description of what the effect does and its intended use.
 
 ## Parameters
-- **Control 1 (Time)**: Delay time from 50ms to 2 seconds
-- **Control 2 (Feedback)**: Feedback amount from 0% to 120%
-- **Control 3 (Character)**: Tape age simulation from new to vintage
-- **Control 4 (Flutter)**: Wow and flutter from stable to warped
+- **Knob 1 (Time)**: Delay time from 50ms to 2 seconds
+- **Knob 2 (Feedback)**: Feedback amount from 0% to 120%
+- **Knob 3 (Character)**: Tape age simulation from new to vintage
+- **Knob 4 (Flutter)**: Wow and flutter from stable to warped
 
 ## LED Display
 - **LEDs 1-4**: Show delay time as moving dot pattern
@@ -1342,13 +1317,13 @@ Timeline: [If accepted, when to implement]
    - Follow each step methodically
    - Document your experience
 
-2. **Study Advanced Techniques**: [Assembly Integration Guide](#gazl-assembly-introduction)
+2. **Study Advanced Techniques**: [Assembly Integration Guide](../../assembly/gazl-assembly-introduction.md)
    - Learn GAZL assembly for maximum performance
    - Advanced debugging and profiling techniques
 
 3. **Explore Complex Algorithms**: Study cookbook recipes
-   - [Spectral Processing](#spectral-processing) for frequency domain work
-   - [Audio Effects](#audio-effects) for classic DSP algorithms
+   - [Spectral Processing](../cookbook/spectral-processing/) for frequency domain work
+   - [Audio Effects](../cookbook/audio-effects/) for classic DSP algorithms
 
 ### Development Environment Setup
 

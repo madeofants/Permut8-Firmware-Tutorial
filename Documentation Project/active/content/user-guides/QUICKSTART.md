@@ -59,179 +59,124 @@ You should see `ringmod_code.gazl` created - that's your compiled firmware!
 
 ## Your First Firmware (15 minutes)
 
-Let's create a **simple delay effect** that shows the **direct connection** between Permut8's operator system and custom firmware.
-
-### **Understanding Permut8's Core System**
-
-Before we build, let's understand what makes Permut8 special:
-
-**The Heart**: 128 kilowords of delay memory with moving read/write heads
-- **Write position (red dot)**: Where incoming audio is stored continuously
-- **Read positions (green dots)**: Where audio is played back from 
-- **Two instructions**: Manipulate the read positions to create effects
-
-**How Delays Work in Permut8**:
-```
-Audio Input → [Write to memory] → [Read from memory at offset] → Audio Output + Original
-```
-- **Write**: Current audio goes into memory at write position
-- **Read**: Audio from X samples ago comes out of memory 
-- **Mix**: Delayed audio + original audio = echo effect
-
-**Original vs Custom Approach** (Same Effect, Different Methods):
-
-#### **Original: SUB Operator (Built-in)**
-- **Instruction 1**: SUB operator with delay time operand
-- **Hardware manages**: Memory read/write automatically
-- **Interface**: Set delay time via switches/LED displays
-- **Efficiency**: Hardware-optimized, very fast
-
-#### **Custom: Manual Implementation (What We'll Build)**
-- **Our firmware**: Manually manage memory read/write
-- **Direct control**: Every aspect of the delay algorithm
-- **Interface**: Custom knob labels and behaviors
-- **Learning**: See exactly how delays work inside
+Let's create a **simple volume control effect** that gives you immediate audio feedback and shows the basic structure of Permut8 firmware.
 
 ### 1. Create a New File
-Create `custom_delay.impala` with this code:
+Create `volume_control.impala` with this code:
 
-**Custom Delay - Shows Connection to SUB Operator**
+**Simple Volume Control - Immediate Audio Feedback**
 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 extern native yield
-extern native read
-extern native write
 
-// Interface override: Transform operator interface into custom delay controls
+// Custom interface labels
 readonly array panelTextRows[8] = {
     "",
     "",
     "",
-    "DELAY |---- TIME (INSTRUCTION 1 HIGH) ----|",
+    "VOLUME |------- GAIN CONTROL -------|",
     "",
     "",
     "",
-    "DELAY |-- FEEDBACK (INSTRUCTION 1 LOW) --|"
+    ""
 }
 
 global array signal[2]
 global array params[8]
 global array displayLEDs[4]
 
-// Delay state (what SUB operator manages automatically)
-global int writePosition = 0
-global array tempBuffer[2]
-
 function process()
-locals int delayTime, int feedback, int input, int delayed, int output
+locals int volume, int inputL, int inputR, int outputL, int outputR
 {
     loop {
-        // Same parameters that SUB operator uses, but with custom control
-        delayTime = ((int)global params[3] * 500 / 255) + 50;  // 50-550 samples (Instruction 1 High)
-        feedback = ((int)global params[4] * 200 / 255);         // 0-200 feedback (Instruction 1 Low)
+        // Get volume from knob (0-255) and convert to gain (0-512 for 2x boost)
+        volume = (int)global params[3] * 2;  // 0-510 range
         
-        // Manual delay processing (what SUB operator does automatically)
-        input = (int)global signal[0];
+        // Get input audio
+        inputL = (int)global signal[0];
+        inputR = (int)global signal[1];
         
-        // Read delayed sample from memory (read position = write position - delay time)
-        int readPosition = global writePosition - delayTime;
-        if (readPosition < 0) readPosition += 65536;  // Wrap around
-        
-        read(readPosition, 1, global tempBuffer);
-        delayed = global tempBuffer[0];
-        
-        // Create echo: original + delayed signal
-        output = input + (delayed * feedback / 255);
+        // Apply volume control
+        outputL = (inputL * volume) / 255;
+        outputR = (inputR * volume) / 255;
         
         // Prevent clipping
-        if (output > 2047) output = 2047;
-        if (output < -2047) output = -2047;
+        if (outputL > 2047) outputL = 2047;
+        if (outputL < -2047) outputL = -2047;
+        if (outputR > 2047) outputR = 2047;
+        if (outputR < -2047) outputR = -2047;
         
-        // Write current input + feedback to memory for next cycle
-        global tempBuffer[0] = input + (delayed * feedback / 255);
-        write(global writePosition, 1, global tempBuffer);
+        // Output the processed audio
+        global signal[0] = outputL;
+        global signal[1] = outputR;
         
-        // Advance write position (what hardware manages automatically)
-        global writePosition = (global writePosition + 1) % 65536;
-        
-        // Output the echo
-        global signal[0] = output;
-        global signal[1] = output;  // Mono delay
-        
-        // Visual feedback showing delay activity
-        global displayLEDs[0] = delayTime >> 2;        // Show delay time
-        global displayLEDs[1] = feedback;              // Show feedback amount
-        global displayLEDs[2] = (delayed > 0) ? 0xFF : 0x00;  // Activity indicator
-        global displayLEDs[3] = (global writePosition >> 8) & 0xFF;  // Position indicator
+        // Visual feedback - show volume level
+        global displayLEDs[0] = volume >> 1;  // Volume indicator
+        global displayLEDs[1] = (outputL > 1000) ? 0xFF : 0x00;  // Left channel activity
+        global displayLEDs[2] = (outputR > 1000) ? 0xFF : 0x00;  // Right channel activity  
+        global displayLEDs[3] = (volume > 200) ? 0xFF : 0x00;    // Boost indicator
         
         yield();
     }
 }
 ```
 
-### **The Operator Connection - Same Parameters, Different Approach**
+### **Understanding What Just Happened**
 
-This firmware shows the **direct relationship** between custom firmware and Permut8's built-in operators:
+This simple firmware demonstrates the core concepts of Permut8 programming:
 
-#### **What SUB Operator Does Automatically**:
-- **Memory Management**: Hardware tracks write position automatically
-- **Read Positioning**: SUB operand directly controls read offset  
-- **Efficiency**: Optimized in hardware, very fast
+#### **The Audio Flow**:
+```
+Audio Input → Volume Calculation → Audio Output
+```
+- **Input**: `global signal[0]` and `global signal[1]` contain incoming audio
+- **Processing**: Multiply by volume value from knob
+- **Output**: Write processed audio back to `global signal[0]` and `global signal[1]`
 
-#### **What Our Custom Firmware Does Manually**:
-- **Manual Memory**: We track `writePosition` ourselves
-- **Manual Reading**: We calculate `readPosition = writePosition - delayTime`
-- **Same Parameters**: `params[3]` (Instruction 1 High) controls delay time in both approaches
-- **Same Effect**: Both create delay, just different implementations
+#### **Parameter Control**:
+- **`params[3]`**: Gets knob position (0-255)
+- **Volume Calculation**: `params[3] * 2` gives 0-510 range (up to 2x boost)
+- **Audio Scaling**: `(input * volume) / 255` applies the gain
 
-#### **Interface Transformation**:
-- **Original**: `params[3]` controlled via switches/LED display showing hex values
-- **Custom**: Same `params[3]` becomes direct "DELAY TIME" knob via `panelTextRows`
-- **User Experience**: Intuitive delay control instead of abstract operand values
+#### **Visual Feedback**:
+- **LED 0**: Shows current volume level
+- **LED 1 & 2**: Flash when audio is present on left/right channels
+- **LED 3**: Lights up when gain exceeds normal level (boost mode)
 
-**The Key Insight**: Both approaches use the **same parameter system** (`params[3]`, `params[4]`), but custom firmware gives you complete control over what those parameters mean and how they're processed.
+**The Key Insight**: You directly control audio processing - every sample passes through your code.
 
 ### 2. Compile Your Firmware
 ```bash
-PikaCmd.exe -compile custom_delay.impala
+PikaCmd.exe -compile volume_control.impala
 ```
 
 **If that doesn't work**, use the full command:
 ```bash
-.\PikaCmd.exe impala.pika compile custom_delay.impala custom_delay.gazl
+.\PikaCmd.exe impala.pika compile volume_control.impala volume_control.gazl
 ```
 
 ### 3. Create Firmware Bank
 
 **Step 3a: Clean the GAZL File**
-Before creating the bank, you need to clean the compiled GAZL file:
-
-1. **Open `custom_delay.gazl`** in a text editor
-2. **Remove the compiler comment line** (if present):
-   ```
-   ; Compiled with Impala version 1.0
-   ```
-3. **Remove any separator lines** like:
-   ```
-   ;-----------------------------------------------------------------------------
-   ```
-4. **Keep only the pure assembly code**
+1. **Open `volume_control.gazl`** in a text editor
+2. **Remove any comment lines** starting with `;`
+3. **Keep only the assembly code**
 
 **Step 3b: Create the Bank File**
-Create `custom_delay.p8bank` with this **exact format** (note the header):
+Create `volume_control.p8bank`:
 ```
 Permut8BankV2: {
     CurrentProgram: A0
     Programs: {
-        A0: { Name: "Short Slap Delay", Operator1: "8" }
-        A1: { Name: "Medium Echo", Operator1: "8" }
-        A2: { Name: "Long Ambient", Operator1: "8" }
-        A3: { Name: "Feedback Madness", Operator1: "8" }
+        A0: { Name: "Quiet", Operator1: "0" }
+        A1: { Name: "Normal", Operator1: "0" }
+        A2: { Name: "Loud", Operator1: "0" }
+        A3: { Name: "Boost", Operator1: "0" }
     }
     Firmware: {
-        Name: "custom_delay"
+        Name: "volume_control"
         Code: {
 [PASTE YOUR CLEANED GAZL CONTENT HERE]
  }
@@ -239,193 +184,158 @@ Permut8BankV2: {
 }
 ```
 
-### **Understanding the Operators in Your Presets**
+### **Understanding the Presets**
 
-You might notice each preset has `Operator1: "8"`. This is **significant** - here's why:
+Each preset has `Operator1: "0"` which means:
+- **"0" = No built-in operator** - Your custom firmware handles everything
+- **Different presets** suggest different volume levels to try
+- **Same firmware** - Just different starting suggestions
 
-**What "8" Means**:
-- **Operator1: "8"** = **SUB operator** (Subtract - creates delays)
-- This is the **same operator** that would create delays using the built-in system
-- **Our custom firmware ignores it** - we're implementing delay manually instead
-- **But the connection is clear**: We're doing the same job as SUB operator
+### 4. Load and Test Your Volume Control
 
-**The Operator Connection**:
-- **Built-in SUB**: `Operator1: "8"` + operand values create automatic delays
-- **Our Custom**: Manual implementation of what SUB does automatically
-- **Same Parameters**: Both use `params[3]` for delay time, `params[4]` for feedback
-- **Same Result**: Both create delay effects, just different approaches
-
-**Why Use SUB "8" in Presets?**:
-1. **Shows Intent**: Makes it clear this is a delay effect
-2. **User Expectation**: Users familiar with SUB will understand immediately  
-3. **Learning Connection**: Demonstrates relationship between operators and custom code
-4. **Future Compatibility**: Could switch to built-in SUB by removing custom firmware
-
-**The Bigger Picture**: This demonstrates how custom firmware can **replace** or **enhance** built-in operators while using the same parameter system and interface concepts.
-
-### 4. Load and Test Your Custom Delay
-
-1. **Load the bank**: File → Load Bank → `custom_delay.p8bank`
-2. **Select a preset** to start with
+1. **Load the bank**: File → Load Bank → `volume_control.p8bank`
+2. **Select A1 "Normal"** preset
 3. **Play audio** through Permut8
-4. **Turn the operator knobs** to hear the delay effect!
+4. **Turn Control 1** to hear immediate volume changes!
 
-## How to Use Your Custom Delay
+## How to Use Your Volume Control
 
 ### **What Just Happened?**
-Your custom firmware **manually implemented** what the SUB operator does automatically:
+Your custom firmware **directly processes every audio sample**:
 
-**Normal SUB Operator Flow**:
+**Audio Flow**:
 ```
-Audio Input → Delay Memory → [SUB operator subtracts offset] → Audio Output + Original
-```
-
-**Your Custom Delay Flow**:
-```
-Audio Input → [Manual memory read/write with offset] → Audio Output + Original
+Audio Input → Volume Multiplication → Audio Output
 ```
 
-**Same Result, Different Method**: Both create delay effects, but now you understand exactly how delays work inside Permut8's memory system.
-
-### **Interface Transformation**
-- **Original**: Instruction 1 operands set by switches/LED displays showing hex values
-- **Your Firmware**: Same parameters become intuitive "DELAY TIME" and "FEEDBACK" controls
-- **Visual**: Clear labels instead of abstract hex operand values
-
-### **The Memory Connection**
-Your code manually does what SUB operator handles automatically:
-- **Write Position**: You track `writePosition` manually vs. hardware automatic
-- **Read Position**: You calculate `writePosition - delayTime` vs. SUB operand subtraction
-- **Memory Management**: You use `read()` and `write()` vs. hardware optimization
-
-### **Preset Guide**
-- **A0 "Short Slap Delay"**: Quick echo, good for drums and percussion
-- **A1 "Medium Echo"**: Classic delay, perfect for vocals and instruments
-- **A2 "Long Ambient"**: Spacious delays for atmospheric effects
-- **A3 "Feedback Madness"**: High feedback for experimental sounds
+**Real-time Processing**: Every audio sample is multiplied by your volume setting before output.
 
 ### **Control Guide**
-- **Control 1 (Delay Time)**: Adjust Instruction 1 High Operand position for delay time
-- **Control 2 (Feedback)**: Adjust Instruction 1 Low Operand position for feedback amount
-- **LED Display**: Shows delay time, feedback amount, and activity
+- **Control 1**: Volume level (turn left = quieter, turn right = louder)
+- **LEDs**: Visual feedback showing volume and audio activity
 
-**Note**: This custom firmware transforms the operand controls (normally set via LED displays and switches) into direct effect controls. The **Operator Control 1** and **Operator Control 2** are not used.
+### **Preset Guide**
+- **A0 "Quiet"**: Start with low volume
+- **A1 "Normal"**: Unity gain (no change)
+- **A2 "Loud"**: Increased volume
+- **A3 "Boost"**: Maximum boost (can distort!)
 
 ### **Tips for New Users**
-1. **Start with A0** and adjust Control 1 (Instruction 1 High Operand) slowly to hear delay time changes
-2. **Add feedback** with Control 2 (Instruction 1 Low Operand) to create multiple echoes
-3. **Watch LEDs** - they show delay parameters and memory activity
-4. **Compare to built-in**: Try the same settings with SUB operator
+1. **Start with A1 "Normal"** and adjust Control 1 to hear changes
+2. **Turn slowly** - volume changes are immediate
+3. **Watch LED 3** - lights up when boosting beyond normal level
+4. **Compare presets** - hear different starting volume levels
 
-### **The Learning Connection**
-This delay effect shows you:
-- **How delay memory works** - the foundation of all Permut8 effects
-- **Parameter relationships** - same `params[3]` and `params[4]` as SUB operator
-- **Custom vs. built-in** - both approaches, same results
-- **Interface control** - how to make complex parameters user-friendly
+**Congratulations!** You just created your first custom firmware that directly controls audio processing in real-time.
 
-**Congratulations!** You just created a delay effect that manually implements what Permut8's SUB operator does automatically, showing the direct connection between operators and custom firmware.
+## Modify Your Volume Control (5 minutes)
 
-## Modify Existing Firmware (15 minutes)
+Let's add a simple modification to make the volume control more interesting.
 
-Let's add LED animation to the ring modulator.
-
-### 1. Copy the Original
-Make a copy of `ringmod_code.impala` called `ringmod_leds.impala`
-
-### 2. Find the LED Code
-Look for this line (around line 272):
+### 1. Add Stereo Width Control
+Replace the audio processing section with:
 ```impala
-global displayLEDs[2] = 0x01 << ((cosL + 0x8000) >> (16 - 3));
+// Get volume and width from knobs
+volume = (int)global params[3] * 2;  // Volume control
+int width = (int)global params[4];   // Stereo width (0-255)
+
+// Get input audio
+inputL = (int)global signal[0];
+inputR = (int)global signal[1];
+
+// Apply volume control
+outputL = (inputL * volume) / 255;
+outputR = (inputR * volume) / 255;
+
+// Apply stereo width effect
+int mono = (outputL + outputR) / 2;  // Mono sum
+int side = (outputL - outputR) / 2;  // Stereo difference
+
+// Adjust stereo width
+side = (side * width) / 255;
+
+// Reconstruct stereo
+outputL = mono + side;
+outputR = mono - side;
 ```
 
-### 3. Add Rainbow LED Animation
-Replace that line with:
+### 2. Update Interface Labels
 ```impala
-// Rainbow LED animation synced to modulation
-global displayLEDs[0] = 0x01 << ((cosL + 0x8000) >> (16 - 3));
-global displayLEDs[1] = 0x01 << ((cosR + 0x8000) >> (16 - 3));
-global displayLEDs[2] = 0x01 << (((cosL + cosR) + 0x10000) >> (17 - 3));
-global displayLEDs[3] = global displayLEDs[0] | global displayLEDs[1];
+readonly array panelTextRows[8] = {
+    "",
+    "",
+    "",
+    "VOLUME |------- GAIN CONTROL -------|",
+    "",
+    "",
+    "",
+    "STEREO |------ WIDTH CONTROL ------|"
+};
 ```
 
-### 4. Compile and Load
+### 3. Compile and Test
 ```bash
-PikaCmd.exe -compile ringmod_leds.impala
+PikaCmd.exe -compile volume_control.impala
 ```
-Load bank: File → Load Bank → `ringmod_leds.p8bank`
 
-Now all four LED displays dance with the ring modulation!
-
-### 5. Try More Modifications
-- Change delay times: Find `delayL` and `delayR` calculations
-- Adjust modulation shape: Look for the `cosTable` 
-- Add parameter smoothing: Implement interpolation in `update()`
+Now you have both volume AND stereo width control!
 
 ## Understanding What You've Learned
 
-### **Two Approaches to Permut8 Effects**
+### **Core Permut8 Programming Concepts**
 
-**You've just seen both approaches**:
+**You've just learned the fundamentals**:
 
-1. **Ring Modulator (Existing)**: Uses Permut8's **original operator system**
-   - Manipulates read/write positions in delay memory
-   - Effects come from **where** and **how** audio is read back
-   - Uses operators like MUL (pitch), SUB (delay), OSC (modulation)
+1. **Audio Processing**: Direct sample manipulation in real-time
+2. **Parameter Control**: Using knobs to control your algorithms
+3. **Visual Feedback**: LEDs that respond to your processing
+4. **Custom Interface**: Clear labels instead of abstract controls
 
-2. **Custom Delay (Your Custom)**: Uses **direct memory manipulation**
-   - Manually implements what SUB operator does automatically
-   - Processes audio through delay memory with custom offset calculation
-   - Full control over delay timing and feedback parameters
+### **The Foundation**
 
-### **Why Both Matter**
+**Every Permut8 firmware follows this pattern**:
+```impala
+function process() {
+    loop {
+        // 1. Read parameters from knobs
+        // 2. Get input audio samples
+        // 3. Process the audio
+        // 4. Output the result
+        // 5. Update visual feedback
+        yield();
+    }
+}
+```
 
-**Original Operators**: 
-- **Efficient** - Built into hardware, very fast
-- **Musical** - Designed for natural delay/modulation effects
-- **Limited** - Can only do read/write head manipulation
-
-**Custom Firmware**:
-- **Unlimited** - Any algorithm you can code
-- **Educational** - Learn by implementing from scratch
-- **Flexible** - Mix approaches or create entirely new effects
-
-### **The Big Picture**
-Permut8 is **both** a sophisticated delay manipulation system **and** a programmable audio processor. Master both approaches to become a complete Permut8 developer.
+**This is the building block** for every effect, from simple volume control to complex delays, filters, and synthesizers.
 
 ## What's Next?
 
-### **New to Audio Programming?** Start with the foundation:
-1. 📖 [How DSP Affects Sound](#how-dsp-affects-sound) - Understand how code creates audio effects (20 min)
-2. 📖 [Getting Audio In and Out](#getting-audio-in-and-out) - Foundation I/O tutorial (10 min)
-3. 📖 [Your First Distortion Effect](#simplest-distortion) - Progressive effect building (15 min)
+### **Ready for More Effects?** Based on what you just built:
 
-### **Want to Master Permut8's Operator System?** 
-📖 [Understanding Permut8 Operators](#understanding-permut8-operators) - Complete guide to the instruction system and effect building (25 min)
+**Want simple, immediate effects?**
+- 📖 [Getting Audio In and Out](getting-audio-in-and-out.md) - Foundation I/O patterns (10 min)
+- 📖 [Make Your First Sound](make-your-first-sound.md) - Basic synthesis (15 min)
+- 📖 [Simple Distortion](cookbook/audio-effects/bitcrusher.md) - Audio processing (15 min)
+- 📖 [Make a Delay](cookbook/audio-effects/make-a-delay.md) - Memory-based effects (20 min)
 
-### **Ready for More Effects?** Based on what you just did:
+**Curious about Permut8's unique features?**
+- 📖 [Understanding Operators vs Custom Firmware](tutorials/understanding-operators-vs-custom-firmware.md) - The two approaches (25 min)
+- 📖 [Understanding Permut8 Operators](tutorials/understanding-permut8-operators.md) - Built-in system (25 min)
 
-**Created a bit crusher?** → Try these effects next:
-- 📖 [Basic Filter](#basic-filter) - Add resonance
-- 📖 [Bitcrusher](#bitcrusher) - More lo-fi options
-- 📖 [Parameter Smoothing](#parameter-smoothing) - Remove clicks
+**Ready for advanced effects?**
+- 📖 [Advanced Custom Delay Tutorial](tutorials/advanced-custom-delay-tutorial.md) - Memory management (45 min)
+- 📖 [Control Something with Knobs](control-something-with-knobs.md) - Parameter mapping (20 min)
 
-**Modified the ring mod?** → Explore these:
-- 📖 [Control LEDs](#control-leds) - More patterns
-- 📖 [Sync to Tempo](#sync-to-tempo) - Beat-synced effects
-- 📖 [Make a Delay](#make-a-delay) - Use the memory buffer
+### **Choose Your Path:**
 
-### **Understanding Permut8 Architecture:**
-
-**Which firmware type should you choose?**
-- **Full Patches** (like our bit crusher): Replace entire DSP engine, process audio samples directly
-- **Mod Patches** (like linsub): Modify built-in operators, manipulate memory positions
-
-📖 [Mod vs Full Architecture Guide](#mod-vs-full-architecture-guide) - Critical decision guidance
+**New to Audio Programming?** → Start with cookbook recipes
+**Want to Understand Permut8?** → Read the operator guides
+**Ready to Build Complex Effects?** → Try the advanced tutorials
 
 ### **Professional Development:**
-- 📖 [Complete Development Workflow](#complete-development-workflow) - Systematic methodology
-- 📖 [Debug Your Plugin](#debug-your-plugin) - Essential troubleshooting
+- 📖 [Complete Development Workflow](tutorials/complete-development-workflow.md) - Systematic methodology
+- 📖 [Debug Your Plugin](tutorials/debug-your-plugin.md) - Essential troubleshooting
 
 ### Quick Tips:
 - `global signal[0]` = left channel, `global signal[1]` = right channel

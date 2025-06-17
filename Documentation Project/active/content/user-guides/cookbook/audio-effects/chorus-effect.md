@@ -136,7 +136,7 @@ The key elements are: modulated delay times that create subtle pitch variations 
 The stereo implementation uses separate LFO phases for each channel, with the stereo spread parameter controlling how much the right channel differs from the left, creating natural chorus width and movement.
 
 ## Related Techniques
-- **[Make a Delay](#make-a-delay)**: Basic delay implementation fundamentals
+- **[Make a Delay](make-a-delay.md)**: Basic delay implementation fundamentals
 - **[Phaser Effect](#phaser-effect)**: Related modulation-based effect
 - **[Stereo Processing](#stereo-processing)**: Stereo width and panning
 
