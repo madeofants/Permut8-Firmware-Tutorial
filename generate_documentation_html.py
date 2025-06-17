@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Simple HTML Documentation Generator for Permut8 Firmware
-Combines all markdown files into a single HTML document with navigation
+Enhanced HTML Documentation Generator for Permut8 Firmware
+Combines all markdown files into a single HTML document with organized navigation
 """
 
 import os
@@ -43,38 +43,129 @@ def markdown_to_html(content):
     
     return '\n'.join(html_paragraphs)
 
-def get_file_order():
-    """Discover and order all documentation files"""
-    files = []
+def organize_content():
+    """Organize all documentation files into logical groups for navigation"""
     base_path = "Documentation Project/active/content"
     
-    # Priority order for key files
-    priority_files = [
-        "user-guides/QUICKSTART.md",
-        "fundamentals/audio-engineering-for-programmers.md",
-        "user-guides/tutorials/complete-development-workflow.md",
-        "user-guides/tutorials/debug-your-plugin.md",
-        "user-guides/tutorials/mod-vs-full-architecture-guide.md",
-    ]
+    # Content groups with titles and icons
+    content_groups = {
+        'foundation': {
+            'title': '📋 Foundation',
+            'files': [],
+            'expanded': True,
+            'priority_patterns': ['QUICKSTART', 'audio-engineering-for-programmers', 'getting-audio-in-and-out', 'how-dsp-affects-sound', 'simplest-distortion']
+        },
+        'learning': {
+            'title': '📚 Learning',
+            'files': [],
+            'expanded': False,
+            'paths': ['tutorials/', 'user-guides/']
+        },
+        'reference': {
+            'title': '🔧 Reference',
+            'files': [],
+            'expanded': False,
+            'paths': ['language/', 'architecture/', 'performance/', 'integration/', 'reference/']
+        },
+        'cookbook': {
+            'title': '🍳 Cookbook',
+            'files': [],
+            'expanded': False,
+            'paths': ['cookbook/']
+        },
+        'advanced': {
+            'title': '🛠️ Advanced',
+            'files': [],
+            'expanded': False,
+            'paths': ['assembly/', 'index/']
+        }
+    }
     
-    # Add priority files first
-    for priority_file in priority_files:
-        full_path = os.path.join(base_path, priority_file)
-        if os.path.exists(full_path):
-            files.append(full_path)
-    
-    # Scan for all other markdown files
+    # Collect all markdown files
+    all_files = []
     for root, dirs, filenames in os.walk(base_path):
         for filename in sorted(filenames):
             if filename.endswith('.md'):
                 full_path = os.path.join(root, filename)
-                if full_path not in files:  # Don't duplicate priority files
-                    files.append(full_path)
+                rel_path = os.path.relpath(full_path, base_path)
+                all_files.append({
+                    'full_path': full_path,
+                    'rel_path': rel_path,
+                    'filename': filename,
+                    'display_name': filename.replace('.md', '').replace('-', ' ').replace('_', ' ').title()
+                })
     
-    return files
+    # Categorize files into groups
+    for file_info in all_files:
+        categorized = False
+        
+        # Check foundation priority patterns first
+        for pattern in content_groups['foundation']['priority_patterns']:
+            if pattern.lower() in file_info['filename'].lower():
+                content_groups['foundation']['files'].append(file_info)
+                categorized = True
+                break
+        
+        if not categorized:
+            # Check other groups by path
+            for group_name, group_info in content_groups.items():
+                if group_name == 'foundation':
+                    continue
+                if 'paths' in group_info:
+                    for path in group_info['paths']:
+                        if path in file_info['rel_path']:
+                            group_info['files'].append(file_info)
+                            categorized = True
+                            break
+                if categorized:
+                    break
+        
+        # Default to advanced if not categorized
+        if not categorized:
+            content_groups['advanced']['files'].append(file_info)
+    
+    return content_groups
+
+def generate_navigation_html(content_groups):
+    """Generate the sidebar navigation HTML"""
+    nav_html = '''
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2>📋 Navigation</h2>
+        </div>
+'''
+    
+    for group_name, group_info in content_groups.items():
+        if not group_info['files']:
+            continue
+            
+        expanded_class = 'expanded' if group_info['expanded'] else ''
+        nav_html += f'''
+        <div class="nav-section {expanded_class}" id="nav-{group_name}">
+            <div class="nav-section-header" onclick="toggleSection('nav-{group_name}')">
+                {group_info['title']} <span class="file-count">({len(group_info['files'])})</span>
+            </div>
+            <div class="nav-section-content">
+'''
+        
+        for file_info in group_info['files']:
+            anchor_id = create_anchor_id(file_info['filename'])
+            nav_html += f'                <a href="#{anchor_id}" class="nav-link">{file_info["display_name"]}</a>\n'
+        
+        nav_html += '            </div>\n        </div>\n'
+    
+    nav_html += '    </nav>\n'
+    return nav_html
+
+def create_anchor_id(filename):
+    """Create consistent anchor ID from filename"""
+    return filename.replace('.md', '').lower().replace(' ', '-').replace('_', '-')
 
 def generate_html():
-    """Generate the HTML documentation"""
+    """Generate the HTML documentation with organized navigation"""
+    
+    # Organize content into groups
+    content_groups = organize_content()
     
     html_content = """<!DOCTYPE html>
 <html lang="en">
@@ -87,67 +178,140 @@ def generate_html():
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
             line-height: 1.6;
             color: #333;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+            margin: 0;
+            padding: 0;
             background-color: #fafafa;
         }
-        .container {
+        
+        .documentation-container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            position: sticky;
+            top: 20px;
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar-header h2 {
+            margin: 0 0 20px 0;
+            color: #495057;
+            font-size: 18px;
+        }
+        
+        .nav-section {
+            margin-bottom: 15px;
+        }
+        
+        .nav-section-header {
+            cursor: pointer;
+            padding: 8px 12px;
+            background: #e9ecef;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #495057;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .nav-section-header:hover {
+            background: #dee2e6;
+        }
+        
+        .file-count {
+            font-size: 12px;
+            color: #868e96;
+            font-weight: 400;
+        }
+        
+        .nav-section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .nav-section.expanded .nav-section-content {
+            max-height: 500px;
+        }
+        
+        .nav-link {
+            display: block;
+            padding: 6px 16px;
+            color: #6c757d;
+            text-decoration: none;
+            font-size: 14px;
+            border-radius: 4px;
+            margin: 2px 0;
+        }
+        
+        .nav-link:hover {
+            background: #dee2e6;
+            color: #495057;
+        }
+        
+        .nav-link.active {
+            background: #007bff;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .content {
             background: white;
             padding: 40px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-height: calc(100vh - 40px);
         }
-        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
-        h2 { color: #34495e; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px; margin-top: 40px; }
-        h3 { color: #7f8c8d; margin-top: 30px; }
-        code {
-            background: #f8f9fa;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-        }
-        pre {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 5px;
+        
+        .content h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        .content h2 { color: #34495e; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px; margin-top: 40px; }
+        .content h3 { color: #7f8c8d; margin-top: 30px; }
+        
+        .content pre { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 5px; 
             overflow-x: auto;
-            border-left: 4px solid #3498db;
+            border-left: 4px solid #17a2b8;
         }
-        pre code {
-            background: none;
-            padding: 0;
+        
+        .content code { 
+            background: #f8f9fa; 
+            padding: 2px 6px; 
+            border-radius: 3px; 
+            font-family: 'Consolas', 'Monaco', monospace;
         }
-        .nav-toc {
-            background: #ecf0f1;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 30px;
+        
+        .content ul, .content ol { margin: 15px 0; padding-left: 30px; }
+        .content li { margin: 8px 0; }
+        
+        .content a { 
+            color: #3498db; 
+            text-decoration: none; 
         }
-        .nav-toc h2 {
-            margin-top: 0;
-            color: #2c3e50;
-        }
-        .nav-toc ul {
-            list-style-type: none;
-            padding-left: 0;
-        }
-        .nav-toc li {
-            margin: 5px 0;
-        }
-        .nav-toc a {
-            color: #3498db;
-            text-decoration: none;
-            padding: 2px 0;
-        }
-        .nav-toc a:hover {
+        
+        .content a:hover { 
+            color: #2980b9; 
             text-decoration: underline;
         }
+        
         .file-section {
             margin: 40px 0;
             padding: 20px 0;
             border-top: 1px solid #ecf0f1;
         }
+        
         .file-title {
             background: #3498db;
             color: white;
@@ -156,19 +320,7 @@ def generate_html():
             margin-bottom: 20px;
             font-weight: bold;
         }
-        blockquote {
-            border-left: 4px solid #f39c12;
-            background: #fef9e7;
-            margin: 0;
-            padding: 10px 20px;
-        }
-        .warning {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 20px 0;
-        }
+        
         .generation-info {
             background: #e8f6f3;
             padding: 15px;
@@ -176,41 +328,43 @@ def generate_html():
             margin-bottom: 30px;
             border-left: 4px solid #27ae60;
         }
+        
+        @media (max-width: 768px) {
+            .documentation-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: relative;
+                height: auto;
+                margin-bottom: 20px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎛️ Permut8 Firmware Tutorial</h1>
-        
-        <div class="generation-info">
-            <strong>📖 Complete Tutorial</strong><br>
-            Generated: """ + datetime.now().strftime("%B %d, %Y at %I:%M %p") + """<br>
-            Complete firmware tutorial and reference combined into a single HTML document for offline use.
-        </div>
-
-        <div class="nav-toc">
-            <h2>📋 Table of Contents</h2>
-            <ul>
+    <div class="documentation-container">
+""" + generate_navigation_html(content_groups) + """
+        <main class="content">
+            <h1>🎛️ Permut8 Firmware Tutorial</h1>
+            <div class="generation-info">
+                <strong>📖 Complete Offline Documentation</strong><br>
+                Generated: """ + datetime.now().strftime("%B %d, %Y at %I:%M %p") + """<br>
+                This documentation contains all Permut8 firmware resources organized for easy navigation.
+            </div>
 """
 
-    # Build navigation and content
-    file_order = get_file_order()
-    toc_items = []
-    sections = []
+    # Generate content sections
     used_ids = set()
     
-    for file_path in file_order:
-        full_path = os.path.join(os.getcwd(), file_path)
-        if os.path.exists(full_path):
+    for group_name, group_info in content_groups.items():
+        for file_info in group_info['files']:
             try:
-                with open(full_path, 'r', encoding='utf-8') as f:
+                with open(file_info['full_path'], 'r', encoding='utf-8') as f:
                     content = f.read()
                 
-                # Create anchor ID from filename
-                filename = os.path.basename(file_path).replace('.md', '')
-                base_anchor_id = filename.lower().replace(' ', '-').replace('_', '-')
-                
-                # Ensure unique ID
+                # Create unique anchor ID
+                base_anchor_id = create_anchor_id(file_info['filename'])
                 anchor_id = base_anchor_id
                 counter = 1
                 while anchor_id in used_ids:
@@ -218,39 +372,65 @@ def generate_html():
                     counter += 1
                 used_ids.add(anchor_id)
                 
-                # Add to TOC
-                display_name = filename.replace('-', ' ').replace('_', ' ').title()
-                toc_items.append(f'<li><a href="#{anchor_id}">{display_name}</a></li>')
-                
                 # Convert content to HTML
                 html_content_section = markdown_to_html(content)
                 
                 # Add section
-                sections.append(f'''
+                html_content += f'''
 <div class="file-section" id="{anchor_id}">
-    <div class="file-title">📄 {display_name}</div>
+    <div class="file-title">📄 {file_info["display_name"]}</div>
     {html_content_section}
 </div>
-''')
+'''
                 
             except Exception as e:
-                print(f"Error processing {file_path}: {e}")
-                
-    # Complete the HTML
-    html_content += '\n'.join(toc_items)
+                print(f"Error processing {file_info['full_path']}: {e}")
+
     html_content += """
-            </ul>
-        </div>
-"""
-    
-    html_content += '\n'.join(sections)
-    
-    html_content += """
-        <div style="margin-top: 60px; padding-top: 20px; border-top: 2px solid #ecf0f1; text-align: center; color: #7f8c8d;">
-            <p><strong>Permut8 Firmware Tutorial</strong></p>
-            <p>Generated on """ + datetime.now().strftime("%B %d, %Y") + """ | Complete offline reference</p>
-        </div>
+        </main>
     </div>
+    
+    <script>
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            section.classList.toggle('expanded');
+        }
+        
+        function updateActiveSection() {
+            const sections = document.querySelectorAll('.file-section');
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            sections.forEach((section) => {
+                const rect = section.getBoundingClientRect();
+                if (rect.top <= 100 && rect.bottom >= 100) {
+                    navLinks.forEach(link => link.classList.remove('active'));
+                    const activeLink = document.querySelector(`[href="#${section.id}"]`);
+                    if (activeLink) activeLink.classList.add('active');
+                }
+            });
+        }
+        
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = document.querySelector(link.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+        
+        window.addEventListener('scroll', updateActiveSection);
+        window.addEventListener('load', updateActiveSection);
+        
+        // Expand foundation section by default
+        document.addEventListener('DOMContentLoaded', function() {
+            const foundationSection = document.getElementById('nav-foundation');
+            if (foundationSection) {
+                foundationSection.classList.add('expanded');
+            }
+        });
+    </script>
 </body>
 </html>"""
 
@@ -258,7 +438,7 @@ def generate_html():
 
 def main():
     """Main function to generate HTML documentation"""
-    print("🚀 Generating Permut8 Documentation HTML...")
+    print("🚀 Generating Permut8 Documentation HTML with organized navigation...")
     
     try:
         html_content = generate_html()
@@ -275,9 +455,9 @@ def main():
         
     except Exception as e:
         print(f"❌ Error generating HTML: {e}")
-        return False
+        return 1
     
-    return True
+    return 0
 
 if __name__ == "__main__":
-    main()
+    exit(main())
