@@ -45,39 +45,87 @@ def markdown_to_html(content):
 
 def organize_content():
     """Organize all documentation files into logical groups for navigation"""
-    base_path = "Documentation Project/active/content"
+    base_path = "content"
     
-    # Content groups with titles and icons
+    # Simple, clear content groups
     content_groups = {
-        'foundation': {
-            'title': '📋 Foundation',
+        'start': {
+            'title': '🎯 Start Here',
             'files': [],
             'expanded': True,
-            'priority_patterns': ['QUICKSTART', 'audio-engineering-for-programmers', 'getting-audio-in-and-out', 'how-dsp-affects-sound', 'simplest-distortion']
+            'patterns': ['QUICKSTART', 'how-to-use-this-documentation']
         },
-        'learning': {
-            'title': '📚 Learning',
+        'language': {
+            'title': '📖 Language Reference',
             'files': [],
             'expanded': False,
-            'paths': ['tutorials/', 'user-guides/']
+            'paths': ['language/']
+        },
+        'tutorials': {
+            'title': '🎓 Tutorials',
+            'files': [],
+            'expanded': False,
+            'paths': ['user-guides/tutorials/']
+        },
+        'cookbook_fundamentals': {
+            'title': '🍳 Cookbook - Fundamentals',
+            'files': [],
+            'expanded': False,
+            'paths': ['user-guides/cookbook/fundamentals/']
+        },
+        'cookbook_effects': {
+            'title': '🎵 Cookbook - Audio Effects',
+            'files': [],
+            'expanded': False,
+            'paths': ['user-guides/cookbook/audio-effects/']
+        },
+        'cookbook_timing': {
+            'title': '⏱️ Cookbook - Timing & Utilities',
+            'files': [],
+            'expanded': False,
+            'paths': ['user-guides/cookbook/timing/', 'user-guides/cookbook/utilities/', 'user-guides/cookbook/visual-feedback/']
+        },
+        'cookbook_advanced': {
+            'title': '🌊 Cookbook - Advanced',
+            'files': [],
+            'expanded': False,
+            'paths': ['user-guides/cookbook/spectral-processing/', 'user-guides/cookbook/advanced/']
         },
         'reference': {
-            'title': '🔧 Reference',
+            'title': '📚 Reference Docs',
             'files': [],
             'expanded': False,
-            'paths': ['language/', 'architecture/', 'performance/', 'integration/', 'reference/']
+            'paths': ['reference/']
         },
-        'cookbook': {
-            'title': '🍳 Cookbook',
+        'architecture': {
+            'title': '🏗️ Architecture',
             'files': [],
             'expanded': False,
-            'paths': ['cookbook/']
+            'paths': ['architecture/']
+        },
+        'performance': {
+            'title': '⚡ Performance',
+            'files': [],
+            'expanded': False,
+            'paths': ['performance/']
+        },
+        'integration': {
+            'title': '🔗 Integration',
+            'files': [],
+            'expanded': False,
+            'paths': ['integration/']
+        },
+        'assembly': {
+            'title': '⚙️ Assembly',
+            'files': [],
+            'expanded': False,
+            'paths': ['assembly/']
         },
         'advanced': {
-            'title': '🛠️ Advanced',
+            'title': '🔬 Advanced Topics',
             'files': [],
             'expanded': False,
-            'paths': ['assembly/', 'index/']
+            'paths': ['fundamentals/', 'index/']
         }
     }
     
@@ -99,17 +147,18 @@ def organize_content():
     for file_info in all_files:
         categorized = False
         
-        # Check foundation priority patterns first
-        for pattern in content_groups['foundation']['priority_patterns']:
-            if pattern.lower() in file_info['filename'].lower():
-                content_groups['foundation']['files'].append(file_info)
-                categorized = True
-                break
+        # Check start patterns first
+        if 'patterns' in content_groups['start']:
+            for pattern in content_groups['start']['patterns']:
+                if pattern.lower() in file_info['filename'].lower():
+                    content_groups['start']['files'].append(file_info)
+                    categorized = True
+                    break
         
         if not categorized:
             # Check other groups by path
             for group_name, group_info in content_groups.items():
-                if group_name == 'foundation':
+                if group_name == 'start':
                     continue
                 if 'paths' in group_info:
                     for path in group_info['paths']:
@@ -139,10 +188,10 @@ def generate_navigation_html(content_groups):
         if not group_info['files']:
             continue
             
-        expanded_class = 'expanded' if group_info['expanded'] else ''
+        expanded_class = ''
         nav_html += f'''
         <div class="nav-section {expanded_class}" id="nav-{group_name}">
-            <div class="nav-section-header" onclick="toggleSection('nav-{group_name}')">
+            <div class="nav-section-header">
                 {group_info['title']} <span class="file-count">({len(group_info['files'])})</span>
             </div>
             <div class="nav-section-content">
@@ -236,13 +285,7 @@ def generate_html():
         }
         
         .nav-section-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-        }
-        
-        .nav-section.expanded .nav-section-content {
-            max-height: 500px;
+            display: block;
         }
         
         .nav-link {
@@ -391,11 +434,6 @@ def generate_html():
     </div>
     
     <script>
-        function toggleSection(sectionId) {
-            const section = document.getElementById(sectionId);
-            section.classList.toggle('expanded');
-        }
-        
         function updateActiveSection() {
             const sections = document.querySelectorAll('.file-section');
             const navLinks = document.querySelectorAll('.nav-link');
@@ -410,26 +448,22 @@ def generate_html():
             });
         }
         
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const target = document.querySelector(link.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth' });
-                }
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up nav link clicks for smooth scrolling
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const target = document.querySelector(link.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
             });
         });
         
         window.addEventListener('scroll', updateActiveSection);
         window.addEventListener('load', updateActiveSection);
-        
-        // Expand foundation section by default
-        document.addEventListener('DOMContentLoaded', function() {
-            const foundationSection = document.getElementById('nav-foundation');
-            if (foundationSection) {
-                foundationSection.classList.add('expanded');
-            }
-        });
     </script>
 </body>
 </html>"""
