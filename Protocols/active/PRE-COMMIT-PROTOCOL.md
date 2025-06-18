@@ -85,7 +85,7 @@ find "Documentation Project/active/content" -name "*.md" | wc -l
 
 ### **Step 6: Commit Summary** ✅ ALWAYS
 ```markdown
-File: commit-summary-YYYY-MM-DD_HH-MM-SS.md
+File: project-archive/session-logs/commit-summary-YYYY-MM-DD_HH-MM-SS.md
 
 Content Requirements:
 - Repository status
