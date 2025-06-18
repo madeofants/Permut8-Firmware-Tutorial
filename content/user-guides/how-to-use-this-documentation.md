@@ -97,40 +97,40 @@ The documentation is designed for **offline use** - once you have it, you can de
 
 #### Stage 1: Foundation (60 minutes)
 1. **Read QUICKSTART** (30 minutes)
-   - Location: 🎯 Start Here → QUICKSTART
+   - Location: 🎯 Start Here section → QUICKSTART
    - Outcome: Understanding of basic workflow and first successful compilation
    - Checkpoint: You can compile and load the example delay effect
 
 2. **Core Language Basics** (30 minutes)
-   - Location: 📖 Language Reference → Core Language Reference
+   - Location: 📖 Language Reference section → Core Language Reference
    - Focus: Variables, functions, basic syntax, the `process()` function
    - Outcome: Understanding how Impala code is structured
    - Checkpoint: You can read and understand basic code examples
 
 #### Stage 2: First Real Project (90 minutes)
 3. **Build Your First Filter** (45 minutes)
-   - Location: 🎓 Tutorials → Build Your First Filter  
+   - Location: 🎓 Tutorials section → Look for "Build Your First Filter"
    - Outcome: Complete working filter from scratch
    - Checkpoint: You have a functioning low-pass filter
 
 4. **Understanding Parameters** (30 minutes)
-   - Location: 🍳 Fundamentals → Parameter Mapping
+   - Location: 🍳 Cookbook - Fundamentals section → Look for "Parameter Mapping"
    - Outcome: Know how to connect knobs to your code
    - Checkpoint: Your filter responds to Control 1
 
 5. **Basic Audio Processing** (15 minutes)
-   - Location: 🍳 Fundamentals → Gain and Volume
+   - Location: 🍳 Cookbook - Fundamentals section → Look for "Gain and Volume"
    - Outcome: Understand audio signal flow
    - Checkpoint: You can control output volume
 
 #### Stage 3: Practical Skills (60 minutes)
 6. **Simple Effect Creation** (30 minutes)
-   - Location: 🍳 Fundamentals → Simplest Distortion
+   - Location: 🍳 Cookbook - Fundamentals section → Look for "Simplest Distortion"
    - Outcome: Build a basic distortion effect
    - Checkpoint: Working distortion with parameter control
 
 7. **Testing and Debugging** (30 minutes)
-   - Location: 🎓 Tutorials → Test Your Plugin
+   - Location: 🎓 Tutorials section → Look for "Test Your Plugin"
    - Outcome: Know how to verify your effects work correctly
    - Checkpoint: Confidence in testing your own code
 
@@ -145,72 +145,72 @@ The documentation is designed for **offline use** - once you have it, you can de
 #### Stage 4: Effect Building Skills (3-4 hours)
 8. **Essential Effects Toolkit** (2-3 hours)
    - **Delay Effect** (45 minutes)
-     - Location: 🎵 Audio Effects → Make a Delay
+     - Location: 🎵 Cookbook - Audio Effects section → "Make a Delay"
      - Outcome: Understanding of memory and feedback
    - **Bitcrusher** (30 minutes)  
-     - Location: 🎵 Audio Effects → Bitcrusher
+     - Location: 🎵 Cookbook - Audio Effects section → "Bitcrusher"
      - Outcome: Digital distortion techniques
    - **Chorus Effect** (45 minutes)
-     - Location: 🎵 Audio Effects → Chorus Effect  
+     - Location: 🎵 Cookbook - Audio Effects section → "Chorus Effect"
      - Outcome: Modulation and multiple delay lines
    - **Basic Filter Types** (30 minutes)
-     - Location: 🍳 Fundamentals → Basic Filter
+     - Location: 🍳 Cookbook - Fundamentals section → "Basic Filter"
      - Outcome: High-pass, band-pass, and resonance control
    - Checkpoint: You have 4-5 working effects you built yourself
 
 9. **Advanced Parameter Control** (60 minutes)
    - **Envelope Basics** (30 minutes)
-     - Location: 🍳 Fundamentals → Envelope Basics
+     - Location: 🍳 Cookbook - Fundamentals section → "Envelope Basics"
      - Outcome: Attack, decay, sustain, release control
    - **Parameter Smoothing** (30 minutes)
-     - Location: 📚 Reference → Parameters → Parameter Smoothing
+     - Location: 📚 Reference Docs section → "Parameter Smoothing"
      - Outcome: Smooth parameter changes, no clicks
    - Checkpoint: Your effects have professional-feeling controls
 
 #### Stage 5: Sound Design Capabilities (2-3 hours)
 10. **Oscillator and Synthesis** (90 minutes)
     - **Basic Oscillator** (45 minutes)
-      - Location: 🍳 Fundamentals → Basic Oscillator
+      - Location: 🍳 Cookbook - Fundamentals section → "Basic Oscillator"
       - Outcome: Generate waveforms from scratch
     - **Waveshaper Distortion** (45 minutes)
-      - Location: 🎵 Audio Effects → Waveshaper Distortion  
+      - Location: 🎵 Cookbook - Audio Effects section → "Waveshaper Distortion"
       - Outcome: Complex distortion algorithms
     - Checkpoint: You can generate and shape audio signals
 
 11. **Stereo and Spatial Effects** (60 minutes)
     - **Stereo Processing** (30 minutes)
-      - Location: 🍳 Fundamentals → Stereo Processing
+      - Location: 🍳 Cookbook - Fundamentals section → "Stereo Processing"
       - Outcome: Left/right channel manipulation
     - **Phaser Effect** (30 minutes)
-      - Location: 🎵 Audio Effects → Phaser Effect
+      - Location: 🎵 Cookbook - Audio Effects section → "Phaser Effect"
       - Outcome: Spatial movement and stereo imaging
     - Checkpoint: Your effects work convincingly in stereo
 
 #### Stage 6: Production Skills (3-4 hours)
 12. **Complex Effects** (2 hours)
     - **Reverb Implementation** (60 minutes)
-      - Location: 🎵 Audio Effects → Reverb Simple
+      - Location: 🎵 Cookbook - Audio Effects section → "Reverb Simple"
       - Outcome: Space and ambience creation
     - **Compressor Design** (60 minutes)
-      - Location: 🎵 Audio Effects → Compressor Basic
+      - Location: 🎵 Cookbook - Audio Effects section → "Compressor Basic"
       - Outcome: Dynamic range control
     - Checkpoint: You can build studio-quality effects
 
 13. **Timing and Rhythm** (90 minutes)
     - **Tempo Sync** (45 minutes)
-      - Location: ⏱️ Timing & Utilities → Sync to Tempo
+      - Location: ⏱️ Cookbook - Timing & Utilities section → "Sync to Tempo"
       - Outcome: Effects that lock to host tempo
     - **Clock Dividers** (45 minutes)
-      - Location: ⏱️ Timing & Utilities → Clock Dividers
+      - Location: ⏱️ Cookbook - Timing & Utilities section → "Clock Dividers"
       - Outcome: Rhythmic subdivision effects
     - Checkpoint: Your effects integrate musically with DAW projects
 
 14. **User Interface Polish** (60 minutes)
     - **LED Control** (30 minutes)
-      - Location: 🎓 Tutorials → Light Up LEDs
+      - Location: 🎓 Tutorials section → "Light Up LEDs"
       - Outcome: Visual feedback for your effects
     - **Parameter Display** (30 minutes)
-      - Location: ⏱️ Timing & Utilities → Parameter Display
+      - Location: ⏱️ Cookbook - Timing & Utilities section → "Parameter Display"
       - Outcome: Clear indication of current settings
     - Checkpoint: Your effects feel professional and polished
 
@@ -221,13 +221,13 @@ The documentation is designed for **offline use** - once you have it, you can de
 ## Quick Reference Guide
 
 ### I need to...
-- **Find a specific function:** → 📚 Reference Docs → Audio Processing Reference
-- **Build a specific effect:** → 🎵 Cookbook - Audio Effects → [Effect Name]
-- **Fix compilation errors:** → 🎓 Tutorials → Compiler Troubleshooting Guide  
-- **Make my effect faster:** → ⚡ Performance → Optimization Basics
-- **Connect to DAW features:** → 🔗 Integration → Preset System
-- **Understand memory issues:** → 🏗️ Architecture → Memory Model
-- **Learn advanced techniques:** → 🌊 Cookbook - Advanced
+- **Find a specific function:** → 📚 Reference Docs section
+- **Build a specific effect:** → 🎵 Cookbook - Audio Effects section
+- **Fix compilation errors:** → 🎓 Tutorials section → Look for "Compiler Troubleshooting"
+- **Make my effect faster:** → ⚡ Performance section
+- **Connect to DAW features:** → 🔗 Integration section  
+- **Understand memory issues:** → 🏗️ Architecture section
+- **Learn advanced techniques:** → 🌊 Cookbook - Advanced section
 
 ### Time Estimates for Common Tasks
 - **Learn basic concept:** 15-30 minutes
