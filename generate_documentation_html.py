@@ -84,7 +84,7 @@ def organize_content():
     """Organize all documentation files into logical groups for navigation"""
     base_path = "content"
     
-    # Simple, clear content groups
+    # Simple, clear content groups - reordered for logical progression
     content_groups = {
         'start': {
             'title': '🎯 Start Here',
@@ -98,17 +98,17 @@ def organize_content():
             'expanded': False,
             'paths': ['language/']
         },
-        'tutorials': {
-            'title': '🎓 Tutorials',
-            'files': [],
-            'expanded': False,
-            'paths': ['user-guides/tutorials/']
-        },
         'cookbook_fundamentals': {
             'title': '🍳 Cookbook - Fundamentals',
             'files': [],
             'expanded': False,
             'paths': ['user-guides/cookbook/fundamentals/']
+        },
+        'tutorials': {
+            'title': '🎓 Tutorials',
+            'files': [],
+            'expanded': False,
+            'paths': ['user-guides/tutorials/']
         },
         'cookbook_effects': {
             'title': '🎵 Cookbook - Audio Effects',
@@ -225,10 +225,10 @@ def generate_navigation_html(content_groups):
         if not group_info['files']:
             continue
             
-        expanded_class = ''
+        expanded_class = '' if group_info.get('expanded', False) else 'collapsed'
         nav_html += f'''
         <div class="nav-section {expanded_class}" id="nav-{group_name}">
-            <div class="nav-section-header">
+            <div class="nav-section-header" onclick="toggleNavSection('nav-{group_name}')">
                 {group_info['title']} <span class="file-count">({len(group_info['files'])})</span>
             </div>
             <div class="nav-section-content">
@@ -323,6 +323,12 @@ def generate_html():
         
         .nav-section-content {
             display: block;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-section.collapsed .nav-section-content {
+            display: none;
         }
         
         .nav-link {
@@ -506,6 +512,29 @@ def generate_html():
     </div>
     
     <script>
+        // Toggle navigation section collapse/expand
+        function toggleNavSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.toggle('collapsed');
+            }
+        }
+        
+        // Expand all nav sections and scroll to top-left position
+        function scrollToTop() {
+            // Expand all collapsed navigation sections
+            document.querySelectorAll('.nav-section.collapsed').forEach(section => {
+                section.classList.remove('collapsed');
+            });
+            
+            // Scroll to top-left to show navigation panel
+            window.scrollTo({
+                top: 0,
+                left: 0,
+                behavior: 'smooth'
+            });
+        }
+        
         function updateActiveSection() {
             const sections = document.querySelectorAll('.file-section');
             const navLinks = document.querySelectorAll('.nav-link');
@@ -517,14 +546,6 @@ def generate_html():
                     const activeLink = document.querySelector('[href="#' + section.id + '"]');
                     if (activeLink) activeLink.classList.add('active');
                 }
-            });
-        }
-        
-        // Back to top functionality
-        function scrollToTop() {
-            document.querySelector('.content h1').scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
             });
         }
         
@@ -548,6 +569,12 @@ def generate_html():
                     e.preventDefault();
                     const target = document.querySelector(link.getAttribute('href'));
                     if (target) {
+                        // Ensure parent nav section stays expanded
+                        const navSection = link.closest('.nav-section');
+                        if (navSection) {
+                            navSection.classList.remove('collapsed');
+                        }
+                        
                         // Add visual feedback
                         link.style.backgroundColor = '#007bff';
                         link.style.color = 'white';
