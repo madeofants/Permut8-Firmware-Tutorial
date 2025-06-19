@@ -11,18 +11,49 @@ from datetime import datetime
 
 def markdown_to_html(content):
     """Convert basic markdown to HTML"""
-    # Headers
+    import html
+    
+    # First, extract and escape code blocks to protect them from other transformations
+    code_blocks = []
+    def extract_code_block(match):
+        code_content = html.escape(match.group(2))
+        placeholder = f"__CODE_BLOCK_{len(code_blocks)}__"
+        code_blocks.append(f'<pre><code>{code_content}</code></pre>')
+        return placeholder
+    
+    # Extract code blocks first
+    content = re.sub(r'```(\w+)?\n(.*?)\n```', extract_code_block, content, flags=re.DOTALL)
+    
+    # Headers (now safe from code block interference)
     content = re.sub(r'^### (.*?)$', r'<h3>\1</h3>', content, flags=re.MULTILINE)
     content = re.sub(r'^## (.*?)$', r'<h2>\1</h2>', content, flags=re.MULTILINE)
     content = re.sub(r'^# (.*?)$', r'<h1>\1</h1>', content, flags=re.MULTILINE)
     
-    # Code blocks
-    content = re.sub(r'```(\w+)?\n(.*?)\n```', r'<pre><code>\2</code></pre>', content, flags=re.DOTALL)
-    content = re.sub(r'`([^`]+)`', r'<code>\1</code>', content)
+    # Inline code (escape HTML in inline code)
+    def escape_inline_code(match):
+        return f'<code>{html.escape(match.group(1))}</code>'
+    content = re.sub(r'`([^`]+)`', escape_inline_code, content)
     
     # Bold and italic
     content = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', content)
     content = re.sub(r'\*(.*?)\*', r'<em>\1</em>', content)
+    
+    # Fix broken cross-references before converting links
+    broken_refs = {
+        '#permut8-cookbook': '#basic-oscillator',  # Point to first cookbook item
+        '#api-reference': '#audio-processing-reference',  # Point to existing reference
+        '#architecture-reference': '#architecture-patterns',  # Point to architecture section
+        '#assembly-integration': '#gazl-assembly-introduction',  # Point to assembly section
+        '#audio-effects': '#make-a-delay',  # Point to first audio effect
+        '#fundamentals': '#basic-oscillator',  # Point to fundamentals section
+        '#integration-systems': '#preset-system',  # Point to integration section
+        '#performance-optimization': '#optimization-basics',  # Point to performance section
+        '${section.id}': '#quickstart',  # Fix template error
+        "' + section.id + '": '#quickstart'  # Fix JavaScript template
+    }
+    
+    for broken, replacement in broken_refs.items():
+        content = content.replace(broken, replacement)
     
     # Links
     content = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2">\1</a>', content)
@@ -41,7 +72,13 @@ def markdown_to_html(content):
             p = f'<p>{p}</p>'
         html_paragraphs.append(p)
     
-    return '\n'.join(html_paragraphs)
+    content = '\n'.join(html_paragraphs)
+    
+    # Restore code blocks
+    for i, code_block in enumerate(code_blocks):
+        content = content.replace(f'__CODE_BLOCK_{i}__', code_block)
+    
+    return content
 
 def organize_content():
     """Organize all documentation files into logical groups for navigation"""
@@ -372,6 +409,36 @@ def generate_html():
             border-left: 4px solid #27ae60;
         }
         
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .back-to-top.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .back-to-top:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        }
+        
         @media (max-width: 768px) {
             .documentation-container {
                 grid-template-columns: 1fr;
@@ -395,6 +462,11 @@ def generate_html():
                 Generated: """ + datetime.now().strftime("%B %d, %Y at %I:%M %p") + """<br>
                 This documentation contains all Permut8 firmware resources organized for easy navigation.
             </div>
+            
+            <!-- Back to Top Button -->
+            <button class="back-to-top" id="backToTop" onclick="scrollToTop()">
+                ↑ Table of Contents
+            </button>
 """
 
     # Generate content sections
@@ -442,10 +514,30 @@ def generate_html():
                 const rect = section.getBoundingClientRect();
                 if (rect.top <= 100 && rect.bottom >= 100) {
                     navLinks.forEach(link => link.classList.remove('active'));
-                    const activeLink = document.querySelector(`[href="#${section.id}"]`);
+                    const activeLink = document.querySelector('[href="#' + section.id + '"]');
                     if (activeLink) activeLink.classList.add('active');
                 }
             });
+        }
+        
+        // Back to top functionality
+        function scrollToTop() {
+            document.querySelector('.content h1').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }
+        
+        // Show/hide back to top button based on scroll position
+        function toggleBackToTopButton() {
+            const backToTop = document.getElementById('backToTop');
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            if (scrollTop > 400) {
+                backToTop.classList.add('visible');
+            } else {
+                backToTop.classList.remove('visible');
+            }
         }
         
         // Initialize everything when DOM is loaded
@@ -456,14 +548,33 @@ def generate_html():
                     e.preventDefault();
                     const target = document.querySelector(link.getAttribute('href'));
                     if (target) {
-                        target.scrollIntoView({ behavior: 'smooth' });
+                        // Add visual feedback
+                        link.style.backgroundColor = '#007bff';
+                        link.style.color = 'white';
+                        
+                        // Scroll to target
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        
+                        // Reset visual feedback after delay
+                        setTimeout(() => {
+                            link.style.backgroundColor = '';
+                            link.style.color = '';
+                        }, 1000);
+                        
+                        // Highlight target section briefly
+                        target.style.border = '3px solid #007bff';
+                        setTimeout(() => {
+                            target.style.border = '';
+                        }, 2000);
                     }
                 });
             });
         });
         
         window.addEventListener('scroll', updateActiveSection);
+        window.addEventListener('scroll', toggleBackToTopButton);
         window.addEventListener('load', updateActiveSection);
+        window.addEventListener('load', toggleBackToTopButton);
     </script>
 </body>
 </html>"""
