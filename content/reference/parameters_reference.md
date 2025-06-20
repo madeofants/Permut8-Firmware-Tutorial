@@ -1,25 +1,58 @@
 # Parameters Reference
 
+## 🚨 CRITICAL: Parameter Access Requirements
+
+**NEVER use raw indices** - these will cause compilation errors:
+```impala
+// ❌ WRONG - Will not compile
+volume = params[3] * 2;
+int knobValue = params[7];
+```
+
+**ALWAYS use parameter constants** - verified from all official firmware:
+```impala
+// ✅ CORRECT - Required for compilation
+volume = (int)global params[OPERAND_2_HIGH_PARAM_INDEX] * 2;
+int knobValue = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
+```
+
+**Required Constants** (must be defined in every firmware):
+```impala
+const int CLOCK_FREQ_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int PARAM_COUNT
+```
+
+---
+
 ## What This Is
 The `params[]` array gives your firmware access to all knob positions, switch states, and system settings. Updated automatically by Permut8 when users turn knobs or flip switches.
+
+**🚨 CRITICAL**: Never use raw indices like `params[3]`. Always use parameter constants for compilation.
 
 ## 🎛️ **Permut8 Interface Architecture**
 
 ### **Physical Controls (Actual Hardware)**
 
 #### **Operation Selection Knobs**
-- **Operator Control 1** (`params[2]`) - Physical knob that selects Instruction 1 operation type (AND, MUL, OSC, RND)
-- **Operator Control 2** (`params[5]`) - Physical knob that selects Instruction 2 operation type (OR, XOR, MSK, SUB, NOP)
+- **Operator Control 1** (`params[OPERATOR_1_PARAM_INDEX]`) - Physical knob that selects Instruction 1 operation type
+- **Operator Control 2** (`params[OPERATOR_2_PARAM_INDEX]`) - Physical knob that selects Instruction 2 operation type
 
 #### **Parameter Setting Interface**  
-- **Instruction 1 High Operand** (`params[3]`) - Set via LED display + switches (0-255)
-- **Instruction 1 Low Operand** (`params[4]`) - Set via LED display + switches (0-255)
-- **Instruction 2 High Operand** (`params[6]`) - Set via LED display + switches (0-255)
-- **Instruction 2 Low Operand** (`params[7]`) - Set via LED display + switches (0-255)
+- **Instruction 1 High Operand** (`params[OPERAND_1_HIGH_PARAM_INDEX]`) - Set via LED display + switches (0-255)
+- **Instruction 1 Low Operand** (`params[OPERAND_1_LOW_PARAM_INDEX]`) - Set via LED display + switches (0-255)
+- **Instruction 2 High Operand** (`params[OPERAND_2_HIGH_PARAM_INDEX]`) - Set via LED display + switches (0-255)
+- **Instruction 2 Low Operand** (`params[OPERAND_2_LOW_PARAM_INDEX]`) - Set via LED display + switches (0-255)
 
 #### **System Controls**
-- **Clock Frequency Knob** (`params[0]`) - Dedicated physical knob for tempo sync timing
-- **Mode Switches** (`params[1]`) - Five switches: SYNC, REV, Triplet, Dotted, Write Protect
+- **Clock Frequency Knob** (`params[CLOCK_FREQ_PARAM_INDEX]`) - Dedicated physical knob for tempo sync timing
+- **Mode Switches** (`params[SWITCHES_PARAM_INDEX]`) - Five switches: SYNC, REV, Triplet, Dotted, Write Protect
 
 ## 📋 **Standard Terminology Convention**
 
@@ -34,10 +67,10 @@ The `params[]` array gives your firmware access to all knob positions, switch st
 - **"Instruction 2 Low Operand"** - Parameter set via LED display/switches (`params[7]`)
 
 #### **Custom Firmware Override References**
-- **"Control 1"** - Custom meaning for `params[3]` (was Instruction 1 High Operand)
-- **"Control 2"** - Custom meaning for `params[4]` (was Instruction 1 Low Operand)
-- **"Control 3"** - Custom meaning for `params[6]` (was Instruction 2 High Operand)
-- **"Control 4"** - Custom meaning for `params[7]` (was Instruction 2 Low Operand)
+- **"Control 1"** - Custom meaning for `params[OPERAND_1_HIGH_PARAM_INDEX]` (was Instruction 1 High Operand)
+- **"Control 2"** - Custom meaning for `params[OPERAND_1_LOW_PARAM_INDEX]` (was Instruction 1 Low Operand)
+- **"Control 3"** - Custom meaning for `params[OPERAND_2_HIGH_PARAM_INDEX]` (was Instruction 2 High Operand)
+- **"Control 4"** - Custom meaning for `params[OPERAND_2_LOW_PARAM_INDEX]` (was Instruction 2 Low Operand)
 
 ### **❌ AVOID These Patterns**
 - **"Control 1/2/3/4"** - Preferred, refers to operand controls via params[0/1/3/4/6/7]

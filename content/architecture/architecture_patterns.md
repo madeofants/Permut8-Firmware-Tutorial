@@ -95,8 +95,8 @@ function operate1() returns int processed {
     // Replace Instruction 1 operator with custom behavior
     int delayOffset = calculateCustomDelay();
     
-    positions[0] += delayOffset;  // Left channel
-    positions[1] += delayOffset;  // Right channel
+    positions[0] = positions[0] + delayOffset;  // Left channel
+    positions[1] = positions[1] + delayOffset;  // Right channel
     
     return 1;  // Signal that we processed the positions
 }

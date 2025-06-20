@@ -64,10 +64,22 @@ In custom firmware (Approach 2), audio samples are integers from **-2047 to +204
 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
+
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 extern native yield
 
 global array signal[2]  // [left channel, right channel]
-global array params[8]  // Hardware knob values (0-255)
+global array params[PARAM_COUNT]  // Hardware knob values (0-255)
 
 function process() {
     loop {
@@ -76,6 +88,7 @@ function process() {
         yield();  // Send these numbers to the speakers
     }
 }
+
 ```
 
 **Key Insight**: Every time your code runs, it puts two numbers into `signal[0]` and `signal[1]`. Those numbers immediately become the sound you hear through your left and right speakers.
@@ -163,7 +176,7 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 extern native yield
 
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 function process() {
@@ -173,7 +186,7 @@ function process() {
         int rightInput = signal[1];
         
         // CHANGE THE SOUND: Make it quieter using Clock Frequency Knob
-        int volumeKnob = params[0];  // 0-255 from hardware
+        int volumeKnob = (int)global params[CLOCK_FREQ_PARAM_INDEX];  // 0-255 from hardware
         int volumeAmount = volumeKnob + 1;  // 1-256 (never zero)
         
         // Apply the volume change

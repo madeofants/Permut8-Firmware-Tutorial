@@ -43,11 +43,23 @@ Create a new text file called `audio_passthrough.impala`:
 // My First Plugin - Audio Passthrough
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 function process()
+locals int inputL, int inputR
 {
     loop {
         // Audio automatically passes through - we don't need to do anything!
@@ -76,12 +88,12 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 **Lines 4-6: Global Variables**
 ```impala
 global array signal[2]      // Audio input and output
-global array params[8]      // Knob values from hardware
+global array params[PARAM_COUNT]      // Knob values from hardware
 global array displayLEDs[4] // LED display control
 ```
 - **REQUIRED** - these connect your plugin to Permut8 hardware
 - `signal[2]` = left and right audio channels
-- `params[8]` = values from 8 knobs (we'll use these later)
+- `params[PARAM_COUNT]` = values from 8 knobs (we'll use these later)
 - `displayLEDs[4]` = control for LED displays (we'll use these later)
 
 **Lines 8-14: Main Processing Function**
@@ -166,6 +178,7 @@ Let's prove you can modify audio. Replace your `process()` function:
 
 ```impala
 function process()
+locals int inputL, int inputR
 {
     loop {
         // Reduce volume to half (simple volume control)
@@ -205,6 +218,7 @@ Add this line before `yield()`:
 
 ```impala
 function process()
+locals int inputL, int inputR
 {
     loop {
         signal[0] = signal[0] / 2
@@ -246,13 +260,25 @@ Here's your complete first plugin with full documentation:
 // Audio Passthrough with Volume Control - My First Plugin
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // Required global variables that connect to Permut8 hardware
 global array signal[2]      // Audio I/O: signal[0] = left, signal[1] = right
-global array params[8]      // Knob values: params[0] through params[7] (0-255 each)
+global array params[PARAM_COUNT]      // Knob values: params[0] through params[7] (0-255 each)
 global array displayLEDs[4] // LED displays: displayLEDs[0] through displayLEDs[3]
 
 // Main processing function - runs continuously while plugin is active
 function process()
+locals int inputL, int inputR
 {
     loop {
         // Process audio: reduce volume to half

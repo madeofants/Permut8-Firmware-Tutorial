@@ -35,16 +35,28 @@ For most delay effects, use **Approach 1: Original Operators**:
 
 ## Quick Reference
 **Parameters**:
-- **Control 1 (params[0])**: Delay time (1-1000 samples, timing varies with sample rate)
-- **Control 2 (params[1])**: Feedback amount (0-90% to prevent runaway)
-- **Control 3 (params[5])**: [Available for expansion]
-- **Control 4 (params[6])**: [Available for expansion]
+- **Control 1 ((int)global params[CLOCK_FREQ_PARAM_INDEX])**: Delay time (1-1000 samples, timing varies with sample rate)
+- **Control 2 ((int)global params[SWITCHES_PARAM_INDEX])**: Feedback amount (0-90% to prevent runaway)
+- **Control 3 ((int)global params[OPERATOR_2_PARAM_INDEX])**: [Available for expansion]
+- **Control 4 ((int)global params[OPERAND_2_HIGH_PARAM_INDEX])**: [Available for expansion]
 
 **Key Concepts**: Memory read/write operations, feedback loops, circular buffering
 
 ## Complete Code
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
+
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
@@ -53,7 +65,7 @@ extern native write             // Write to delay line memory
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Delay processing variables
@@ -77,8 +89,8 @@ function process() {
 
 function operate1() {
     // === PARAMETER READING ===
-    int delayTime = ((int)params[0] * maxDelayTime / 255) + 1  // 1-1000 samples
-    int feedbackAmount = (int)params[1] * 90 / 255             // 0-90% feedback
+    int delayTime = ((int)(int)global params[CLOCK_FREQ_PARAM_INDEX] * maxDelayTime / 255) + 1  // 1-1000 samples
+    int feedbackAmount = (int)(int)global params[SWITCHES_PARAM_INDEX] * 90 / 255             // 0-90% feedback
     
     // === DELAY PROCESSING ===
     // Read delayed sample from memory (fixed offset from write position)
@@ -115,8 +127,8 @@ function operate1() {
 function operate2() {
     // === RIGHT CHANNEL PROCESSING ===
     // Identical delay processing for right channel using offset memory location
-    int delayTime = ((int)params[0] * maxDelayTime / 255) + 1
-    int feedbackAmount = (int)params[1] * 90 / 255
+    int delayTime = ((int)(int)global params[CLOCK_FREQ_PARAM_INDEX] * maxDelayTime / 255) + 1
+    int feedbackAmount = (int)(int)global params[SWITCHES_PARAM_INDEX] * 90 / 255
     
     // Use offset memory location to avoid interference with left channel
     int readPos = ((delayIndex - delayTime + maxDelayTime) % maxDelayTime) + maxDelayTime
@@ -136,6 +148,7 @@ function operate2() {
     signal[1] = output
     yield()
 }
+
 ```
 
 ## Try These Changes

@@ -5,7 +5,7 @@
 
 This tutorial demonstrates how to use **every aspect** of Permut8's original interface system by building a delay effect that utilizes all UI elements:
 
-- **All 8 parameters** (`params[0-7]`) - Clock frequency, switches, operators, and operands
+- **All 8 parameters** (`params[PARAM_COUNT]`) - Clock frequency, switches, operators, and operands
 - **All 4 LED displays** - Parameter feedback and activity indication
 - **Both instructions** - Instruction 1 and Instruction 2 processing
 - **All switch states** - SYNC, REV, triplet, dotted timing modes
@@ -32,7 +32,18 @@ extern native write
 
 // Global variables that connect to Permut8 hardware
 global array signal[2]          // Audio input/output
-global array params[8]          // All 8 hardware parameters
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+global array params[PARAM_COUNT]          // All hardware parameters
 global array displayLEDs[4]     // All 4 LED displays
 global array positions[2]       // Memory positions for operators
 
@@ -54,11 +65,11 @@ global int crossFeedback = 50
 // Operator 1: Enhanced SUB with modulation
 function operate1() returns int processed {
     // === PARAMETER READING (Using Original Interface) ===
-    int clockFreq = (int)params[0];           // Clock frequency knob
-    int switches = (int)params[1];            // Switch states bit mask
-    int operator1Type = (int)params[2];       // Should be SUB (8) for delay
-    int delayHigh = (int)params[3];          // Instruction 1 High Operand
-    int delayLow = (int)params[4];           // Instruction 1 Low Operand
+    int clockFreq = (int)global params[CLOCK_FREQ_PARAM_INDEX];           // Clock frequency knob
+    int switches = (int)global params[SWITCHES_PARAM_INDEX];            // Switch states bit mask
+    int operator1Type = (int)global params[OPERATOR_1_PARAM_INDEX];       // Should be SUB (8) for delay
+    int delayHigh = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];          // Instruction 1 High Operand
+    int delayLow = (int)global params[OPERAND_1_LOW_PARAM_INDEX];           // Instruction 1 Low Operand
     
     // === SWITCH PROCESSING (All 5 Switch States) ===
     syncMode = (switches & 0x01) != 0;           // Bit 0: SYNC switch
@@ -106,8 +117,8 @@ function operate1() returns int processed {
     int readPosition = currentPosition - modulatedDelayTime;
     
     // Handle memory wrapping
-    if (readPosition < 0) readPosition += 65536;
-    if (readPosition >= 65536) readPosition -= 65536;
+    if (readPosition < 0) readPosition = readPosition + 65536;
+    if (readPosition >= 65536) readPosition = readPosition - 65536;
     
     // Read delayed audio
     read(readPosition, 1, delayBuffer);
@@ -130,9 +141,9 @@ function operate1() returns int processed {
 // Operator 2: Cross-channel and feedback processing
 function operate2() returns int processed {
     // === PARAMETER READING (Instruction 2) ===
-    int operator2Type = (int)params[5];       // Instruction 2 operator type
-    int feedbackHigh = (int)params[6];        // Instruction 2 High Operand  
-    int feedbackLow = (int)params[7];         // Instruction 2 Low Operand
+    int operator2Type = (int)global params[OPERATOR_2_PARAM_INDEX];       // Instruction 2 operator type
+    int feedbackHigh = (int)global params[OPERAND_2_HIGH_PARAM_INDEX];        // Instruction 2 High Operand  
+    int feedbackLow = (int)global params[OPERAND_2_LOW_PARAM_INDEX];         // Instruction 2 Low Operand
     
     // Calculate feedback parameters
     feedbackAmount = (feedbackHigh * 3) / 4;     // 0-191 feedback (75% max)
@@ -143,8 +154,8 @@ function operate2() returns int processed {
     int readPosition = currentPosition - modulatedDelayTime;
     
     // Handle wrapping for right channel
-    if (readPosition < 0) readPosition += 65536;
-    if (readPosition >= 65536) readPosition -= 65536;
+    if (readPosition < 0) readPosition = readPosition + 65536;
+    if (readPosition >= 65536) readPosition = readPosition - 65536;
     
     // Read right channel delayed audio
     read(readPosition + 32768, 1, delayBuffer);  // Offset for stereo separation
@@ -186,11 +197,11 @@ function update() {
     // === LED DISPLAY 1: Clock and Sync Status ===
     if (syncMode) {
         // Show tempo divisions when synced
-        int tempoDiv = ((int)params[0] >> 3) + 1;
+        int tempoDiv = ((int)global params[CLOCK_FREQ_PARAM_INDEX] >> 3) + 1;
         displayLEDs[0] = (1 << (tempoDiv - 1)) & 0xFF;  // Light LEDs for tempo
     } else {
         // Show clock frequency when not synced
-        displayLEDs[0] = params[0];
+        displayLEDs[0] = global params[CLOCK_FREQ_PARAM_INDEX];
     }
     
     // === LED DISPLAY 2: Switch States ===
@@ -230,20 +241,20 @@ function process() {
 
 | Parameter | Original Meaning | Our Enhancement |
 |-----------|------------------|-----------------|
-| `params[0]` | Clock Frequency | Tempo sync and delay quantization |
-| `params[1]` | Switch States | All 5 switch modes processed |
-| `params[2]` | Operator 1 Type | Should be SUB (8) for delay |
-| `params[3]` | Instruction 1 High | Delay time high byte |
-| `params[4]` | Instruction 1 Low | Delay time low byte |
-| `params[5]` | Operator 2 Type | Feedback processing type |
-| `params[6]` | Instruction 2 High | Feedback amount |
-| `params[7]` | Instruction 2 Low | Cross-channel feedback |
+| `params[CLOCK_FREQ_PARAM_INDEX]` | Clock Frequency | Tempo sync and delay quantization |
+| `params[SWITCHES_PARAM_INDEX]` | Switch States | All 5 switch modes processed |
+| `params[OPERATOR_1_PARAM_INDEX]` | Operator 1 Type | Should be SUB (8) for delay |
+| `params[OPERAND_1_HIGH_PARAM_INDEX]` | Instruction 1 High | Delay time high byte |
+| `params[OPERAND_1_LOW_PARAM_INDEX]` | Instruction 1 Low | Delay time low byte |
+| `params[OPERATOR_2_PARAM_INDEX]` | Operator 2 Type | Feedback processing type |
+| `params[OPERAND_2_HIGH_PARAM_INDEX]` | Instruction 2 High | Feedback amount |
+| `params[OPERAND_2_LOW_PARAM_INDEX]` | Instruction 2 Low | Cross-channel feedback |
 
 ### **Switch Processing (All 5 Switches)**
 
 ```impala
-// How to decode switch states from params[1]
-int switches = (int)params[1];
+// How to decode switch states from params[SWITCHES_PARAM_INDEX]
+int switches = (int)global params[SWITCHES_PARAM_INDEX];
 int syncMode = (switches & 0x01) != 0;       // Bit 0: SYNC switch
 int reverseMode = (switches & 0x02) != 0;    // Bit 1: REV switch  
 int tripletMode = (switches & 0x04) != 0;    // Bit 2: Triplet timing

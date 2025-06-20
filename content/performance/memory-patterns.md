@@ -22,11 +22,22 @@ Memory access patterns dramatically impact DSP performance due to CPU cache beha
 
 ### Before: Poor Memory Access
 ```impala
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // Bad: random access pattern destroys cache performance
 function operate1()
 locals int i, int delay_length, int read_pos, int delayed_sample, int output
 {
-    delay_length = global params[0] * 10;  // 0-1000 samples
+    delay_length = global (int)global params[CLOCK_FREQ_PARAM_INDEX] * 10;  // 0-1000 samples
     
     for (i = 0 to BLOCK_SIZE - 1) {
         // Random access to delay buffer - cache miss likely
@@ -40,6 +51,7 @@ locals int i, int delay_length, int read_pos, int delayed_sample, int output
         global write_pos = (global write_pos + 1) & DELAY_MASK;
     }
 }
+
 ```
 
 ### After: Cache-Friendly Sequential Access
@@ -49,8 +61,8 @@ function operate1_optimized()
 locals int delay_length, int feedback, int block, int end, int read_start, int i
 locals int read_pos, int delayed, int output
 {
-    delay_length = global params[0] * 10;
-    feedback = global params[1] / 100;  // Integer division instead of * 0.01
+    delay_length = global (int)global params[CLOCK_FREQ_PARAM_INDEX] * 10;
+    feedback = global (int)global params[SWITCHES_PARAM_INDEX] / 100;  // Integer division instead of * 0.01
     
     // Process samples in cache-sized chunks
     block = 0;
@@ -223,7 +235,7 @@ locals int temp_buffer1_offset, int temp_buffer2_offset, int i
     
     // Both buffers are adjacent in memory - excellent cache behavior
     for (i = 0 to BLOCK_SIZE - 1) {
-        global memory_pool[temp_buffer1_offset + i] = (global signal[i] * global params[0]) >> 8;
+        global memory_pool[temp_buffer1_offset + i] = (global signal[i] * global (int)global params[CLOCK_FREQ_PARAM_INDEX]) >> 8;
         global memory_pool[temp_buffer2_offset + i] = applyFilter(global memory_pool[temp_buffer1_offset + i]);
         global signal[i] = global memory_pool[temp_buffer2_offset + i];
     }

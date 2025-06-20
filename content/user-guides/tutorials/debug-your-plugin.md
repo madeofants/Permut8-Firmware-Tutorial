@@ -22,8 +22,20 @@ Create `broken_reverb.impala` with these deliberate mistakes:
 // Broken Reverb - Full of Common Mistakes!
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 // Delay buffers for reverb
@@ -39,8 +51,8 @@ function process()
 {
     loop {
         // BUG 1: Not reading parameters correctly
-        int roomSize = params[3]    // Should be scaled
-        int decay = params[4]       // Should be limited
+        int roomSize = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]    // Should be scaled
+        int decay = (int)global params[OPERAND_1_LOW_PARAM_INDEX]       // Should be limited
         
         // BUG 2: Delay index not bounded
         delayIndex = delayIndex + 1  // Will overflow!
@@ -63,6 +75,7 @@ function process()
         // BUG 7: Missing yield()!
     }
 }
+
 ```
 
 ### 1.2 Try to Compile the Broken Plugin
@@ -311,11 +324,11 @@ Parameters come in as 0-255 but need to be scaled for different uses.
 ### 7.2 Debug Parameter Scaling
 ```impala
 // WRONG: Raw parameter value
-int feedback = params[4];           // 0-255, often too much
+int feedback = (int)global params[OPERAND_1_LOW_PARAM_INDEX];           // 0-255, often too much
 effect = input * feedback;          // Huge multiplication!
 
 // RIGHT: Scale to useful range
-int feedback = params[4] / 4;       // 0-63, safer range
+int feedback = (int)global params[OPERAND_1_LOW_PARAM_INDEX] / 4;       // 0-63, safer range
 effect = (input * feedback) / 64;  // Controlled multiplication
 ```
 
@@ -324,8 +337,8 @@ Replace the parameter reading:
 
 ```impala
 // BUG 1 FIX: Properly scale parameters
-int roomSize = params[3] / 2;       // 0-127 range
-int decay = params[4] / 4;          // 0-63 range for safety
+int roomSize = (int)global params[OPERAND_1_HIGH_PARAM_INDEX] / 2;       // 0-127 range
+int decay = (int)global params[OPERAND_1_LOW_PARAM_INDEX] / 4;          // 0-63 range for safety
 ```
 
 ---
@@ -340,7 +353,7 @@ Here's our reverb with all bugs fixed:
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 global array delayBuffer1[500]
@@ -352,8 +365,8 @@ function process()
 {
     loop {
         // FIX 1: Properly scale parameters
-        int roomSize = params[3] / 2;       // 0-127 range
-        int decay = params[4] / 4;          // 0-63 range for safety
+        int roomSize = (int)global params[OPERAND_1_HIGH_PARAM_INDEX] / 2;       // 0-127 range
+        int decay = (int)global params[OPERAND_1_LOW_PARAM_INDEX] / 4;          // 0-63 range for safety
         
         // FIX 2: Bound delay index  
         delayIndex = (delayIndex + 1) % 500;
@@ -447,7 +460,7 @@ yield();
 // If this works, your effect processing has the problem
 
 // Test 3: Add one parameter
-int volume = params[3] / 2;
+int volume = (int)global params[OPERAND_1_HIGH_PARAM_INDEX] / 2;
 signal[0] = (signal[0] * volume) / 128;
 signal[1] = (signal[1] * volume) / 128;
 yield();
@@ -467,7 +480,7 @@ yield();
 **Use LEDs for Debugging:**
 ```impala
 // Show parameter values
-displayLEDs[0] = params[3];
+displayLEDs[0] = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
 
 // Show if processing is happening
 displayLEDs[1] = (signal[0] > 100) ? 0xFF : 0x00;
@@ -486,7 +499,7 @@ else if (output < -2047) output = -2047;
 index = index % arraySize;
 
 // Scale all parameters
-param = params[3] / scaleFactor;
+param = (int)global params[OPERAND_1_HIGH_PARAM_INDEX] / scaleFactor;
 ```
 
 ---
@@ -513,7 +526,8 @@ int result = fastApproximateDistance(value1, value2);
 **Large Array Operations:**
 ```impala
 // SLOW: Processing huge arrays every sample
-for (int i = 0; i < 10000; i++) {
+int i;
+for (i = 0 to 10000) {
     bigArray[i] = bigArray[i] * 2;
 }
 
@@ -523,14 +537,14 @@ for (int i = 0; i < 10000; i++) {
 **Unnecessary Calculations:**
 ```impala
 // SLOW: Recalculating constants
-int coefficient = (params[3] * 3.14159) / 255;  // Every sample!
+int coefficient = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 3.14159) / 255;  // Every sample!
 
 // FAST: Calculate only when parameter changes
 static int lastParam = -1;
 static int coefficient = 0;
-if (params[3] != lastParam) {
-    coefficient = (params[3] * 314) / 255;  // Use integer approximation
-    lastParam = params[3];
+if ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] != lastParam) {
+    coefficient = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 314) / 255;  // Use integer approximation
+    lastParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
 }
 ```
 

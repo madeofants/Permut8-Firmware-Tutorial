@@ -21,7 +21,19 @@ Create your first sound-generating plugin! Instead of just processing incoming a
 ### 1.1 Processing vs. Generating
 **What you did before** (processing):
 ```impala
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 signal[0] = signal[0] / 2  // Take incoming audio, modify it
+
 ```
 
 **What you'll do now** (generating):
@@ -61,7 +73,7 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 extern native yield             // Return control to Permut8 audio engine
 
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 // Oscillator state
@@ -337,7 +349,7 @@ Here's your complete first sound generator:
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 // Oscillator state variables

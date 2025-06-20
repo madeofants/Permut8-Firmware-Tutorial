@@ -5,16 +5,28 @@ Creates a lush, thickening effect by adding multiple modulated delay lines that 
 
 ## Quick Reference
 **Parameters**:
-- **Control 1 (params[3])**: LFO rate (0.1Hz to 5Hz, controls sweep speed)
-- **Control 2 (params[4])**: Modulation depth (0-255, controls pitch variation amount)
-- **Control 3 (params[5])**: Dry/wet mix (0% = dry signal, 100% = full chorus)
-- **Control 4 (params[6])**: Stereo spread (0 = mono, 255 = maximum width)
+- **Control 1 ((int)global params[OPERAND_1_HIGH_PARAM_INDEX])**: LFO rate (0.1Hz to 5Hz, controls sweep speed)
+- **Control 2 ((int)global params[OPERAND_1_LOW_PARAM_INDEX])**: Modulation depth (0-255, controls pitch variation amount)
+- **Control 3 ((int)global params[OPERATOR_2_PARAM_INDEX])**: Dry/wet mix (0% = dry signal, 100% = full chorus)
+- **Control 4 ((int)global params[OPERAND_2_HIGH_PARAM_INDEX])**: Stereo spread (0 = mono, 255 = maximum width)
 
 **Key Concepts**: Multiple delay lines, LFO modulation, stereo imaging, interpolation
 
 ## Complete Code
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
+
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
@@ -23,7 +35,7 @@ extern native write             // Write to delay line memory
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Simple chorus state
@@ -49,10 +61,10 @@ locals int output_r
 {
     loop {
         // Read parameters
-        rate = ((int)global params[3] >> 4) + 1;     // Control 1: LFO rate (1-16)
-        depth = ((int)global params[4] >> 3) + 1;    // Control 2: Modulation depth (1-32 samples)
-        mix = (int)global params[5];                 // Control 3: Dry/wet mix (0-255)
-        spread = (int)global params[6];              // Control 4: Stereo spread (0-255)
+        rate = ((int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 4) + 1;     // Control 1: LFO rate (1-16)
+        depth = ((int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX] >> 3) + 1;    // Control 2: Modulation depth (1-32 samples)
+        mix = (int)global (int)global params[OPERATOR_2_PARAM_INDEX];                 // Control 3: Dry/wet mix (0-255)
+        spread = (int)global (int)global params[OPERAND_2_HIGH_PARAM_INDEX];              // Control 4: Stereo spread (0-255)
         
         // Triangle LFO for left channel
         global lfo_phase = (global lfo_phase + rate) & 255;
@@ -119,6 +131,7 @@ locals int output_r
         yield();
     }
 }
+
 ```
 
 ## Try These Changes

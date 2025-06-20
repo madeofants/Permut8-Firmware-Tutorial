@@ -24,6 +24,17 @@ Fixed-point arithmetic replaces expensive floating-point operations with fast in
 
 ### Q15 Format (Most Common for Audio)
 ```impala
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // Q15: 1 sign bit + 15 fractional bits
 // Range: -1.0 to +0.999969 (almost +1.0)
 // Resolution: 1/32768 ≈ 0.00003
@@ -40,6 +51,7 @@ function Q15ToFloat(int value) returns float result {
 
 // Example: 0.5 in Q15 format
 global int half_volume = 16384;  // 0.5 * 32768
+
 ```
 
 ### Q12 Format (Extended Range)
@@ -50,7 +62,7 @@ global int half_volume = 16384;  // 0.5 * 32768
 
 // Useful for parameters that exceed ±1.0 range
 function convertParamToQ12() returns int gain_q12 {
-    gain_q12 = params[0] * 41;  // Convert 0-100 param to Q12 (0-10.0 range)
+    gain_q12 = (int)global params[CLOCK_FREQ_PARAM_INDEX] * 41;  // Convert 0-100 param to Q12 (0-10.0 range)
 }
 ```
 
@@ -92,11 +104,11 @@ global int y2 = 0;
 
 function operate1() {
     // Filter coefficients in Q15 format
-    int a1_q15 = params[0] * 327;  // Feedback coefficient
-    int a2_q15 = params[1] * 327;  
-    int b0_q15 = params[2] * 327;  // Feedforward coefficient
-    int b1_q15 = params[3] * 327;
-    int b2_q15 = params[4] * 327;
+    int a1_q15 = (int)global params[CLOCK_FREQ_PARAM_INDEX] * 327;  // Feedback coefficient
+    int a2_q15 = (int)global params[SWITCHES_PARAM_INDEX] * 327;  
+    int b0_q15 = (int)global params[OPERATOR_1_PARAM_INDEX] * 327;  // Feedforward coefficient
+    int b1_q15 = (int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 327;
+    int b2_q15 = (int)global params[OPERAND_1_LOW_PARAM_INDEX] * 327;
     
     int i = 0;
     loop {
@@ -129,7 +141,7 @@ global array sine_table_q15[1024];  // Pre-computed in Q15
 global int phase = 0;
 
 function operate2() {
-    int frequency = params[0];  // 0-100 range
+    int frequency = (int)global params[CLOCK_FREQ_PARAM_INDEX];  // 0-100 range
     
     // Convert frequency to Q16 phase increment
     // phase_inc = (frequency * table_size * 65536) / sample_rate
@@ -146,7 +158,7 @@ function operate2() {
         int sine_q15 = sine_table_q15[table_index];
         
         // Apply amplitude and convert to output format
-        int amplitude = params[1] * 20;  // 0-100 to 0-2000 range
+        int amplitude = (int)global params[SWITCHES_PARAM_INDEX] * 20;  // 0-100 to 0-2000 range
         signal[i] = (sine_q15 * amplitude) >> 15;
         
         phase = phase + phase_increment;  // Q16 phase accumulation
@@ -167,8 +179,8 @@ global int ATTACK = 0;
 global int DECAY = 1;
 
 function operate1() {
-    int attack_rate = params[0] + 1;   // Prevent division by zero
-    int decay_shift = params[1] >> 3;  // Decay rate as bit shift amount
+    int attack_rate = (int)global params[CLOCK_FREQ_PARAM_INDEX] + 1;   // Prevent division by zero
+    int decay_shift = (int)global params[SWITCHES_PARAM_INDEX] >> 3;  // Decay rate as bit shift amount
     
     int i = 0;
     loop {

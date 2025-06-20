@@ -33,6 +33,17 @@ Direct GAZL knowledge becomes essential when:
 GAZL understanding complements Impala development:
 
 ```impala
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // High-level Impala algorithm
 function process_samples() {
     int i;
@@ -40,6 +51,7 @@ function process_samples() {
         global signal[i] = complex_dsp_algorithm(global signal[i]);
     }
 }
+
 ```
 
 Compiles to GAZL virtual machine code:
@@ -295,7 +307,7 @@ addNumbers:     FUNC
 ```impala
 // Impala global declarations
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global int my_variable = 100
 ```
 

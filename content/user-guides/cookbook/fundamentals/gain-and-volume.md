@@ -9,9 +9,9 @@ Gain and volume control scales audio levels with smooth parameter changes to pre
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Master volume (0-255)
-- `params[1]`: Stereo balance (0-255, 128=center)
-- `params[2]`: Smoothing speed (0-255)
+- `params[CLOCK_FREQ_PARAM_INDEX]`: Master volume (0-255)
+- `params[SWITCHES_PARAM_INDEX]`: Stereo balance (0-255, 128=center)
+- `params[OPERATOR_1_PARAM_INDEX]`: Smoothing speed (0-255)
 
 **Core Techniques:**
 - **Volume scaling**: Multiply samples by gain factor
@@ -26,12 +26,23 @@ Gain and volume control scales audio levels with smooth parameter changes to pre
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Volume control state
@@ -45,9 +56,9 @@ locals int volume_target, int balance_target, int smoothing_speed, int left_samp
 {
     loop {
         // Read parameters
-        volume_target = ((int)global params[0] << 3);        // 0-255 → 0-2040
-        balance_target = (int)global params[1];              // 0-255 balance
-        smoothing_speed = ((int)global params[2] >> 4) + 1;  // 1-16 smoothing rate
+        volume_target = ((int)global params[CLOCK_FREQ_PARAM_INDEX] << 3);        // 0-255 → 0-2040
+        balance_target = (int)global params[SWITCHES_PARAM_INDEX];              // 0-255 balance
+        smoothing_speed = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;  // 1-16 smoothing rate
         
         // Smooth volume changes to prevent clicks
         global smooth_volume = global smooth_volume + 
@@ -116,24 +127,24 @@ locals int volume_target, int balance_target, int smoothing_speed, int left_samp
 
 ```impala
 // Unity gain, centered
-params[0] = 128;  // Half volume
-params[1] = 128;  // Center balance
-params[2] = 64;   // Medium smoothing
+params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Half volume
+params[SWITCHES_PARAM_INDEX] = 128;  // Center balance
+params[OPERATOR_1_PARAM_INDEX] = 64;   // Medium smoothing
 
 // Left-heavy mix
-params[0] = 200;  // Loud volume
-params[1] = 80;   // Left balance
-params[2] = 32;   // Slow smoothing
+params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Loud volume
+params[SWITCHES_PARAM_INDEX] = 80;   // Left balance
+params[OPERATOR_1_PARAM_INDEX] = 32;   // Slow smoothing
 
 // Quick response
-params[0] = 100;  // Moderate volume
-params[1] = 150;  // Right balance
-params[2] = 200;  // Fast smoothing
+params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Moderate volume
+params[SWITCHES_PARAM_INDEX] = 150;  // Right balance
+params[OPERATOR_1_PARAM_INDEX] = 200;  // Fast smoothing
 
 // Background level
-params[0] = 40;   // Quiet volume
-params[1] = 128;  // Center balance
-params[2] = 16;   // Very slow smoothing
+params[CLOCK_FREQ_PARAM_INDEX] = 40;   // Quiet volume
+params[SWITCHES_PARAM_INDEX] = 128;  // Center balance
+params[OPERATOR_1_PARAM_INDEX] = 16;   // Very slow smoothing
 ```
 
 ## Understanding Volume Control

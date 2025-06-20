@@ -9,9 +9,9 @@ Output limiting automatically reduces gain when audio signals get too loud, prev
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Threshold level (0-255, where limiting starts)
-- `params[1]`: Release speed (0-255, how fast limiting recovers)
-- `params[2]`: Limiter strength (0-255, how hard it limits)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Threshold level (0-255, where limiting starts)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Release speed (0-255, how fast limiting recovers)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Limiter strength (0-255, how hard it limits)
 
 **Common Settings:**
 - **Gentle limiting**: High threshold, slow release, light strength
@@ -25,12 +25,24 @@ Output limiting automatically reduces gain when audio signals get too loud, prev
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Limiter state
@@ -42,9 +54,9 @@ locals int threshold, int release_speed, int strength, int left_peak, int right_
 {
     loop {
         // Read parameters
-        threshold = ((int)global params[0] << 3) + 512;  // 512-2560 threshold range
-        release_speed = ((int)global params[1] >> 4) + 1; // 1-16 release rate
-        strength = ((int)global params[2] >> 2) + 1;     // 1-64 limiter strength
+        threshold = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] << 3) + 512;  // 512-2560 threshold range
+        release_speed = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 4) + 1; // 1-16 release rate
+        strength = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 2) + 1;     // 1-64 limiter strength
         
         // Detect peak levels in both channels
         left_peak = (int)global signal[0];
@@ -111,6 +123,7 @@ locals int threshold, int release_speed, int strength, int left_peak, int right_
         
         yield();
 }
+
 ```
 
 ## How It Works
@@ -134,24 +147,24 @@ locals int threshold, int release_speed, int strength, int left_peak, int right_
 
 ```impala
 // Gentle mastering limiter
-params[0] = 200;  // High threshold
-params[1] = 100;  // Moderate release
-params[2] = 80;   // Light limiting
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High threshold
+(int)global params[SWITCHES_PARAM_INDEX] = 100;  // Moderate release
+(int)global params[OPERATOR_1_PARAM_INDEX] = 80;   // Light limiting
 
 // Broadcast safety limiter
-params[0] = 150;  // Medium threshold
-params[1] = 200;  // Fast release
-params[2] = 180;  // Strong limiting
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 150;  // Medium threshold
+(int)global params[SWITCHES_PARAM_INDEX] = 200;  // Fast release
+(int)global params[OPERATOR_1_PARAM_INDEX] = 180;  // Strong limiting
 
 // Aggressive maximizer
-params[0] = 100;  // Low threshold
-params[1] = 50;   // Slow release
-params[2] = 255;  // Maximum limiting
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Low threshold
+(int)global params[SWITCHES_PARAM_INDEX] = 50;   // Slow release
+(int)global params[OPERATOR_1_PARAM_INDEX] = 255;  // Maximum limiting
 
 // Transparent protection
-params[0] = 220;  // Very high threshold
-params[1] = 128;  // Balanced release
-params[2] = 60;   // Very light limiting
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 220;  // Very high threshold
+(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Balanced release
+(int)global params[OPERATOR_1_PARAM_INDEX] = 60;   // Very light limiting
 ```
 
 ## Understanding Limiting

@@ -9,9 +9,9 @@ Circular buffers enable delay-based audio effects like echo, reverb, and chorus.
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Delay time (0-255, controls echo distance)
-- `params[1]`: Feedback amount (0-255, controls echo repetitions)
-- `params[2]`: Wet/dry mix (0-255, dry to wet balance)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Delay time (0-255, controls echo distance)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Feedback amount (0-255, controls echo repetitions)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Wet/dry mix (0-255, dry to wet balance)
 
 **Core Concept:** Write new samples while reading older samples from different positions in the same buffer.
 
@@ -22,12 +22,24 @@ Circular buffers enable delay-based audio effects like echo, reverb, and chorus.
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Circular buffer for delay
@@ -39,9 +51,9 @@ locals int delay_time, int feedback, int wet_mix, int read_pos, int delayed_samp
 {
     loop {
         // Read parameters
-        delay_time = ((int)global params[0] >> 1) + 1;  // 1-128 delay samples
-        feedback = ((int)global params[1] >> 1);        // 0-127 feedback amount
-        wet_mix = ((int)global params[2]);              // 0-255 wet/dry balance
+        delay_time = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 1) + 1;  // 1-128 delay samples
+        feedback = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 1);        // 0-127 feedback amount
+        wet_mix = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX]);              // 0-255 wet/dry balance
         
         // Calculate read position (look back in time)
         read_pos = global write_pos - delay_time;
@@ -86,6 +98,7 @@ locals int delay_time, int feedback, int wet_mix, int read_pos, int delayed_samp
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -107,24 +120,24 @@ locals int delay_time, int feedback, int wet_mix, int read_pos, int delayed_samp
 
 ```impala
 // Short slap-back delay
-params[0] = 30;   // Short delay
-params[1] = 80;   // Medium feedback
-params[2] = 100;  // Mix with dry signal
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 30;   // Short delay
+(int)global params[SWITCHES_PARAM_INDEX] = 80;   // Medium feedback
+(int)global params[OPERATOR_1_PARAM_INDEX] = 100;  // Mix with dry signal
 
 // Long echo
-params[0] = 200;  // Long delay
-params[1] = 120;  // Strong feedback
-params[2] = 150;  // More wet signal
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Long delay
+(int)global params[SWITCHES_PARAM_INDEX] = 120;  // Strong feedback
+(int)global params[OPERATOR_1_PARAM_INDEX] = 150;  // More wet signal
 
 // Subtle ambience
-params[0] = 50;   // Medium delay
-params[1] = 40;   // Light feedback
-params[2] = 60;   // Mostly dry
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 50;   // Medium delay
+(int)global params[SWITCHES_PARAM_INDEX] = 40;   // Light feedback
+(int)global params[OPERATOR_1_PARAM_INDEX] = 60;   // Mostly dry
 
 // Self-oscillation (careful!)
-params[0] = 100;  // Medium delay
-params[1] = 127;  // Maximum feedback
-params[2] = 200;  // Heavy wet mix
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Medium delay
+(int)global params[SWITCHES_PARAM_INDEX] = 127;  // Maximum feedback
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Heavy wet mix
 ```
 
 ## Understanding Delay Effects

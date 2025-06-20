@@ -10,6 +10,43 @@ This comprehensive API reference documents all Impala core functions, global var
 
 ---
 
+## CRITICAL: Required Constants and Declarations
+
+**Every firmware MUST include these parameter constants:**
+
+```impala
+const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
+
+extern native yield
+extern native trace
+extern native read
+extern native write
+extern native abort
+
+// Parameter index constants (REQUIRED FOR COMPILATION)
+const int CLOCK_FREQ_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int PARAM_COUNT
+```
+
+**Standard Global Variables (REQUIRED):**
+
+```impala
+global int clock = 0
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global int clockFreqLimit = 132300
+global array signal[2]                    // For full patches
+```
+
+---
+
 ## Core Processing Functions
 
 ### process()
@@ -17,33 +54,61 @@ This comprehensive API reference documents all Impala core functions, global var
 **Primary processing function for full patches that replace the entire audio engine.**
 
 ```impala
-function process() {
+function process()
+locals int volume, int inputL, int inputR, int outputL, int outputR
+{
     loop {
-        // Process audio samples
-        yield()
+        // Get parameters (ALWAYS use constants)
+        volume = (int)global params[OPERAND_2_HIGH_PARAM_INDEX] * 2;
+        
+        // Get input audio
+        inputL = (int)global signal[0];
+        inputR = (int)global signal[1];
+        
+        // Process audio
+        outputL = (inputL * volume) / 255;
+        outputR = (inputR * volume) / 255;
+        
+        // Write output
+        global signal[0] = outputL;
+        global signal[1] = outputR;
+        
+        yield();
     }
 }
 ```
 
 **Global Variables Used**:
 - `global array signal[2]`: Stereo audio I/O [left, right] with values -2047 to 2047
-- `global array params[8]`: Parameter values 0-255 from hardware controls
+- `global array params[PARAM_COUNT]`: Parameter values 0-255 from hardware controls
+- **CRITICAL**: Always access parameters using constants, never raw indices
+- **Required Constants**: `OPERAND_1_HIGH_PARAM_INDEX`, `OPERAND_2_HIGH_PARAM_INDEX`, etc.
 
 **Usage Pattern**:
 ```impala
-function process() {
+function process()
+locals int left, int right, int param1, int param2
+{
     loop {
+        // Get parameters using constants (REQUIRED)
+        param1 = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
+        param2 = (int)global params[OPERAND_2_HIGH_PARAM_INDEX];
+        
         // Process left channel
-        int left = global signal[0]
-        left = applyEffect(left)
-        global signal[0] = clampAudio(left)
+        left = (int)global signal[0];
+        left = applyEffect(left, param1, param2);
+        if (left > 2047) left = 2047;
+        if (left < -2047) left = -2047;
+        global signal[0] = left;
         
         // Process right channel  
-        int right = global signal[1]
-        right = applyEffect(right)
-        global signal[1] = clampAudio(right)
+        right = (int)global signal[1];
+        right = applyEffect(right, param1, param2);
+        if (right > 2047) right = 2047;
+        if (right < -2047) right = -2047;
+        global signal[1] = right;
         
-        yield()
+        yield();
     }
 }
 ```

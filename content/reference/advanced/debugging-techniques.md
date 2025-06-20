@@ -115,7 +115,8 @@ void testFilterIsolation() {
     // Test with known inputs
     float testInputs[] = {0.0f, 0.5f, 1.0f, -1.0f};
     
-    for (int i = 0; i < 4; i++) {
+    int i;
+    for (i = 0 to 4) {
         float output = filter.process(testInputs[i]);
         logValue("Filter test", i, testInputs[i], output);
     }
@@ -219,12 +220,13 @@ void captureState(const char* label) {
     SystemState* state = &capturedStates[stateIndex];
     
     // Capture current parameter values
-    for (int i = 0; i < MAX_PARAMS; i++) {
+    int i;
+    for (i = 0 to MAX_PARAMS) {
         state->parameters[i] = params[i];
     }
     
     // Capture signal levels
-    for (int i = 0; i < 8; i++) {
+    for (i = 0 to 8) {
         state->signalLevels[i] = signal[i];
     }
     
@@ -291,12 +293,13 @@ Verify system invariants at strategic points:
 ```impala
 void checkAudioInvariants() {
     // Signal levels should never exceed valid range
-    for (int i = 0; i < 8; i++) {
+    int i;
+    for (i = 0 to 8) {
         ASSERT(signal[i] >= -2048.0f && signal[i] <= 2047.0f, "signal_out_of_range");
     }
     
     // Parameters should always be normalized
-    for (int i = 0; i < MAX_PARAMS; i++) {
+    for (i = 0 to MAX_PARAMS) {
         ASSERT(params[i] >= 0.0f && params[i] <= 1.0f, "param_not_normalized");
     }
     
@@ -363,7 +366,8 @@ void initProtectedBuffer(ProtectedBuffer* buf) {
     buf->endCanary = CANARY_VALUE;
     
     // Initialize data
-    for (int i = 0; i < BUFFER_SIZE; i++) {
+    int i;
+    for (i = 0 to BUFFER_SIZE) {
         buf->data[i] = 0.0f;
     }
 }
@@ -471,7 +475,8 @@ void routeSignalToDebugOutput(float internalSignal, int debugChannel) {
 void debugFilterResponse() {
     float testFrequencies[] = {100.0f, 440.0f, 1000.0f, 4000.0f};
     
-    for (int i = 0; i < 4; i++) {
+    int i;
+    for (i = 0 to 4) {
         float testSine = generateSine(testFrequencies[i]);
         float filteredSignal = applyFilter(testSine);
         
@@ -576,8 +581,8 @@ void endPerformanceMeasurement() {
         perfCounter.maxProcessingCycles = cycles;
     }
     
-    perfCounter.totalCycles += cycles;
-    perfCounter.frameCount++;
+    perfCounter.totalCycles = perfCounter.totalCycles + cycles;
+    perfCounter.frameCount = perfCounter.frameCount + 1;
     
     // Calculate CPU load percentage
     float cpuLoad = (cycles * 100.0f) / MAX_CYCLES_PER_FRAME;
@@ -592,7 +597,8 @@ void processAudioFrame() {
     startPerformanceMeasurement();
     
     // Main audio processing
-    for (int i = 0; i < FRAME_SIZE; i++) {
+    int i;
+    for (i = 0 to FRAME_SIZE) {
         signal[i] = processAudioSample(signal[i]);
     }
     
@@ -616,7 +622,8 @@ FunctionProfile profiles[MAX_FUNCTIONS];
 int profileCount = 0;
 
 int findOrCreateProfile(const char* functionName) {
-    for (int i = 0; i < profileCount; i++) {
+    int i;
+    for (i = 0 to profileCount) {
         if (strcmp(profiles[i].name, functionName) == 0) {
             return i;
         }
@@ -638,8 +645,8 @@ int findOrCreateProfile(const char* functionName) {
 void profileFunction(const char* functionName, int cycles) {
     int index = findOrCreateProfile(functionName);
     if (index >= 0) {
-        profiles[index].callCount++;
-        profiles[index].totalCycles += cycles;
+        profiles[index].callCount = profiles[index].callCount + 1;
+        profiles[index].totalCycles = profiles[index].totalCycles + cycles;
         
         if (cycles > profiles[index].maxCycles) {
             profiles[index].maxCycles = cycles;
@@ -706,7 +713,8 @@ void analyzeMemoryAccess(void* address, int size) {
 // Cache-aware data access
 void processSamplesOptimized(float* samples, int count) {
     // Sequential access pattern
-    for (int i = 0; i < count; i++) {
+    int i;
+    for (i = 0 to count) {
         analyzeMemoryAccess(&samples[i], sizeof(float));
         samples[i] = processSample(samples[i]);
     }
@@ -741,7 +749,7 @@ void* debugMalloc(int size, const char* function) {
         allocations[allocationCount].active = true;
         allocationCount++;
         
-        totalAllocated += size;
+        totalAllocated = totalAllocated + size;
         if (totalAllocated > peakAllocated) {
             peakAllocated = totalAllocated;
             logMessage(LOG_INFO, "debugMalloc", "new_peak_memory", peakAllocated);
@@ -752,10 +760,11 @@ void* debugMalloc(int size, const char* function) {
 }
 
 void debugFree(void* ptr) {
-    for (int i = 0; i < allocationCount; i++) {
+    int i;
+    for (i = 0 to allocationCount) {
         if (allocations[i].address == ptr && allocations[i].active) {
             allocations[i].active = false;
-            totalAllocated -= allocations[i].size;
+            totalAllocated = totalAllocated - allocations[i].size;
             break;
         }
     }
@@ -924,11 +933,12 @@ void createCheckpoint() {
     SystemCheckpoint* cp = &checkpoints[currentCheckpoint];
     
     // Save current system state
-    for (int i = 0; i < MAX_PARAMS; i++) {
+    int i;
+    for (i = 0 to MAX_PARAMS) {
         cp->parameters[i] = params[i];
     }
     
-    for (int i = 0; i < MAX_FILTERS; i++) {
+    for (i = 0 to MAX_FILTERS) {
         cp->filterStates[i] = getFilterState(i);
     }
     
@@ -946,7 +956,8 @@ void restoreFromCheckpoint() {
     int searchIndex = currentCheckpoint;
     SystemCheckpoint* cp = NULL;
     
-    for (int i = 0; i < CHECKPOINT_COUNT; i++) {
+    int i;
+    for (i = 0 to CHECKPOINT_COUNT) {
         searchIndex = (searchIndex - 1 + CHECKPOINT_COUNT) % CHECKPOINT_COUNT;
         if (checkpoints[searchIndex].valid) {
             cp = &checkpoints[searchIndex];
@@ -956,11 +967,12 @@ void restoreFromCheckpoint() {
     
     if (cp) {
         // Restore system state
-        for (int i = 0; i < MAX_PARAMS; i++) {
+        int i;
+        for (i = 0 to MAX_PARAMS) {
             params[i] = cp->parameters[i];
         }
         
-        for (int i = 0; i < MAX_FILTERS; i++) {
+        for (i = 0 to MAX_FILTERS) {
             setFilterState(i, cp->filterStates[i]);
         }
         
@@ -1012,7 +1024,12 @@ void assertEqual(const char* testName, float expected, float actual, float toler
     result->expectedValue = expected;
     result->actualValue = actual;
     
-    float difference = (actual > expected) ? (actual - expected) : (expected - actual);
+    float difference;
+    if (actual > expected) {
+        difference = actual - expected;
+    } else {
+        difference = expected - actual;
+    }
     result->passed = (difference <= tolerance);
     
     if (!result->passed) {
@@ -1028,9 +1045,17 @@ void assertTrue(const char* testName, bool condition, const char* errorMsg) {
     TestResult* result = &testResults[testCount++];
     result->testName = testName;
     result->passed = condition;
-    result->errorMessage = condition ? NULL : errorMsg;
+    if (condition) {
+        result->errorMessage = NULL;
+    } else {
+        result->errorMessage = errorMsg;
+    }
     result->expectedValue = 1.0f;
-    result->actualValue = condition ? 1.0f : 0.0f;
+    if (condition) {
+        result->actualValue = 1.0f;
+    } else {
+        result->actualValue = 0.0f;
+    }
     
     if (!condition) {
         logMessage(LOG_ERROR, "assertTrue", testName, 0);
@@ -1068,9 +1093,10 @@ void runAllTests() {
     
     // Report results
     int passedTests = 0;
-    for (int i = 0; i < testCount; i++) {
+    int i;
+    for (i = 0 to testCount) {
         if (testResults[i].passed) {
-            passedTests++;
+            passedTests = passedTests + 1;
         } else {
             logMessage(LOG_ERROR, "test_failed", testResults[i].testName, 
                       testResults[i].actualValue);
@@ -1142,11 +1168,13 @@ void stressTestCPULoad() {
     logMessage(LOG_INFO, "stressTestCPULoad", "starting_stress_test", 0);
     
     // Gradually increase processing complexity
-    for (int complexity = 1; complexity <= 10; complexity++) {
+    int complexity;
+    for (complexity = 1 to 11) {
         setProcessingComplexity(complexity);
         
         // Run for several seconds
-        for (int frame = 0; frame < 1000; frame++) {
+        int frame;
+        for (frame = 0 to 1000) {
             processAudioFrame();
             
             float cpuLoad = getCurrentCpuLoad();
@@ -1187,7 +1215,8 @@ void stressTestMemoryUsage() {
     }
     
     // Free all allocations
-    for (int i = 0; i < allocationCount; i++) {
+    int i;
+    for (i = 0 to allocationCount) {
         FREE(allocations[i]);
     }
     
@@ -1197,7 +1226,8 @@ void stressTestMemoryUsage() {
 
 void stressTestParameterChanges() {
     // Rapid parameter changes
-    for (int iteration = 0; iteration < 10000; iteration++) {
+    int iteration;
+    for (iteration = 0 to 10000) {
         int paramIndex = iteration % MAX_PARAMS;
         float paramValue = (iteration % 100) / 100.0f;
         
@@ -1319,7 +1349,11 @@ void endDebugSession(const char* solution, bool resolved) {
     // Generate session report
     generateSessionReport(&currentSession);
     
-    logMessage(LOG_INFO, "endDebugSession", "session_completed", resolved ? 1 : 0);
+    if (resolved) {
+        logMessage(LOG_INFO, "endDebugSession", "session_completed", 1);
+    } else {
+        logMessage(LOG_INFO, "endDebugSession", "session_completed", 0);
+    }
     
     // Restore normal logging level
     restoreNormalLogging();
@@ -1417,7 +1451,8 @@ bool executeReproductionCase(ReproductionCase* testCase) {
     restoreParameterState(&testCase->initialState);
     
     // Execute all actions
-    for (int i = 0; i < testCase->actionCount; i++) {
+    int i;
+    for (i = 0 to testCase->actionCount) {
         TestAction* action = &testCase->actions[i];
         
         switch (action->type) {
@@ -1438,7 +1473,11 @@ bool executeReproductionCase(ReproductionCase* testCase) {
     // Check if expected result occurred
     bool reproduced = checkExpectedResult(testCase->expectedResult);
     
-    logMessage(LOG_INFO, "executeReproductionCase", "case_completed", reproduced ? 1 : 0);
+    if (reproduced) {
+        logMessage(LOG_INFO, "executeReproductionCase", "case_completed", 1);
+    } else {
+        logMessage(LOG_INFO, "executeReproductionCase", "case_completed", 0);
+    }
     return reproduced;
 }
 ```

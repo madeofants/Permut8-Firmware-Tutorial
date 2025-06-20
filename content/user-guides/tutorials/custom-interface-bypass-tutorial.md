@@ -32,7 +32,18 @@ extern native write
 
 // Required global variables (but with custom meanings)
 global array signal[2]          // Audio input/output
-global array params[8]          // Hardware controls with custom meanings
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+global array params[PARAM_COUNT]          // Hardware controls with custom meanings
 global array displayLEDs[4]     // Custom LED behaviors
 
 // Completely custom interface labels
@@ -61,13 +72,13 @@ global int randomSeed = 12345
 function processGranularEffect() {
     // === CUSTOM PARAMETER MAPPING ===
     // These parameters have NOTHING to do with operators/operands
-    grainSize = ((int)params[3] * 15) + 128;        // Control 1: 128-4000 samples
-    grainSpray = (int)params[4];                    // Control 2: 0-255 randomness
-    pitchShift = ((int)params[6] * 2) + 64;         // Control 3: 64-574 (pitch range)
-    wetMix = (int)params[7];                        // Control 4: 0-255 dry/wet
+    grainSize = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 15) + 128;        // Control 1: 128-4000 samples
+    grainSpray = (int)global params[OPERAND_1_LOW_PARAM_INDEX];                    // Control 2: 0-255 randomness
+    pitchShift = ((int)global params[OPERAND_2_HIGH_PARAM_INDEX] * 2) + 64;         // Control 3: 64-574 (pitch range)
+    wetMix = (int)global params[OPERAND_2_LOW_PARAM_INDEX];                        // Control 4: 0-255 dry/wet
     
     // === CUSTOM SWITCH BEHAVIOR ===
-    int switches = (int)params[1];
+    int switches = (int)global params[SWITCHES_PARAM_INDEX];
     int freezeMode = (switches & 0x01) != 0;        // Switch 1: Freeze grains
     int reverseMode = (switches & 0x02) != 0;       // Switch 2: Reverse grains
     int chorusMode = (switches & 0x04) != 0;        // Switch 3: Chorus effect
@@ -90,17 +101,17 @@ function processGranularEffect() {
     int grainReadPos = baseReadPos + sprayOffset;
     
     // Handle wrapping
-    if (grainReadPos < 0) grainReadPos += 4096;
-    if (grainReadPos >= 4096) grainReadPos -= 4096;
+    if (grainReadPos < 0) grainReadPos = grainReadPos + 4096;
+    if (grainReadPos >= 4096) grainReadPos = grainReadPos - 4096;
     
     // Read grain with pitch shifting
     int grainSample = grainBuffer[grainReadPos];
     
     // Apply pitch shifting by varying read rate
     if (pitchShift != 256) {
-        grainPhase += pitchShift;
+        grainPhase = grainPhase + pitchShift;
         if (grainPhase >= 256) {
-            grainPhase -= 256;
+            grainPhase = grainPhase - 256;
             grainReadPos = (grainReadPos + 1) % 4096;
             grainSample = grainBuffer[grainReadPos];
         }
@@ -173,7 +184,7 @@ function updateCustomLEDs() {
     int modeIndicators = 0;
     
     // Add mode indicators to top 3 LEDs
-    int switches = (int)params[1];
+    int switches = (int)global params[SWITCHES_PARAM_INDEX];
     if (switches & 0x01) modeIndicators |= 0x20;  // Freeze mode
     if (switches & 0x02) modeIndicators |= 0x40;  // Reverse mode
     if (switches & 0x04) modeIndicators |= 0x80;  // Chorus mode
@@ -199,7 +210,7 @@ function update() {
     // For example, smooth parameter changes to avoid audio artifacts:
     
     // static int lastGrainSize = 512;
-    // int targetGrainSize = ((int)params[3] * 15) + 128;
+    // int targetGrainSize = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 15) + 128;
     // lastGrainSize = (lastGrainSize * 7 + targetGrainSize) / 8;  // Smooth transition
 }
 ```
@@ -210,19 +221,19 @@ function update() {
 
 | Parameter | Operator Meaning | Our Custom Meaning |
 |-----------|------------------|-------------------|
-| `params[0]` | Clock Frequency | **IGNORED** |
-| `params[1]` | Switch States | **Custom switch functions** |
-| `params[2]` | Operator 1 Type | **IGNORED** |
-| `params[3]` | Instruction 1 High | **Grain Size (128-4000 samples)** |
-| `params[4]` | Instruction 1 Low | **Grain Spray (0-255 randomness)** |
-| `params[5]` | Operator 2 Type | **IGNORED** |
-| `params[6]` | Instruction 2 High | **Pitch Shift (64-574 range)** |
-| `params[7]` | Instruction 2 Low | **Dry/Wet Mix (0-255)** |
+| `params[CLOCK_FREQ_PARAM_INDEX]` | Clock Frequency | **IGNORED** |
+| `params[SWITCHES_PARAM_INDEX]` | Switch States | **Custom switch functions** |
+| `params[OPERATOR_1_PARAM_INDEX]` | Operator 1 Type | **IGNORED** |
+| `params[OPERAND_1_HIGH_PARAM_INDEX]` | Instruction 1 High | **Grain Size (128-4000 samples)** |
+| `params[OPERAND_1_LOW_PARAM_INDEX]` | Instruction 1 Low | **Grain Spray (0-255 randomness)** |
+| `params[OPERATOR_2_PARAM_INDEX]` | Operator 2 Type | **IGNORED** |
+| `params[OPERAND_2_HIGH_PARAM_INDEX]` | Instruction 2 High | **Pitch Shift (64-574 range)** |
+| `params[OPERAND_2_LOW_PARAM_INDEX]` | Instruction 2 Low | **Dry/Wet Mix (0-255)** |
 
 ### **Custom Switch Functions**
 
 ```impala
-int switches = (int)params[1];
+int switches = (int)global params[SWITCHES_PARAM_INDEX];
 int freezeMode = (switches & 0x01) != 0;    // Switch 1: Freeze grain buffer
 int reverseMode = (switches & 0x02) != 0;   // Switch 2: Reverse grain playback
 int chorusMode = (switches & 0x04) != 0;    // Switch 3: Multi-grain chorus

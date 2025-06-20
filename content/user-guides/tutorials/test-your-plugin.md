@@ -22,7 +22,7 @@ We'll create a multi-mode delay plugin that we can test thoroughly:
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 global array delayBufferL[2000]
@@ -34,10 +34,10 @@ function process()
 {
     loop {
         // Parameters
-        int delayTimeParam = params[3]      // Delay time (0-255)
-        int feedbackParam = params[4]       // Feedback amount (0-255)
-        int mixParam = params[5]            // Dry/wet mix (0-255)
-        int modeParam = params[6]           // Delay mode (0-255)
+        int delayTimeParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]      // Delay time (0-255)
+        int feedbackParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]       // Feedback amount (0-255)
+        int mixParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]            // Dry/wet mix (0-255)
+        int modeParam = (int)global params[OPERAND_1_LOW_PARAM_INDEX]           // Delay mode (0-255)
         
         // Scale parameters
         int delayTime = 10 + ((delayTimeParam * (maxDelay - 10)) / 255)

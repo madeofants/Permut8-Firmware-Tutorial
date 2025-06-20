@@ -57,10 +57,22 @@ This is exactly what happens with audio effects - they change volume as a side e
 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
+
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 extern native yield
 
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 function process() {
@@ -69,7 +81,7 @@ function process() {
         int inputLevel = signal[0];
         
         // Apply some effect that changes volume
-        int distortionAmount = params[0] / 32;  // 0-7
+        int distortionAmount = (int)global params[CLOCK_FREQ_PARAM_INDEX] / 32;  // 0-7
         int processed = inputLevel * distortionAmount;
         
         // GAIN COMPENSATION: Auto-scale back to original level
@@ -83,6 +95,7 @@ function process() {
         yield();
     }
 }
+
 ```
 
 ### Why This Matters
@@ -105,7 +118,7 @@ global int previousLevel = 0;
 function process() {
     loop {
         int input = signal[0];
-        int compressionRatio = params[0];  // 0-255
+        int compressionRatio = (int)global params[CLOCK_FREQ_PARAM_INDEX];  // 0-255
         
         // Compression reduces loud signals
         int compressed;
@@ -160,7 +173,7 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 extern native yield
 
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 // Smoothed parameter storage
@@ -170,8 +183,8 @@ global int smoothedFilter = 128;
 function process() {
     loop {
         // Read current knob positions
-        int targetVolume = params[0];    // 0-255
-        int targetFilter = params[1];    // 0-255
+        int targetVolume = (int)global params[CLOCK_FREQ_PARAM_INDEX];    // 0-255
+        int targetFilter = (int)global params[SWITCHES_PARAM_INDEX];    // 0-255
         
         // PARAMETER SMOOTHING: Gradually approach target values
         // Like interpolation: current = current + (target - current) / speed
@@ -217,8 +230,8 @@ global int smoothedFreq = 1000;
 
 function process() {
     loop {
-        int targetGain = params[0];
-        int targetFreq = params[1] * 20;  // 0-5100 Hz range
+        int targetGain = (int)global params[CLOCK_FREQ_PARAM_INDEX];
+        int targetFreq = (int)global params[SWITCHES_PARAM_INDEX] * 20;  // 0-5100 Hz range
         
         // FAST smoothing for gain (immediate response)
         smoothedGain = smoothedGain + ((targetGain - smoothedGain) / 4);
@@ -269,13 +282,13 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 extern native yield
 
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 function process() {
     loop {
         int input = signal[0];
-        int effectAmount = params[0];  // 0-255
+        int effectAmount = (int)global params[CLOCK_FREQ_PARAM_INDEX];  // 0-255
         
         // HEADROOM MANAGEMENT: Keep some "space" for processing
         int workingLevel = (input * 80) / 100;  // Use only 80% of range
@@ -393,7 +406,7 @@ function process() {
         int input = safeBounds(signal[0], -2047, 2047);
         
         // ALWAYS validate parameters
-        int gain = safeBounds(params[0], 0, 255);
+        int gain = safeBounds((int)global params[CLOCK_FREQ_PARAM_INDEX], 0, 255);
         
         // Process with validated data
         int result = (input * gain) / 255;
@@ -413,7 +426,7 @@ function process() {
 function process() {
     loop {
         int input = signal[0];
-        int complexEffect = params[0];
+        int complexEffect = (int)global params[CLOCK_FREQ_PARAM_INDEX];
         
         if (complexEffect < 10) {
             // Simple processing for low values
@@ -452,7 +465,7 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 extern native yield
 
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 // Smoothed parameters
@@ -483,9 +496,9 @@ function process() {
         int input = safeBounds(signal[0], -2047, 2047);
         
         // PARAMETER SMOOTHING
-        smoothedDrive = smoothedDrive + ((params[0] - smoothedDrive) / 8);
-        smoothedTone = smoothedTone + ((params[1] - smoothedTone) / 16);
-        smoothedLevel = smoothedLevel + ((params[2] - smoothedLevel) / 8);
+        smoothedDrive = smoothedDrive + (((int)global params[CLOCK_FREQ_PARAM_INDEX] - smoothedDrive) / 8);
+        smoothedTone = smoothedTone + (((int)global params[SWITCHES_PARAM_INDEX] - smoothedTone) / 16);
+        smoothedLevel = smoothedLevel + (((int)global params[OPERATOR_1_PARAM_INDEX] - smoothedLevel) / 8);
         
         // HEADROOM MANAGEMENT
         int workingSignal = (input * 80) / 100;  // Leave headroom

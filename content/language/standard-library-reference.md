@@ -13,11 +13,23 @@ Impala focuses on real-time safety with static allocation, cooperative multitask
 Essential functions for delay line and audio buffer management:
 
 ```impala
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // Read from delay memory
 read(int offset, int frameCount, pointer buffer)
 
 // Write to delay memory  
 write(int offset, int frameCount, pointer buffer)
+
 ```
 
 **Delay Line Example:**
@@ -170,7 +182,7 @@ int ftoi(float x)        // Float to integer (truncates)
 ```impala
 function update() {
     // Convert 8-bit parameter (0-255) to float (0.0-1.0)
-    float knobValue = itof((int)global params[0]) / 255.0
+    float knobValue = itof((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX]) / 255.0
     
     // Convert to audio range
     int audioGain = ftoi(knobValue * 2047.0)

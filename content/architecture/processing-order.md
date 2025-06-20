@@ -188,7 +188,7 @@ function operate1(int input) returns int result {
     
     // Calculate delay output
     int delayedPos = (delayPos - 500) % 1024;
-    if (delayedPos < 0) delayedPos += 1024;
+    if (delayedPos < 0) delayedPos = delayedPos + 1024;
     
     int delayed = delayLine[delayedPos];
     delayPos = (delayPos + 1) % 1024;

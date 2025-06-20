@@ -9,10 +9,10 @@ Provides basic phase vocoder functionality for independent time and pitch manipu
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Time stretch factor (0-255, 0.5x to 1.5x playback speed)
-- `params[1]`: Pitch shift factor (0-255, 0.5x to 1.5x frequency shift)
-- `params[2]`: Processing blend (0-255, mix between original and processed)
-- `params[3]`: Analysis window (0-255, future enhancement)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Time stretch factor (0-255, 0.5x to 1.5x playback speed)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Pitch shift factor (0-255, 0.5x to 1.5x frequency shift)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Processing blend (0-255, mix between original and processed)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Analysis window (0-255, future enhancement)
 
 **Core Techniques:**
 - **Spectral analysis**: Break audio into frequency components
@@ -27,12 +27,24 @@ Provides basic phase vocoder functionality for independent time and pitch manipu
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Simplified phase vocoder state
@@ -50,8 +62,8 @@ locals int i, int time_factor, int pitch_factor, int hop_size, int analysis_inpu
 {
     loop {
         // Read control parameters
-        global time_stretch = 64 + ((int)global params[0] >> 1);   // 64-191 range (0.5x to 1.5x)
-        global pitch_shift = 64 + ((int)global params[1] >> 1);    // 64-191 range (0.5x to 1.5x)
+        global time_stretch = 64 + ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 1);   // 64-191 range (0.5x to 1.5x)
+        global pitch_shift = 64 + ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 1);    // 64-191 range (0.5x to 1.5x)
         
         // Calculate processing parameters
         time_factor = global time_stretch;
@@ -208,6 +220,7 @@ locals int i, int time_factor, int pitch_factor, int hop_size, int analysis_inpu
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -240,22 +253,22 @@ locals int i, int time_factor, int pitch_factor, int hop_size, int analysis_inpu
 
 ```impala
 // Slow motion effect
-params[0] = 64;   // 0.75x time stretch
-params[1] = 128;  // Normal pitch
-params[2] = 200;  // High processing blend
-params[3] = 128;  // Standard window
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // 0.75x time stretch
+(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Normal pitch
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // High processing blend
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Standard window
 
 // Chipmunk effect
-params[0] = 200;  // 1.25x time stretch
-params[1] = 200;  // 1.25x pitch up
-params[2] = 255;  // Full processing
-params[3] = 64;   // Small window
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // 1.25x time stretch
+(int)global params[SWITCHES_PARAM_INDEX] = 200;  // 1.25x pitch up
+(int)global params[OPERATOR_1_PARAM_INDEX] = 255;  // Full processing
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Small window
 
 // Pitch correction
-params[0] = 128;  // Normal time
-params[1] = 140;  // Slight pitch up
-params[2] = 128;  // 50% blend
-params[3] = 192;  // Large window
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Normal time
+(int)global params[SWITCHES_PARAM_INDEX] = 140;  // Slight pitch up
+(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // 50% blend
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 192;  // Large window
 ```
 
 ## Musical Applications

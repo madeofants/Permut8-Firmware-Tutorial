@@ -9,10 +9,10 @@ Creates the classic phaser effect by using a simple variable filter with LFO mod
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: LFO rate (0-255, sweep speed)
-- `params[1]`: Modulation depth (0-255, sweep range)
-- `params[2]`: Feedback amount (0-255, intensity)
-- `params[3]`: Dry/wet mix (0-255, blend control)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: LFO rate (0-255, sweep speed)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Modulation depth (0-255, sweep range)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Feedback amount (0-255, intensity)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Dry/wet mix (0-255, blend control)
 
 **Key Concepts:** Variable filtering, LFO modulation, feedback loops, phase relationships
 
@@ -21,12 +21,24 @@ Creates the classic phaser effect by using a simple variable filter with LFO mod
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // All-pass phaser state
@@ -61,10 +73,10 @@ locals int output
 {
     loop {
         // Read parameters
-        rate = ((int)global params[0] >> 4) + 1;     // 1-16 LFO rate
-        depth = ((int)global params[1] >> 2) + 1;    // 1-64 modulation depth
-        feedback = (int)global params[2];            // 0-255 feedback amount
-        mix = (int)global params[3];                 // 0-255 dry/wet mix
+        rate = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 4) + 1;     // 1-16 LFO rate
+        depth = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 2) + 1;    // 1-64 modulation depth
+        feedback = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];            // 0-255 feedback amount
+        mix = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];                 // 0-255 dry/wet mix
         
         input = (int)global signal[0];
         
@@ -141,6 +153,7 @@ locals int output
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -163,16 +176,16 @@ locals int output
 
 ```impala
 // Slow, gentle phasing
-params[0] = 64;   // Slow rate
-params[1] = 128;  // Medium depth
-params[2] = 64;   // Light feedback
-params[3] = 128;  // 50% mix
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Slow rate
+(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Medium depth
+(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Light feedback
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // 50% mix
 
 // Fast, dramatic phasing
-params[0] = 200;  // Fast rate
-params[1] = 200;  // Deep modulation
-params[2] = 120;  // Moderate feedback (safer than 150)
-params[3] = 180;  // Mostly wet
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Fast rate
+(int)global params[SWITCHES_PARAM_INDEX] = 200;  // Deep modulation
+(int)global params[OPERATOR_1_PARAM_INDEX] = 120;  // Moderate feedback (safer than 150)
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Mostly wet
 ```
 
 ## Try These Changes

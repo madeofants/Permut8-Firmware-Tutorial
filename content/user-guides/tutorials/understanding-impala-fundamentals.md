@@ -452,7 +452,7 @@ function init()
 function update()
 {
     // Called when knobs change
-    global amplitude = global params[0] * 4  // Scale 0-255 to 0-1020
+    global amplitude = global params[OPERAND_2_HIGH_PARAM_INDEX] * 4  // Scale 0-255 to 0-1020
 }
 
 // Optional: Reset notification
@@ -534,10 +534,10 @@ returns int scaled
 function update()
 {
     // Map knob to frequency range 100Hz-5000Hz
-    global frequency = scaleLinear(global params[0], 100, 5000)
+    global frequency = scaleLinear(global params[OPERAND_2_HIGH_PARAM_INDEX], 100, 5000)
     
     // Map knob to gain 0%-200%  
-    global gainPercent = scaleLinear(global params[1], 0, 200)
+    global gainPercent = scaleLinear(global params[OPERAND_2_LOW_PARAM_INDEX], 0, 200)
 }
 ```
 

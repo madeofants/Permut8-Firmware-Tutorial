@@ -81,7 +81,7 @@ function processReverb(int input) returns int result {
     for (i = 0 to 8) {
         int tapIndex = (reverbPos - tapDelays[i]) % 1024;
         if (tapIndex < 0) tapIndex += 1024;
-        output += reverbTaps[tapIndex] >> 2;  // Mix in reverb taps
+        output = output + (reverbTaps[tapIndex] >> 2);  // Mix in reverb taps
     }
     
     // Store input in reverb buffer
@@ -150,9 +150,9 @@ function operate1(int input) returns int result {
         // Gradual transition prevents clicks
         int diff = targetGain - currentGain;
         if (diff > gainTransitionRate) {
-            currentGain += gainTransitionRate;
+            currentGain = currentGain + gainTransitionRate;
         } else if (diff < -gainTransitionRate) {
-            currentGain -= gainTransitionRate;
+            currentGain = currentGain - gainTransitionRate;
         } else {
             currentGain = targetGain;  // Close enough, snap to target
         }

@@ -81,7 +81,7 @@ function process()
 {
     loop {
         // CONTROL 1: Rate from knob 1 (linear mapping)
-        int rateParam = params[3]           // Get knob value (0-255)
+        int rateParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]           // Get knob value (0-255)
         tremoloRate = 10 + (rateParam / 2)  // Map to 10-137 range
         
         // Same tremolo code as before
@@ -126,11 +126,11 @@ function process()
 {
     loop {
         // CONTROL 1: Rate (linear)
-        int rateParam = params[3]
+        int rateParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
         tremoloRate = 10 + (rateParam / 2)
         
         // CONTROL 2: Depth (exponential curve)
-        int depthParam = params[4]              // Get knob value (0-255)
+        int depthParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]              // Get knob value (0-255)
         
         // Create exponential curve: depth = param^2 / 255
         int depthSquared = (depthParam * depthParam) / 255
@@ -178,7 +178,7 @@ function process()
 {
     loop {
         // CONTROL 1: Rate (musical/exponential)
-        int rateParam = params[3]
+        int rateParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
         
         // Musical mapping: each 32 knob units = double the rate
         int octaves = rateParam / 32                    // 0-7 octaves
@@ -187,7 +187,7 @@ function process()
         tremoloRate = musicalRate + (rateParam % 32)    // Fine tuning
         
         // CONTROL 2: Depth (exponential) 
-        int depthParam = params[4]
+        int depthParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]
         int depthSquared = (depthParam * depthParam) / 255
         tremoloDepth = depthSquared / 2
         
@@ -233,19 +233,19 @@ function process()
 {
     loop {
         // CONTROL 1: Rate (musical)
-        int rateParam = params[3]
+        int rateParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
         int octaves = rateParam / 32
         int baseRate = 20
         int musicalRate = baseRate << (octaves / 2)
         tremoloRate = musicalRate + (rateParam % 32)
         
         // CONTROL 2: Depth (exponential)
-        int depthParam = params[4]
+        int depthParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]
         int depthSquared = (depthParam * depthParam) / 255
         tremoloDepth = depthSquared / 2
         
         // CONTROL 3: Mode switching (multi-range)
-        int modeParam = params[5]               // Get knob value
+        int modeParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]               // Get knob value
         
         int finalDepth = 0
         if (modeParam < 85) {
@@ -308,19 +308,19 @@ function process()
 {
     loop {
         // CONTROL 1: Rate (musical)
-        int rateParam = params[3]
+        int rateParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
         int octaves = rateParam / 32
         int baseRate = 20
         int musicalRate = baseRate << (octaves / 2)
         tremoloRate = musicalRate + (rateParam % 32)
         
         // CONTROL 2: Depth (exponential)
-        int depthParam = params[4]
+        int depthParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]
         int depthSquared = (depthParam * depthParam) / 255
         tremoloDepth = depthSquared / 2
         
         // CONTROL 3: Mode (multi-range)
-        int modeParam = params[5]
+        int modeParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]
         int finalDepth = 0
         int currentMode = 0
         
@@ -432,8 +432,8 @@ function process()
 {
     loop {
         // 1. READ PARAMETERS
-        int param1 = params[3]  // Get raw knob values
-        int param2 = params[4]
+        int param1 = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // Get raw knob values
+        int param2 = (int)global params[OPERAND_2_LOW_PARAM_INDEX]
         
         // 2. MAP TO USEFUL RANGES  
         int usefulValue1 = mapToRange(param1)    // Apply mapping technique

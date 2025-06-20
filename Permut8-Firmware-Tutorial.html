@@ -435,7 +435,7 @@
             <h1>🎛️ Permut8 Firmware Tutorial</h1>
             <div class="generation-info">
                 <strong>📖 Complete Offline Documentation</strong><br>
-                Generated: June 19, 2025 at 06:16 PM<br>
+                Generated: June 20, 2025 at 11:21 AM<br>
                 This documentation contains all Permut8 firmware resources organized for easy navigation.
             </div>
             
@@ -488,6 +488,17 @@ Create <code>volume_control.impala</code> with this code:
 
 extern native yield
 
+// Parameter index constants (required for parameter access)
+const int CLOCK_FREQ_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int PARAM_COUNT
+
 // Custom interface labels
 readonly array panelTextRows[8] = {
     &quot;&quot;,
@@ -509,7 +520,7 @@ locals int volume, int inputL, int inputR, int outputL, int outputR
 {
     loop {
         // Get volume from knob (0-255) and convert to gain (0-512 for 2x boost)
-        volume = (int)global params[3] * 2;  // 0-510 range
+        volume = (int)global params[OPERAND_2_HIGH_PARAM_INDEX] * 2;  // 0-510 range
         
         // Get input audio
         inputL = (int)global signal[0];
@@ -531,9 +542,27 @@ locals int volume, int inputL, int inputR, int outputL, int outputR
         
         // Visual feedback - show volume level
         global displayLEDs[0] = volume &gt;&gt; 1;  // Volume indicator
-        global displayLEDs[1] = (outputL &gt; 1000) ? 0xFF : 0x00;  // Left channel activity
-        global displayLEDs[2] = (outputR &gt; 1000) ? 0xFF : 0x00;  // Right channel activity  
-        global displayLEDs[3] = (volume &gt; 200) ? 0xFF : 0x00;    // Boost indicator
+        
+        // Left channel activity
+        if (outputL &gt; 1000) {
+            global displayLEDs[1] = 0xFF;
+        } else {
+            global displayLEDs[1] = 0x00;
+        }
+        
+        // Right channel activity
+        if (outputR &gt; 1000) {
+            global displayLEDs[2] = 0xFF;
+        } else {
+            global displayLEDs[2] = 0x00;
+        }
+        
+        // Boost indicator
+        if (volume &gt; 200) {
+            global displayLEDs[3] = 0xFF;
+        } else {
+            global displayLEDs[3] = 0x00;
+        }
         
         yield();
     }
@@ -544,7 +573,7 @@ locals int volume, int inputL, int inputR, int outputL, int outputR
 <pre><code>Audio Input → Volume Calculation → Audio Output</code></pre>
 <ul><li><strong>Input</strong>: <code>global signal[0]</code> and <code>global signal[1]</code> contain incoming audio</li><li><strong>Processing</strong>: Multiply by volume value from knob</li><li><strong>Output</strong>: Write processed audio back to <code>global signal[0]</code> and <code>global signal[1]</code></li></ul></p>
 <p>#### <strong>Parameter Control</strong>:
-<ul><li><strong><code>params[3]</code></strong>: Gets knob position (0-255)</li><li><strong>Volume Calculation</strong>: <code>params[3] * 2</code> gives 0-510 range (up to 2x boost)</li><li><strong>Audio Scaling</strong>: <code>(input * volume) / 255</code> applies the gain</li></ul></p>
+<ul><li><strong><code>params[OPERAND_2_HIGH_PARAM_INDEX]</code></strong>: Gets knob position (0-255)</li><li><strong>Volume Calculation</strong>: <code>params[OPERAND_2_HIGH_PARAM_INDEX] * 2</code> gives 0-510 range (up to 2x boost)</li><li><strong>Audio Scaling</strong>: <code>(input * volume) / 255</code> applies the gain</li></ul></p>
 <p>#### <strong>Visual Feedback</strong>:
 <ul><li><strong>LED 0</strong>: Shows current volume level</li><li><strong>LED 1 & 2</strong>: Flash when audio is present on left/right channels</li><li><strong>LED 3</strong>: Lights up when gain exceeds normal level (boost mode)</li></ul></p>
 <strong>The Key Insight</strong>: You directly control audio processing - every sample passes through your code.
@@ -897,31 +926,84 @@ outputR = mono - side;</code></pre>
 <strong>Prerequisites</strong>: Understanding of digital signal processing and C programming  
 <strong>Integration</strong>: Works with parameter mapping (Session 16b) and preset systems (Session 16a)
 <p>---</p>
+<h2>CRITICAL: Required Constants and Declarations</h2>
+<strong>Every firmware MUST include these parameter constants:</strong>
+<p><pre><code>const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
+
+extern native yield
+extern native trace
+extern native read
+extern native write
+extern native abort
+
+// Parameter index constants (REQUIRED FOR COMPILATION)
+const int CLOCK_FREQ_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int PARAM_COUNT</code></pre></p>
+<strong>Standard Global Variables (REQUIRED):</strong>
+<p><pre><code>global int clock = 0
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global int clockFreqLimit = 132300
+global array signal[2]                    // For full patches</code></pre></p>
+<p>---</p>
 <h2>Core Processing Functions</h2>
 <h3>process()</h3>
 <strong>Primary processing function for full patches that replace the entire audio engine.</strong>
-<p><pre><code>function process() {
+<p><pre><code>function process()
+locals int volume, int inputL, int inputR, int outputL, int outputR
+{
     loop {
-        // Process audio samples
-        yield()
+        // Get parameters (ALWAYS use constants)
+        volume = (int)global params[OPERAND_2_HIGH_PARAM_INDEX] * 2;
+        
+        // Get input audio
+        inputL = (int)global signal[0];
+        inputR = (int)global signal[1];
+        
+        // Process audio
+        outputL = (inputL * volume) / 255;
+        outputR = (inputR * volume) / 255;
+        
+        // Write output
+        global signal[0] = outputL;
+        global signal[1] = outputR;
+        
+        yield();
     }
 }</code></pre></p>
 <strong>Global Variables Used</strong>:
-<ul><li><code>global array signal[2]</code>: Stereo audio I/O [left, right] with values -2047 to 2047</li><li><code>global array params[8]</code>: Parameter values 0-255 from hardware controls</li></ul>
+<ul><li><code>global array signal[2]</code>: Stereo audio I/O [left, right] with values -2047 to 2047</li><li><code>global array params[PARAM_COUNT]</code>: Parameter values 0-255 from hardware controls</li><li><strong>CRITICAL</strong>: Always access parameters using constants, never raw indices</li><li><strong>Required Constants</strong>: <code>OPERAND_1_HIGH_PARAM_INDEX</code>, <code>OPERAND_2_HIGH_PARAM_INDEX</code>, etc.</li></ul>
 <strong>Usage Pattern</strong>:
-<pre><code>function process() {
+<pre><code>function process()
+locals int left, int right, int param1, int param2
+{
     loop {
+        // Get parameters using constants (REQUIRED)
+        param1 = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
+        param2 = (int)global params[OPERAND_2_HIGH_PARAM_INDEX];
+        
         // Process left channel
-        int left = global signal[0]
-        left = applyEffect(left)
-        global signal[0] = clampAudio(left)
+        left = (int)global signal[0];
+        left = applyEffect(left, param1, param2);
+        if (left &gt; 2047) left = 2047;
+        if (left &lt; -2047) left = -2047;
+        global signal[0] = left;
         
         // Process right channel  
-        int right = global signal[1]
-        right = applyEffect(right)
-        global signal[1] = clampAudio(right)
+        right = (int)global signal[1];
+        right = applyEffect(right, param1, param2);
+        if (right &gt; 2047) right = 2047;
+        if (right &lt; -2047) right = -2047;
+        global signal[1] = right;
         
-        yield()
+        yield();
     }
 }</code></pre>
 <strong>Performance Considerations</strong>:
@@ -3313,14 +3395,22 @@ int position = 0x80000      // 20-bit position value</code></pre></p>
 <p>Use for control logic and state flags:</p>
 <p><pre><code>int gate_open = 1                    // Use 1 for true, 0 for false
 int effect_bypass = 0
-if (params[7] &gt; 128) effect_bypass = 1
+// CORRECT: Always use parameter constants
+if ((int)global params[OPERAND_2_LOW_PARAM_INDEX] &gt; 128) effect_bypass = 1;
 
 if (gate_open &amp;&amp; (effect_bypass == 0)) {
     // Process audio
 }</code></pre></p>
 <h3>Array Types</h3>
 <p>Fixed-size arrays for buffers and lookup tables:</p>
-<p><pre><code>global array delay_line[1024]               // 1024-sample delay buffer
+<p><pre><code>// Standard global arrays (required)
+global int clock = 0
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global array signal[2]
+
+// Custom arrays for your firmware
+global array delay_line[1024]               // 1024-sample delay buffer
 global array sine_table[256]                // Lookup table for oscillator
 global array coefficients[8] = {64, 32, 16, 8, 4, 2, 1, 1}  // Filter coefficients</code></pre></p>
 <h2>Fixed-Point Arithmetic</h2>
@@ -6106,7 +6196,7 @@ locals int delayTime, int feedback, int input, int delayed, int output
         
         // Read delayed sample from memory (read position = write position - delay time)
         int readPosition = global writePosition - delayTime;
-        if (readPosition &lt; 0) readPosition += 65536;  // Wrap around
+        if (readPosition &lt; 0) readPosition = readPosition + 65536;  // Wrap around
         
         read(readPosition, 1, global tempBuffer);
         delayed = global tempBuffer[0];
@@ -6142,7 +6232,7 @@ locals int delayTime, int feedback, int input, int delayed, int output
 <h3><strong>The Core Algorithm</strong></h3>
 <p><pre><code>// 1. Calculate where to read from
 int readPosition = global writePosition - delayTime;
-if (readPosition &lt; 0) readPosition += 65536;  // Handle wraparound
+if (readPosition &lt; 0) readPosition = readPosition + 65536;  // Handle wraparound
 
 // 2. Read the delayed audio
 read(readPosition, 1, global tempBuffer);
@@ -6293,8 +6383,8 @@ read(readPosition, 4, batchBuffer);  // Read 4 samples at once
 
 ### **Memory Safety**</code></pre>impala
 // Always validate array bounds
-if (readPosition < 0) readPosition += 65536;
-if (readPosition >= 65536) readPosition -= 65536;
+if (readPosition < 0) readPosition = readPosition + 65536;
+if (readPosition >= 65536) readPosition = readPosition - 65536;
 ``<code></p>
 <p>&lt;h2&gt;Comparison with SUB Operator&lt;/h2&gt;</p>
 <p>&lt;h3&gt;<strong>Performance</strong>&lt;/h3&gt;
@@ -6812,8 +6902,9 @@ global int filterStateR = 0    // if memory is constrained</code></pre>
     // Spectrum analyzer style frequency display
     int freqBand = global smoothedFrequency / 1000  // 0-8 bands
     int pattern = 0
-    for (int i = 0; i &lt;= freqBand; i++) {
-        pattern = pattern | (1 &lt;&lt; i)  // Progressive bar
+    int i;
+    for (i = 0 to freqBand) {
+        pattern = pattern | (1 &lt;&lt; i);  // Progressive bar
     }
     displayLEDs[0] = pattern
 }</code></pre>
@@ -8772,8 +8863,8 @@ function operate1() returns int processed {
     int readPosition = currentPosition - modulatedDelayTime;
     
     // Handle memory wrapping
-    if (readPosition &lt; 0) readPosition += 65536;
-    if (readPosition &gt;= 65536) readPosition -= 65536;
+    if (readPosition &lt; 0) readPosition = readPosition + 65536;
+    if (readPosition &gt;= 65536) readPosition = readPosition - 65536;
     
     // Read delayed audio
     read(readPosition, 1, delayBuffer);
@@ -8809,8 +8900,8 @@ function operate2() returns int processed {
     int readPosition = currentPosition - modulatedDelayTime;
     
     // Handle wrapping for right channel
-    if (readPosition &lt; 0) readPosition += 65536;
-    if (readPosition &gt;= 65536) readPosition -= 65536;
+    if (readPosition &lt; 0) readPosition = readPosition + 65536;
+    if (readPosition &gt;= 65536) readPosition = readPosition - 65536;
     
     // Read right channel delayed audio
     read(readPosition + 32768, 1, delayBuffer);  // Offset for stereo separation
@@ -9239,10 +9330,10 @@ function process()
         int targetLFODepth = (lfoKnob * 100) / 255
         
         // Smooth all parameters
-        smoothedFrequency += (targetFrequency - smoothedFrequency) / 16
-        smoothedVolume += (targetVolume - smoothedVolume) / 16
-        smoothedFilterCutoff += (targetFilter - smoothedFilterCutoff) / 16
-        smoothedLFODepth += (targetLFODepth - smoothedLFODepth) / 16
+        smoothedFrequency = smoothedFrequency + (targetFrequency - smoothedFrequency) / 16
+        smoothedVolume = smoothedVolume + (targetVolume - smoothedVolume) / 16
+        smoothedFilterCutoff = smoothedFilterCutoff + (targetFilter - smoothedFilterCutoff) / 16
+        smoothedLFODepth = smoothedLFODepth + (targetLFODepth - smoothedLFODepth) / 16
         
         // Generate LFO for frequency modulation
         lfoPhase = (lfoPhase + 50) % 65536
@@ -9731,17 +9822,17 @@ function processGranularEffect() {
     int grainReadPos = baseReadPos + sprayOffset;
     
     // Handle wrapping
-    if (grainReadPos &lt; 0) grainReadPos += 4096;
-    if (grainReadPos &gt;= 4096) grainReadPos -= 4096;
+    if (grainReadPos &lt; 0) grainReadPos = grainReadPos + 4096;
+    if (grainReadPos &gt;= 4096) grainReadPos = grainReadPos - 4096;
     
     // Read grain with pitch shifting
     int grainSample = grainBuffer[grainReadPos];
     
     // Apply pitch shifting by varying read rate
     if (pitchShift != 256) {
-        grainPhase += pitchShift;
+        grainPhase = grainPhase + pitchShift;
         if (grainPhase &gt;= 256) {
-            grainPhase -= 256;
+            grainPhase = grainPhase - 256;
             grainReadPos = (grainReadPos + 1) % 4096;
             grainSample = grainBuffer[grainReadPos];
         }
@@ -10315,7 +10406,8 @@ int result = sqrt(value1 * value1 + value2 * value2);
 int result = fastApproximateDistance(value1, value2);</code></pre>
 <strong>Large Array Operations:</strong>
 <pre><code>// SLOW: Processing huge arrays every sample
-for (int i = 0; i &lt; 10000; i++) {
+int i;
+for (i = 0 to 10000) {
     bigArray[i] = bigArray[i] * 2;
 }
 
@@ -13858,7 +13950,7 @@ input = (int)global signal[0];
 
 // Read delayed sample from memory (read position = write position - delay time)
 int readPosition = global writePosition - delayTime;
-if (readPosition &lt; 0) readPosition += 65536;  // Wrap around
+if (readPosition &lt; 0) readPosition = readPosition + 65536;  // Wrap around
 
 read(readPosition, 1, global tempBuffer);
 delayed = global tempBuffer[0];
@@ -19040,22 +19132,43 @@ array workingBuffer[MAX_DELAY_SAMPLES * 2];</code></pre>
 <div class="file-section" id="parameters-reference">
     <div class="file-title">📄 Parameters Reference</div>
     <h1>Parameters Reference</h1>
+<h2>🚨 CRITICAL: Parameter Access Requirements</h2>
+<strong>NEVER use raw indices</strong> - these will cause compilation errors:
+<pre><code>// ❌ WRONG - Will not compile
+volume = params[3] * 2;
+int knobValue = params[7];</code></pre>
+<strong>ALWAYS use parameter constants</strong> - verified from all official firmware:
+<pre><code>// ✅ CORRECT - Required for compilation
+volume = (int)global params[OPERAND_2_HIGH_PARAM_INDEX] * 2;
+int knobValue = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];</code></pre>
+<strong>Required Constants</strong> (must be defined in every firmware):
+<pre><code>const int CLOCK_FREQ_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int PARAM_COUNT</code></pre>
+<p>---</p>
 <h2>What This Is</h2>
 The <code>params[]</code> array gives your firmware access to all knob positions, switch states, and system settings. Updated automatically by Permut8 when users turn knobs or flip switches.
+<strong>🚨 CRITICAL</strong>: Never use raw indices like <code>params[3]</code>. Always use parameter constants for compilation.
 <h2>🎛️ <strong>Permut8 Interface Architecture</strong></h2>
 <h3><strong>Physical Controls (Actual Hardware)</strong></h3>
 <p>#### <strong>Operation Selection Knobs</strong>
-<ul><li><strong>Operator Control 1</strong> (<code>params[2]</code>) - Physical knob that selects Instruction 1 operation type (AND, MUL, OSC, RND)</li><li><strong>Operator Control 2</strong> (<code>params[5]</code>) - Physical knob that selects Instruction 2 operation type (OR, XOR, MSK, SUB, NOP)</li></ul></p>
+<ul><li><strong>Operator Control 1</strong> (<code>params[OPERATOR_1_PARAM_INDEX]</code>) - Physical knob that selects Instruction 1 operation type</li><li><strong>Operator Control 2</strong> (<code>params[OPERATOR_2_PARAM_INDEX]</code>) - Physical knob that selects Instruction 2 operation type</li></ul></p>
 <p>#### <strong>Parameter Setting Interface</strong>  
-<ul><li><strong>Instruction 1 High Operand</strong> (<code>params[3]</code>) - Set via LED display + switches (0-255)</li><li><strong>Instruction 1 Low Operand</strong> (<code>params[4]</code>) - Set via LED display + switches (0-255)</li><li><strong>Instruction 2 High Operand</strong> (<code>params[6]</code>) - Set via LED display + switches (0-255)</li><li><strong>Instruction 2 Low Operand</strong> (<code>params[7]</code>) - Set via LED display + switches (0-255)</li></ul></p>
+<ul><li><strong>Instruction 1 High Operand</strong> (<code>params[OPERAND_1_HIGH_PARAM_INDEX]</code>) - Set via LED display + switches (0-255)</li><li><strong>Instruction 1 Low Operand</strong> (<code>params[OPERAND_1_LOW_PARAM_INDEX]</code>) - Set via LED display + switches (0-255)</li><li><strong>Instruction 2 High Operand</strong> (<code>params[OPERAND_2_HIGH_PARAM_INDEX]</code>) - Set via LED display + switches (0-255)</li><li><strong>Instruction 2 Low Operand</strong> (<code>params[OPERAND_2_LOW_PARAM_INDEX]</code>) - Set via LED display + switches (0-255)</li></ul></p>
 <p>#### <strong>System Controls</strong>
-<ul><li><strong>Clock Frequency Knob</strong> (<code>params[0]</code>) - Dedicated physical knob for tempo sync timing</li><li><strong>Mode Switches</strong> (<code>params[1]</code>) - Five switches: SYNC, REV, Triplet, Dotted, Write Protect</li></ul></p>
+<ul><li><strong>Clock Frequency Knob</strong> (<code>params[CLOCK_FREQ_PARAM_INDEX]</code>) - Dedicated physical knob for tempo sync timing</li><li><strong>Mode Switches</strong> (<code>params[SWITCHES_PARAM_INDEX]</code>) - Five switches: SYNC, REV, Triplet, Dotted, Write Protect</li></ul></p>
 <h2>📋 <strong>Standard Terminology Convention</strong></h2>
 <h3><strong>✅ CORRECT Terminology Patterns</strong></h3>
 <p>#### <strong>Original Operator System References</strong>
 <ul><li><strong>"Operator Control 1"</strong> - Only for the physical operation selection knob (<code>params[2]</code>)</li><li><strong>"Operator Control 2"</strong> - Only for the physical operation selection knob (<code>params[5]</code>)</li><li><strong>"Instruction 1 High Operand"</strong> - Parameter set via LED display/switches (<code>params[3]</code>)</li><li><strong>"Instruction 1 Low Operand"</strong> - Parameter set via LED display/switches (<code>params[4]</code>)</li><li><strong>"Instruction 2 High Operand"</strong> - Parameter set via LED display/switches (<code>params[6]</code>)</li><li><strong>"Instruction 2 Low Operand"</strong> - Parameter set via LED display/switches (<code>params[7]</code>)</li></ul></p>
 <p>#### <strong>Custom Firmware Override References</strong>
-<ul><li><strong>"Control 1"</strong> - Custom meaning for <code>params[3]</code> (was Instruction 1 High Operand)</li><li><strong>"Control 2"</strong> - Custom meaning for <code>params[4]</code> (was Instruction 1 Low Operand)</li><li><strong>"Control 3"</strong> - Custom meaning for <code>params[6]</code> (was Instruction 2 High Operand)</li><li><strong>"Control 4"</strong> - Custom meaning for <code>params[7]</code> (was Instruction 2 Low Operand)</li></ul></p>
+<ul><li><strong>"Control 1"</strong> - Custom meaning for <code>params[OPERAND_1_HIGH_PARAM_INDEX]</code> (was Instruction 1 High Operand)</li><li><strong>"Control 2"</strong> - Custom meaning for <code>params[OPERAND_1_LOW_PARAM_INDEX]</code> (was Instruction 1 Low Operand)</li><li><strong>"Control 3"</strong> - Custom meaning for <code>params[OPERAND_2_HIGH_PARAM_INDEX]</code> (was Instruction 2 High Operand)</li><li><strong>"Control 4"</strong> - Custom meaning for <code>params[OPERAND_2_LOW_PARAM_INDEX]</code> (was Instruction 2 Low Operand)</li></ul></p>
 <h3><strong>❌ AVOID These Patterns</strong></h3>
 <ul><li><strong>"Control 1/2/3/4"</strong> - Preferred, refers to operand controls via params[0/1/3/4/6/7]</li><li><strong>"Operator Control 1" for operand controls</strong> - Incorrect, operator controls select operations</li><li><strong>"Parameter knobs"</strong> - Too vague, missing context</li><li><strong>"The delay knob"</strong> - Not specific enough</li></ul>
 <h2>🔄 <strong>Parameter Context: Original vs Custom Firmware</strong></h2>
@@ -21490,8 +21603,8 @@ class DSPGenerator:
                 float a2 = 1.0 - alpha;
                 &#x27;&#x27;&#x27;,
                 &#x27;normalization&#x27;: &#x27;&#x27;&#x27;
-                b0 /= a0; b1 /= a0; b2 /= a0;
-                a1 /= a0; a2 /= a0;
+                b0 = b0 / a0; b1 = b1 / a0; b2 = b2 / a0;
+                a1 = a1 / a0; a2 = a2 / a0;
                 &#x27;&#x27;&#x27;
             },
             &#x27;highpass&#x27;: {
@@ -21510,8 +21623,8 @@ class DSPGenerator:
                 float a2 = 1.0 - alpha;
                 &#x27;&#x27;&#x27;,
                 &#x27;normalization&#x27;: &#x27;&#x27;&#x27;
-                b0 /= a0; b1 /= a0; b2 /= a0;
-                a1 /= a0; a2 /= a0;
+                b0 = b0 / a0; b1 = b1 / a0; b2 = b2 / a0;
+                a1 = a1 / a0; a2 = a2 / a0;
                 &#x27;&#x27;&#x27;
             },
             &#x27;bandpass&#x27;: {
@@ -21530,8 +21643,8 @@ class DSPGenerator:
                 float a2 = 1.0 - alpha;
                 &#x27;&#x27;&#x27;,
                 &#x27;normalization&#x27;: &#x27;&#x27;&#x27;
-                b0 /= a0; b1 /= a0; b2 /= a0;
-                a1 /= a0; a2 /= a0;
+                b0 = b0 / a0; b1 = b1 / a0; b2 = b2 / a0;
+                a1 = a1 / a0; a2 = a2 / a0;
                 &#x27;&#x27;&#x27;
             }
         }
@@ -22525,7 +22638,8 @@ void testFilterIsolation() {
     // Test with known inputs
     float testInputs[] = {0.0f, 0.5f, 1.0f, -1.0f};
     
-    for (int i = 0; i &lt; 4; i++) {
+    int i;
+    for (i = 0 to 4) {
         float output = filter.process(testInputs[i]);
         logValue(&quot;Filter test&quot;, i, testInputs[i], output);
     }
@@ -22615,12 +22729,13 @@ void captureState(const char* label) {
     SystemState* state = &amp;capturedStates[stateIndex];
     
     // Capture current parameter values
-    for (int i = 0; i &lt; MAX_PARAMS; i++) {
+    int i;
+    for (i = 0 to MAX_PARAMS) {
         state-&gt;parameters[i] = params[i];
     }
     
     // Capture signal levels
-    for (int i = 0; i &lt; 8; i++) {
+    for (i = 0 to 8) {
         state-&gt;signalLevels[i] = signal[i];
     }
     
@@ -22678,12 +22793,13 @@ float getSignalValue(int index) {
 Verify system invariants at strategic points:
 <p><pre><code>void checkAudioInvariants() {
     // Signal levels should never exceed valid range
-    for (int i = 0; i &lt; 8; i++) {
+    int i;
+    for (i = 0 to 8) {
         ASSERT(signal[i] &gt;= -2048.0f &amp;&amp; signal[i] &lt;= 2047.0f, &quot;signal_out_of_range&quot;);
     }
     
     // Parameters should always be normalized
-    for (int i = 0; i &lt; MAX_PARAMS; i++) {
+    for (i = 0 to MAX_PARAMS) {
         ASSERT(params[i] &gt;= 0.0f &amp;&amp; params[i] &lt;= 1.0f, &quot;param_not_normalized&quot;);
     }
     
@@ -22741,7 +22857,8 @@ void initProtectedBuffer(ProtectedBuffer* buf) {
     buf-&gt;endCanary = CANARY_VALUE;
     
     // Initialize data
-    for (int i = 0; i &lt; BUFFER_SIZE; i++) {
+    int i;
+    for (i = 0 to BUFFER_SIZE) {
         buf-&gt;data[i] = 0.0f;
     }
 }
@@ -22835,7 +22952,8 @@ void routeSignalToDebugOutput(float internalSignal, int debugChannel) {
 void debugFilterResponse() {
     float testFrequencies[] = {100.0f, 440.0f, 1000.0f, 4000.0f};
     
-    for (int i = 0; i &lt; 4; i++) {
+    int i;
+    for (i = 0 to 4) {
         float testSine = generateSine(testFrequencies[i]);
         float filteredSignal = applyFilter(testSine);
         
@@ -22925,8 +23043,8 @@ void endPerformanceMeasurement() {
         perfCounter.maxProcessingCycles = cycles;
     }
     
-    perfCounter.totalCycles += cycles;
-    perfCounter.frameCount++;
+    perfCounter.totalCycles = perfCounter.totalCycles + cycles;
+    perfCounter.frameCount = perfCounter.frameCount + 1;
     
     // Calculate CPU load percentage
     float cpuLoad = (cycles * 100.0f) / MAX_CYCLES_PER_FRAME;
@@ -22941,7 +23059,8 @@ void processAudioFrame() {
     startPerformanceMeasurement();
     
     // Main audio processing
-    for (int i = 0; i &lt; FRAME_SIZE; i++) {
+    int i;
+    for (i = 0 to FRAME_SIZE) {
         signal[i] = processAudioSample(signal[i]);
     }
     
@@ -22961,7 +23080,8 @@ FunctionProfile profiles[MAX_FUNCTIONS];
 int profileCount = 0;
 
 int findOrCreateProfile(const char* functionName) {
-    for (int i = 0; i &lt; profileCount; i++) {
+    int i;
+    for (i = 0 to profileCount) {
         if (strcmp(profiles[i].name, functionName) == 0) {
             return i;
         }
@@ -22983,8 +23103,8 @@ int findOrCreateProfile(const char* functionName) {
 void profileFunction(const char* functionName, int cycles) {
     int index = findOrCreateProfile(functionName);
     if (index &gt;= 0) {
-        profiles[index].callCount++;
-        profiles[index].totalCycles += cycles;
+        profiles[index].callCount = profiles[index].callCount + 1;
+        profiles[index].totalCycles = profiles[index].totalCycles + cycles;
         
         if (cycles &gt; profiles[index].maxCycles) {
             profiles[index].maxCycles = cycles;
@@ -23046,7 +23166,8 @@ void analyzeMemoryAccess(void* address, int size) {
 // Cache-aware data access
 void processSamplesOptimized(float* samples, int count) {
     // Sequential access pattern
-    for (int i = 0; i &lt; count; i++) {
+    int i;
+    for (i = 0 to count) {
         analyzeMemoryAccess(&amp;samples[i], sizeof(float));
         samples[i] = processSample(samples[i]);
     }
@@ -23077,7 +23198,7 @@ void* debugMalloc(int size, const char* function) {
         allocations[allocationCount].active = true;
         allocationCount++;
         
-        totalAllocated += size;
+        totalAllocated = totalAllocated + size;
         if (totalAllocated &gt; peakAllocated) {
             peakAllocated = totalAllocated;
             logMessage(LOG_INFO, &quot;debugMalloc&quot;, &quot;new_peak_memory&quot;, peakAllocated);
@@ -23088,10 +23209,11 @@ void* debugMalloc(int size, const char* function) {
 }
 
 void debugFree(void* ptr) {
-    for (int i = 0; i &lt; allocationCount; i++) {
+    int i;
+    for (i = 0 to allocationCount) {
         if (allocations[i].address == ptr &amp;&amp; allocations[i].active) {
             allocations[i].active = false;
-            totalAllocated -= allocations[i].size;
+            totalAllocated = totalAllocated - allocations[i].size;
             break;
         }
     }
@@ -23245,11 +23367,12 @@ void createCheckpoint() {
     SystemCheckpoint* cp = &amp;checkpoints[currentCheckpoint];
     
     // Save current system state
-    for (int i = 0; i &lt; MAX_PARAMS; i++) {
+    int i;
+    for (i = 0 to MAX_PARAMS) {
         cp-&gt;parameters[i] = params[i];
     }
     
-    for (int i = 0; i &lt; MAX_FILTERS; i++) {
+    for (i = 0 to MAX_FILTERS) {
         cp-&gt;filterStates[i] = getFilterState(i);
     }
     
@@ -23267,7 +23390,8 @@ void restoreFromCheckpoint() {
     int searchIndex = currentCheckpoint;
     SystemCheckpoint* cp = NULL;
     
-    for (int i = 0; i &lt; CHECKPOINT_COUNT; i++) {
+    int i;
+    for (i = 0 to CHECKPOINT_COUNT) {
         searchIndex = (searchIndex - 1 + CHECKPOINT_COUNT) % CHECKPOINT_COUNT;
         if (checkpoints[searchIndex].valid) {
             cp = &amp;checkpoints[searchIndex];
@@ -23277,11 +23401,12 @@ void restoreFromCheckpoint() {
     
     if (cp) {
         // Restore system state
-        for (int i = 0; i &lt; MAX_PARAMS; i++) {
+        int i;
+        for (i = 0 to MAX_PARAMS) {
             params[i] = cp-&gt;parameters[i];
         }
         
-        for (int i = 0; i &lt; MAX_FILTERS; i++) {
+        for (i = 0 to MAX_FILTERS) {
             setFilterState(i, cp-&gt;filterStates[i]);
         }
         
@@ -23327,7 +23452,12 @@ void assertEqual(const char* testName, float expected, float actual, float toler
     result-&gt;expectedValue = expected;
     result-&gt;actualValue = actual;
     
-    float difference = (actual &gt; expected) ? (actual - expected) : (expected - actual);
+    float difference;
+    if (actual &gt; expected) {
+        difference = actual - expected;
+    } else {
+        difference = expected - actual;
+    }
     result-&gt;passed = (difference &lt;= tolerance);
     
     if (!result-&gt;passed) {
@@ -23343,9 +23473,17 @@ void assertTrue(const char* testName, bool condition, const char* errorMsg) {
     TestResult* result = &amp;testResults[testCount++];
     result-&gt;testName = testName;
     result-&gt;passed = condition;
-    result-&gt;errorMessage = condition ? NULL : errorMsg;
+    if (condition) {
+        result-&gt;errorMessage = NULL;
+    } else {
+        result-&gt;errorMessage = errorMsg;
+    }
     result-&gt;expectedValue = 1.0f;
-    result-&gt;actualValue = condition ? 1.0f : 0.0f;
+    if (condition) {
+        result-&gt;actualValue = 1.0f;
+    } else {
+        result-&gt;actualValue = 0.0f;
+    }
     
     if (!condition) {
         logMessage(LOG_ERROR, &quot;assertTrue&quot;, testName, 0);
@@ -23383,9 +23521,10 @@ void runAllTests() {
     
     // Report results
     int passedTests = 0;
-    for (int i = 0; i &lt; testCount; i++) {
+    int i;
+    for (i = 0 to testCount) {
         if (testResults[i].passed) {
-            passedTests++;
+            passedTests = passedTests + 1;
         } else {
             logMessage(LOG_ERROR, &quot;test_failed&quot;, testResults[i].testName, 
                       testResults[i].actualValue);
@@ -23448,11 +23587,13 @@ Test system behavior under extreme conditions:
     logMessage(LOG_INFO, &quot;stressTestCPULoad&quot;, &quot;starting_stress_test&quot;, 0);
     
     // Gradually increase processing complexity
-    for (int complexity = 1; complexity &lt;= 10; complexity++) {
+    int complexity;
+    for (complexity = 1 to 11) {
         setProcessingComplexity(complexity);
         
         // Run for several seconds
-        for (int frame = 0; frame &lt; 1000; frame++) {
+        int frame;
+        for (frame = 0 to 1000) {
             processAudioFrame();
             
             float cpuLoad = getCurrentCpuLoad();
@@ -23493,7 +23634,8 @@ void stressTestMemoryUsage() {
     }
     
     // Free all allocations
-    for (int i = 0; i &lt; allocationCount; i++) {
+    int i;
+    for (i = 0 to allocationCount) {
         FREE(allocations[i]);
     }
     
@@ -23503,7 +23645,8 @@ void stressTestMemoryUsage() {
 
 void stressTestParameterChanges() {
     // Rapid parameter changes
-    for (int iteration = 0; iteration &lt; 10000; iteration++) {
+    int iteration;
+    for (iteration = 0 to 10000) {
         int paramIndex = iteration % MAX_PARAMS;
         float paramValue = (iteration % 100) / 100.0f;
         
@@ -23615,7 +23758,11 @@ void endDebugSession(const char* solution, bool resolved) {
     // Generate session report
     generateSessionReport(&amp;currentSession);
     
-    logMessage(LOG_INFO, &quot;endDebugSession&quot;, &quot;session_completed&quot;, resolved ? 1 : 0);
+    if (resolved) {
+        logMessage(LOG_INFO, &quot;endDebugSession&quot;, &quot;session_completed&quot;, 1);
+    } else {
+        logMessage(LOG_INFO, &quot;endDebugSession&quot;, &quot;session_completed&quot;, 0);
+    }
     
     // Restore normal logging level
     restoreNormalLogging();
@@ -23704,7 +23851,8 @@ bool executeReproductionCase(ReproductionCase* testCase) {
     restoreParameterState(&amp;testCase-&gt;initialState);
     
     // Execute all actions
-    for (int i = 0; i &lt; testCase-&gt;actionCount; i++) {
+    int i;
+    for (i = 0 to testCase-&gt;actionCount) {
         TestAction* action = &amp;testCase-&gt;actions[i];
         
         switch (action-&gt;type) {
@@ -23725,7 +23873,11 @@ bool executeReproductionCase(ReproductionCase* testCase) {
     // Check if expected result occurred
     bool reproduced = checkExpectedResult(testCase-&gt;expectedResult);
     
-    logMessage(LOG_INFO, &quot;executeReproductionCase&quot;, &quot;case_completed&quot;, reproduced ? 1 : 0);
+    if (reproduced) {
+        logMessage(LOG_INFO, &quot;executeReproductionCase&quot;, &quot;case_completed&quot;, 1);
+    } else {
+        logMessage(LOG_INFO, &quot;executeReproductionCase&quot;, &quot;case_completed&quot;, 0);
+    }
     return reproduced;
 }</code></pre></p>
 <h2>Conclusion</h2>
@@ -23770,7 +23922,11 @@ bool executeReproductionCase(ReproductionCase* testCase) {
     } \
     \
     TYPE get##NAME##Array(struct NAME##Array* arr, int index) { \
-        return (index &gt;= 0 &amp;&amp; index &lt; arr-&gt;size) ? arr-&gt;data[index] : (TYPE)0; \
+        if (index &gt;= 0 &amp;&amp; index &lt; arr-&gt;size) { \
+            return arr-&gt;data[index]; \
+        } else { \
+            return (TYPE)0; \
+        } \
     } \
     \
     void clear##NAME##Array(struct NAME##Array* arr) { \
@@ -23871,7 +24027,8 @@ const char* getEffectName(enum EffectType type) {
     }; \
     \
     void init##NAME##Filter(struct NAME##Filter* filter) { \
-        for (int i = 0; i &lt;= ORDER; i++) { \
+        int i; \
+        for (i = 0 to ORDER + 1) { \
             filter-&gt;x[i] = 0.0f; \
             filter-&gt;y[i] = 0.0f; \
         } \
@@ -23885,12 +24042,12 @@ const char* getEffectName(enum EffectType type) {
         f32 output = 0.0f; \
         static const f32 coefficients[][ORDER + 1] = COEFFS; \
         \
-        for (int i = 0; i &lt;= ORDER; i++) { \
+        for (i = 0 to ORDER + 1) { \
             int xIndex = (filter-&gt;pos - i + ORDER + 1) % (ORDER + 1); \
             int yIndex = (filter-&gt;pos - i + ORDER + 1) % (ORDER + 1); \
-            output += coefficients[0][i] * filter-&gt;x[xIndex]; \
+            output = output + coefficients[0][i] * filter-&gt;x[xIndex]; \
             if (i &gt; 0) { \
-                output -= coefficients[1][i] * filter-&gt;y[yIndex]; \
+                output = output - coefficients[1][i] * filter-&gt;y[yIndex]; \
             } \
         } \
         \
@@ -23970,7 +24127,11 @@ void setupFilters() {
                 struct NAME##Node* toDelete = *current; \
                 *current = (*current)-&gt;next; \
                 if (toDelete == list-&gt;tail) { \
-                    list-&gt;tail = (list-&gt;head == toDelete) ? null : list-&gt;head; \
+                    if (list-&gt;head == toDelete) { \
+                        list-&gt;tail = null; \
+                    } else { \
+                        list-&gt;tail = list-&gt;head; \
+                    } \
                 } \
                 deallocate(toDelete); \
                 list-&gt;count--; \
@@ -24023,7 +24184,8 @@ void useLists() {
 <p><pre><code>// Generic sorting algorithm
 #define DECLARE_SORT(TYPE, NAME, COMPARE_FUNC) \
     void sort##NAME(TYPE* array, int size) { \
-        for (int i = 1; i &lt; size; i++) { \
+        int i; \
+        for (i = 1 to size) { \
             TYPE key = array[i]; \
             int j = i - 1; \
             \
@@ -24226,7 +24388,8 @@ f32 processAudioEffect(f32 input, int effectType) {
 #if ENABLE_SIMD_OPTIMIZATIONS
 FORCE_INLINE void vectorAdd(f32* a, f32* b, f32* result, int count) {
     // SIMD implementation
-    for (int i = 0; i &lt; count; i += 4) {
+    int i;
+    for (i = 0 to count; i = i + 4) {
         __m128 va = _mm_load_ps(&amp;a[i]);
         __m128 vb = _mm_load_ps(&amp;b[i]);
         __m128 vr = _mm_add_ps(va, vb);
@@ -24236,7 +24399,8 @@ FORCE_INLINE void vectorAdd(f32* a, f32* b, f32* result, int count) {
 #else
 FORCE_INLINE void vectorAdd(f32* a, f32* b, f32* result, int count) {
     // Scalar implementation
-    for (int i = 0; i &lt; count; i++) {
+    int i;
+    for (i = 0 to count) {
         result[i] = a[i] + b[i];
     }
 }
@@ -24315,7 +24479,8 @@ bool reverbInit(AudioProcessor* proc) {
 void reverbProcess(AudioProcessor* proc, f32* input, f32* output, int samples) {
     struct ReverbData* data = (struct ReverbData*)proc-&gt;instanceData;
     // Reverb processing implementation
-    for (int i = 0; i &lt; samples; i++) {
+    int i;
+    for (i = 0 to samples) {
         f32 wet = processReverbAlgorithm(input[i], data);
         output[i] = data-&gt;dryLevel * input[i] + data-&gt;wetLevel * wet;
     }
@@ -24411,13 +24576,14 @@ struct EventDispatcher {
 static struct EventDispatcher eventDispatcher;
 
 void initEventDispatcher() {
-    for (int i = 0; i &lt; 16; i++) {
+    int i;
+    for (i = 0 to 16) {
         eventDispatcher.callbacks[i] = null;
     }
     
     // Initialize free list
     eventDispatcher.freeNodes = null;
-    for (int i = 0; i &lt; MAX_CALLBACKS; i++) {
+    for (i = 0 to MAX_CALLBACKS) {
         eventDispatcher.nodePool[i].next = eventDispatcher.freeNodes;
         eventDispatcher.freeNodes = &amp;eventDispatcher.nodePool[i];
     }
@@ -24608,7 +24774,8 @@ void init%NAME%Oscillator(struct %NAME%Oscillator* osc, f32 freq) {
     osc-&gt;useTable = false;
     
     // Pre-compute wave table for efficiency
-    for (int i = 0; i &lt; WAVE_TABLE_SIZE; i++) {
+    int i;
+    for (i = 0 to WAVE_TABLE_SIZE) {
         f32 x = (f32)i / WAVE_TABLE_SIZE * TWO_PI;
         osc-&gt;waveTable[i] = (%TYPE%)%WAVE_FUNC%(x);
     }
@@ -24632,9 +24799,9 @@ void init%NAME%Oscillator(struct %NAME%Oscillator* osc, f32 freq) {
     }
     
     // Update phase
-    osc-&gt;phase += osc-&gt;frequency * PHASE_INCREMENT;
+    osc-&gt;phase = osc-&gt;phase + osc-&gt;frequency * PHASE_INCREMENT;
     if (osc-&gt;phase &gt;= TWO_PI) {
-        osc-&gt;phase -= TWO_PI;
+        osc-&gt;phase = osc-&gt;phase - TWO_PI;
     }
     
     return result * osc-&gt;amplitude;
@@ -24657,7 +24824,8 @@ void init%NAME%Oscillator(struct %NAME%Oscillator* osc, f32 freq) {
         osc-&gt;amplitude = 1.0f; \
         osc-&gt;useTable = false; \
         \
-        for (int i = 0; i &lt; WAVE_TABLE_SIZE; i++) { \
+        int i; \
+        for (i = 0 to WAVE_TABLE_SIZE) { \
             f32 x = (f32)i / WAVE_TABLE_SIZE * TWO_PI; \
             osc-&gt;waveTable[i] = (TYPE)WAVE_FUNC(x); \
         } \
@@ -24678,9 +24846,9 @@ void init%NAME%Oscillator(struct %NAME%Oscillator* osc, f32 freq) {
             result = (TYPE)WAVE_FUNC(osc-&gt;phase); \
         } \
         \
-        osc-&gt;phase += osc-&gt;frequency * PHASE_INCREMENT; \
+        osc-&gt;phase = osc-&gt;phase + osc-&gt;frequency * PHASE_INCREMENT; \
         if (osc-&gt;phase &gt;= TWO_PI) { \
-            osc-&gt;phase -= TWO_PI; \
+            osc-&gt;phase = osc-&gt;phase - TWO_PI; \
         } \
         \
         return result * osc-&gt;amplitude; \
@@ -24703,7 +24871,11 @@ f32 sawtoothWave(f32 phase) {
 }
 
 f32 squareWave(f32 phase) {
-    return (phase &lt; PI) ? 1.0f : -1.0f;
+    if (phase &lt; PI) {
+        return 1.0f;
+    } else {
+        return -1.0f;
+    }
 }
 
 // Usage
@@ -24716,7 +24888,8 @@ void useOscillators() {
     initTriangleOscillator(&amp;triangle, 220.0f);
     initSawtoothOscillator(&amp;sawtooth, 110.0f);
     
-    for (int i = 0; i &lt; BUFFER_SIZE; i++) {
+    int i;
+    for (i = 0 to BUFFER_SIZE) {
         f32 sineOutput = processSineOscillator(&amp;sine);
         f32 triangleOutput = processTriangleOscillator(&amp;triangle);
         f32 sawtoothOutput = processSawtoothOscillator(&amp;sawtooth);
@@ -25881,7 +26054,8 @@ static void reverb_cleanup(void* instance_data) {
 static void reverb_process(void* instance_data, audio_buffer_t* input, audio_buffer_t* output) {
     reverb_state_t* state = (reverb_state_t*)instance_data;
     
-    for (uint32_t i = 0; i &lt; input-&gt;size; i++) {
+    uint32_t i;
+    for (i = 0 to input-&gt;size) {
         // Reverb algorithm implementation
         float dry = input-&gt;data[i];
         float wet = apply_reverb_algorithm(state, dry);
@@ -25930,7 +26104,11 @@ static const plugin_interface_t reverb_plugin = {
     .get_parameter_count = lambda() { return PARAM_COUNT; },
     .get_parameter_name = lambda(int id) {
         static const char* names[] = {&quot;Room Size&quot;, &quot;Damping&quot;, &quot;Wet Level&quot;};
-        return (id &gt;= 0 &amp;&amp; id &lt; PARAM_COUNT) ? names[id] : &quot;Unknown&quot;;
+        if (id &gt;= 0 &amp;&amp; id &lt; PARAM_COUNT) {
+            return names[id];
+        } else {
+            return &quot;Unknown&quot;;
+        }
     }
 };
 
@@ -26069,7 +26247,8 @@ bool pool_allocated[POOL_SIZE] = {false};
 
 int allocate_buffer() {
     // O(1) allocation - bounded execution time
-    for (int i = 0; i &lt; POOL_SIZE; i++) {
+    int i;
+    for (i = 0 to POOL_SIZE) {
         if (!pool_allocated[i]) {
             pool_allocated[i] = true;
             return i;
@@ -26210,7 +26389,12 @@ void process() {
     float dry = signal[0];
     
     // Branchless selection: 0.0 = bypass, 1.0 = effect
-    float mix = bypass_enabled ? 0.0f : 1.0f;
+    float mix;
+    if (bypass_enabled) {
+        mix = 0.0f;
+    } else {
+        mix = 1.0f;
+    }
     signal[0] = dry * (1.0f - mix) + processed * mix;
 }
 
@@ -26232,7 +26416,11 @@ float apply_distortion(float input, int type) {
     } else if (type == 1) {
         return tanh(input * 3.0f);
     } else if (type == 2) {
-        return input &gt; 0 ? sqrt(input) : -sqrt(-input);
+        if (input &gt; 0) {
+            return sqrt(input);
+        } else {
+            return -sqrt(-input);
+        }
     } else {
         return input;
     }
@@ -26243,7 +26431,13 @@ typedef float (*distortion_func)(float);
 
 float hard_clip(float x) { return x * 2.0f; }
 float soft_sat(float x) { return tanh(x * 3.0f); }
-float tube_sim(float x) { return x &gt; 0 ? sqrt(x) : -sqrt(-x); }
+float tube_sim(float x) { 
+    if (x &gt; 0) {
+        return sqrt(x);
+    } else {
+        return -sqrt(-x);
+    }
+}
 float pass_through(float x) { return x; }
 
 static distortion_func distortion_table[] = {
@@ -26261,7 +26455,8 @@ float apply_distortion(float input, int type) {
 <p><pre><code>// ❌ DANGEROUS: Complex ISR processing
 void audio_interrupt_handler() {
     // Complex processing in ISR increases latency
-    for (int i = 0; i &lt; BLOCK_SIZE; i++) {
+    int i;
+    for (i = 0 to BLOCK_SIZE) {
         float sample = input_buffer[i];
         sample = complex_effect_chain(sample);  // Unbounded execution time
         output_buffer[i] = sample;
@@ -26285,7 +26480,8 @@ void audio_interrupt_handler() {
 void main_loop() {
     if (audio_ready) {
         // Process audio in main thread context
-        for (int i = 0; i &lt; BLOCK_SIZE; i++) {
+        int i;
+        for (i = 0 to BLOCK_SIZE) {
             process_input[i] = complex_effect_chain(process_input[i]);
         }
         
@@ -26342,7 +26538,7 @@ struct voice voices[16];  // Array of structures
 void process_voices() {
     // Poor cache usage - loads entire voice struct for each parameter
     for (int i = 0; i &lt; 16; i++) {
-        voices[i].phase += voices[i].frequency * delta_time;
+        voices[i].phase = voices[i].phase + voices[i].frequency * delta_time;
         float sample = sin(voices[i].phase) * voices[i].amplitude;
         // ... more processing ...
     }
@@ -26362,11 +26558,12 @@ static struct voice_bank voices;
 
 void process_voices() {
     // Excellent cache usage - sequential access to same parameter type
-    for (int i = 0; i &lt; 16; i++) {
-        voices.phase[i] += voices.frequency[i] * delta_time;
+    int i;
+    for (i = 0 to 16) {
+        voices.phase[i] = voices.phase[i] + voices.frequency[i] * delta_time;
     }
     
-    for (int i = 0; i &lt; 16; i++) {
+    for (i = 0 to 16) {
         float sample = sin(voices.phase[i]) * voices.amplitude[i];
         // Process in batches for maximum cache efficiency
     }
@@ -26384,22 +26581,24 @@ void apply_reverb_random() {
                       delay_buffer[delay_tap2] * 0.2f +
                       delay_buffer[delay_tap3] * 0.1f;
         
-        signal[i] += reverb;
+        signal[i] = signal[i] + reverb;
     }
 }
 
 // ✅ BETTER: Sequential with prefetch
 void apply_reverb_sequential() {
     // Process delay taps in sequential chunks
-    for (int tap = 0; tap &lt; 3; tap++) {
+    int tap;
+    for (tap = 0 to 3) {
         int tap_delays[] = {123, 456, 789};
         float tap_gains[] = {0.3f, 0.2f, 0.1f};
         
         int base_delay = (delay_pos - tap_delays[tap]) &amp; DELAY_MASK;
         
-        for (int i = 0; i &lt; BLOCK_SIZE; i++) {
+        int i;
+        for (i = 0 to BLOCK_SIZE) {
             int delay_index = (base_delay + i) &amp; DELAY_MASK;
-            signal[i] += delay_buffer[delay_index] * tap_gains[tap];
+            signal[i] = signal[i] + delay_buffer[delay_index] * tap_gains[tap];
         }
     }
 }</code></pre></p>
@@ -26425,7 +26624,7 @@ void process() {
     uint32_t elapsed = end_cycles - start_cycles;
     
     // Lock-free statistics update
-    perf.cycle_count_total += elapsed;
+    perf.cycle_count_total = perf.cycle_count_total + elapsed;
     if (elapsed &gt; perf.cycle_count_max) {
         perf.cycle_count_max = elapsed;
     }
@@ -26632,7 +26831,7 @@ void process_envelope(struct envelope* env) {
     
     switch (current_state) {
         case ENV_ATTACK:
-            env-&gt;level += env-&gt;rate;
+            env-&gt;level = env-&gt;level + env-&gt;rate;
             if (env-&gt;level &gt;= env-&gt;target) {
                 env-&gt;level = env-&gt;target;
                 env-&gt;target = sustain_level;
@@ -26692,19 +26891,26 @@ struct stress_test tests[] = {
 };
 
 void run_stress_tests() {
-    for (int i = 0; i &lt; sizeof(tests)/sizeof(tests[0]); i++) {
+    int i;
+    for (i = 0 to sizeof(tests)/sizeof(tests[0])) {
         printf(&quot;Running %s...\n&quot;, tests[i].name);
         
         if (tests[i].setup) tests[i].setup();
         
         bool passed = true;
-        for (int iter = 0; iter &lt; tests[i].max_iterations &amp;&amp; passed; iter++) {
+        int iter;
+        for (iter = 0 to tests[i].max_iterations) {
+            if (!passed) break;
             passed = tests[i].execute(iter);
         }
         
         if (tests[i].teardown) tests[i].teardown();
         
-        printf(&quot;%s: %s\n&quot;, tests[i].name, passed ? &quot;PASSED&quot; : &quot;FAILED&quot;);
+        if (passed) {
+            printf(&quot;%s: PASSED\n&quot;, tests[i].name);
+        } else {
+            printf(&quot;%s: FAILED\n&quot;, tests[i].name);
+        }
     }
 }</code></pre></p>
 <h2>Real-Time Safety Checklist</h2>
@@ -27025,8 +27231,8 @@ namespace Profiler {
     // End timing measurement
     void endTimer(PerformanceCounter* counter) {
         int elapsed = getCurrentCycles() - counter-&gt;startTime;
-        counter-&gt;totalTime += elapsed;
-        counter-&gt;callCount++;
+        counter-&gt;totalTime = counter-&gt;totalTime + elapsed;
+        counter-&gt;callCount = counter-&gt;callCount + 1;
         if (elapsed &gt; counter-&gt;maxTime) {
             counter-&gt;maxTime = elapsed;
         }
@@ -27072,9 +27278,9 @@ namespace MemoryDebug {
     void* debugMalloc(int size, const char* file, int line) {
         void* ptr = malloc(size);
         if (ptr) {
-            memStats.totalAllocated += size;
-            memStats.currentUsage += size;
-            memStats.allocationCount++;
+            memStats.totalAllocated = memStats.totalAllocated + size;
+            memStats.currentUsage = memStats.currentUsage + size;
+            memStats.allocationCount = memStats.allocationCount + 1;
             
             if (memStats.currentUsage &gt; memStats.peakUsage) {
                 memStats.peakUsage = memStats.currentUsage;
@@ -27091,8 +27297,8 @@ namespace MemoryDebug {
     void debugFree(void* ptr, int size, const char* file, int line) {
         if (ptr) {
             free(ptr);
-            memStats.currentUsage -= size;
-            memStats.freeCount++;
+            memStats.currentUsage = memStats.currentUsage - size;
+            memStats.freeCount = memStats.freeCount + 1;
             
             #ifdef DEBUG
                 printf(&quot;FREE: %p, size=%d, %s:%d\n&quot;, ptr, size, file, line);
@@ -27203,8 +27409,8 @@ namespace Diagnostics {
             float sample = buffer[i];
             if (sample &lt; min) min = sample;
             if (sample &gt; max) max = sample;
-            sum += sample;
-            sumSquares += sample * sample;
+            sum = sum + sample;
+            sumSquares = sumSquares + (sample * sample);
         }
         
         float mean = sum / size;
@@ -27246,12 +27452,12 @@ namespace UnitTest {
     
     // Test assertion
     void testAssert(bool condition, const char* testName) {
-        testStats.totalTests++;
+        testStats.totalTests = testStats.totalTests + 1;
         if (condition) {
-            testStats.passedTests++;
+            testStats.passedTests = testStats.passedTests + 1;
             printf(&quot;PASS: %s\n&quot;, testName);
         } else {
-            testStats.failedTests++;
+            testStats.failedTests = testStats.failedTests + 1;
             printf(&quot;FAIL: %s\n&quot;, testName);
         }
     }
@@ -27346,7 +27552,8 @@ void advancedFirmware() {
     // Diagnostic output (debug builds only)
     #ifdef DEBUG
         static int debugCounter = 0;
-        if (++debugCounter % 48000 == 0) {  // Every second
+        debugCounter = debugCounter + 1;
+        if (debugCounter % 48000 == 0) {  // Every second
             Diagnostics::logMessage(LOG_INFO, &quot;Average processing time: %.2f cycles&quot;, 
                                    Profiler::getAverageTime(&amp;mainCounter));
         }
@@ -28213,8 +28420,8 @@ function operate1() returns int processed {
     // Replace Instruction 1 operator with custom behavior
     int delayOffset = calculateCustomDelay();
     
-    positions[0] += delayOffset;  // Left channel
-    positions[1] += delayOffset;  // Right channel
+    positions[0] = positions[0] + delayOffset;  // Left channel
+    positions[1] = positions[1] + delayOffset;  // Right channel
     
     return 1;  // Signal that we processed the positions
 }
@@ -29257,7 +29464,7 @@ readonly array cosineTable[360] = {
 function fastCos(int scaledAngle) returns int result {
     int degrees = (scaledAngle * 360) / 6283;  // Convert to degrees
     degrees = degrees % 360;  // Wrap to 0-359
-    if (degrees &lt; 0) degrees += 360;
+    if (degrees &lt; 0) degrees = degrees + 360;
     result = cosineTable[degrees];
 }</code></pre>
 <strong>Pre-allocated Buffers (Best Practice):</strong>
@@ -29379,7 +29586,7 @@ function safeArrayAccess(array buffer[1024], int index, int value) {
 function circularBufferAccess(array buffer[512], int index, int value) {
     // Ensure positive index and wrap
     int safeIndex = index % 512;
-    if (safeIndex &lt; 0) safeIndex += 512;
+    if (safeIndex &lt; 0) safeIndex = safeIndex + 512;
     buffer[safeIndex] = value;
 }</code></pre></p>
 <h2>Memory Layout Optimization</h2>
@@ -29995,7 +30202,7 @@ function operate1(int input) returns int result {
     
     // Calculate delay output
     int delayedPos = (delayPos - 500) % 1024;
-    if (delayedPos &lt; 0) delayedPos += 1024;
+    if (delayedPos &lt; 0) delayedPos = delayedPos + 1024;
     
     int delayed = delayLine[delayedPos];
     delayPos = (delayPos + 1) % 1024;
@@ -30152,7 +30359,7 @@ function processReverb(int input) returns int result {
     for (i = 0 to 8) {
         int tapIndex = (reverbPos - tapDelays[i]) % 1024;
         if (tapIndex &lt; 0) tapIndex += 1024;
-        output += reverbTaps[tapIndex] &gt;&gt; 2;  // Mix in reverb taps
+        output = output + (reverbTaps[tapIndex] &gt;&gt; 2);  // Mix in reverb taps
     }
     
     // Store input in reverb buffer
@@ -30210,9 +30417,9 @@ function operate1(int input) returns int result {
         // Gradual transition prevents clicks
         int diff = targetGain - currentGain;
         if (diff &gt; gainTransitionRate) {
-            currentGain += gainTransitionRate;
+            currentGain = currentGain + gainTransitionRate;
         } else if (diff &lt; -gainTransitionRate) {
-            currentGain -= gainTransitionRate;
+            currentGain = currentGain - gainTransitionRate;
         } else {
             currentGain = targetGain;  // Close enough, snap to target
         }
@@ -33086,8 +33293,16 @@ function checkLearnSwitches() {
     }
     
     // Update previous switch states
-    global prev_switch_state[1] = (switches &amp; 0x02) != 0 ? 1 : 0;
-    global prev_switch_state[2] = (switches &amp; 0x04) != 0 ? 1 : 0;
+    if ((switches &amp; 0x02) != 0) {
+        global prev_switch_state[1] = 1;
+    } else {
+        global prev_switch_state[1] = 0;
+    }
+    if ((switches &amp; 0x04) != 0) {
+        global prev_switch_state[2] = 1;
+    } else {
+        global prev_switch_state[2] = 0;
+    }
 }
 
 // Clear all learned mappings
@@ -33424,7 +33639,11 @@ locals int gate_open, int gate_level, int audio_sample
     audio_sample = (audio_sample * gate_level) &gt;&gt; 8;
     
     // Visual feedback
-    global displayLEDs[1] = gate_open ? 255 : 32;
+    if (gate_open) {
+        global displayLEDs[1] = 255;
+    } else {
+        global displayLEDs[1] = 32;
+    }
     global displayLEDs[2] = global current_step &lt;&lt; 4;  // Show step
     
     return audio_sample;
@@ -34030,7 +34249,11 @@ void updateSyncDisplay() {
     // Clock source indicator
     switch (multiClock.activeSource) {
         case MIDI_CLOCK:
-            displayLEDs[SOURCE_LED] = tempoEst.tempoLocked ? 255 : 128;
+            if (tempoEst.tempoLocked) {
+                displayLEDs[SOURCE_LED] = 255;
+            } else {
+                displayLEDs[SOURCE_LED] = 128;
+            }
             break;
         case INTERNAL_CLOCK:
             displayLEDs[SOURCE_LED] = 64;
@@ -35312,7 +35535,12 @@ locals int input_sample, int output_sample, int mix_level, int mode_processing
         global displayLEDs[0] = mix_level;                    // Main parameter
         global displayLEDs[1] = global current_mode &lt;&lt; 6;    // Current mode
         global displayLEDs[2] = global current_snapshot &lt;&lt; 6; // Active snapshot
-        global displayLEDs[3] = global smooth_active ? 255 : 64; // Smoothing indicator
+        // Smoothing indicator
+        if (global smooth_active) {
+            global displayLEDs[3] = 255;
+        } else {
+            global displayLEDs[3] = 64;
+        }
         
         yield();
     }
@@ -36825,7 +37053,11 @@ function efficientLoop()
 locals int i, int threshold, int should_continue
 {
     threshold = global params[0];
-    should_continue = (threshold &gt; 50) ? 1 : 0;
+    if (threshold &gt; 50) {
+        should_continue = 1;
+    } else {
+        should_continue = 0;
+    }
     
     if (should_continue == 1) {
         for (i = 0 to BUFFER_SIZE - 1) {
@@ -37272,7 +37504,11 @@ locals int passed, int total
         trace(&quot;Total:&quot;, total);
     }
     
-    return (passed == total) ? 1 : 0;
+    if (passed == total) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 function runTest(testName, testFunction) 

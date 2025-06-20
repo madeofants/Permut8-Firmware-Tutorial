@@ -66,18 +66,30 @@ Result: Clean, efficient delay effect
 
 ### **Example: Custom Delay Implementation**
 ```impala
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // Manual delay processing (what SUB operator does automatically)
 input = (int)global signal[0];
 
 // Read delayed sample from memory (read position = write position - delay time)
 int readPosition = global writePosition - delayTime;
-if (readPosition < 0) readPosition += 65536;  // Wrap around
+if (readPosition < 0) readPosition = readPosition + 65536;  // Wrap around
 
 read(readPosition, 1, global tempBuffer);
 delayed = global tempBuffer[0];
 
 // Create echo: original + delayed signal
 output = input + (delayed * feedback / 255);
+
 ```
 
 **Advantages:**
@@ -97,19 +109,19 @@ Both approaches use the **same parameter system** but interpret it differently:
 
 ### **Built-in Operators**
 ```
-params[3] → Instruction 1 High Operand → SUB delay time (hex value)
-params[4] → Instruction 1 Low Operand → Feedback amount (hex value)
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] → Instruction 1 High Operand → SUB delay time (hex value)
+(int)global params[OPERAND_1_LOW_PARAM_INDEX] → Instruction 1 Low Operand → Feedback amount (hex value)
 Interface: LED displays showing abstract hex values
 ```
 
 ### **Custom Firmware**
 ```
-params[3] → delayTime calculation → User-friendly delay time
-params[4] → feedback calculation → User-friendly feedback amount
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] → delayTime calculation → User-friendly delay time
+(int)global params[OPERAND_1_LOW_PARAM_INDEX] → feedback calculation → User-friendly feedback amount
 Interface: Custom labels like "DELAY TIME" and "FEEDBACK"
 ```
 
-**The Key Insight**: Both approaches use the **same parameter system** (`params[3]`, `params[4]`), but custom firmware gives you complete control over what those parameters mean and how they're processed.
+**The Key Insight**: Both approaches use the **same parameter system** (`(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`, `(int)global params[OPERAND_1_LOW_PARAM_INDEX]`), but custom firmware gives you complete control over what those parameters mean and how they're processed.
 
 ## Interface Transformation Example
 
@@ -134,7 +146,7 @@ readonly array panelTextRows[8] = {
 }
 ```
 ```
-Control: Same knob (params[3])
+Control: Same knob ((int)global params[OPERAND_1_HIGH_PARAM_INDEX])
 Display: Clear label "DELAY TIME"
 User Experience: Intuitive, immediate understanding
 ```
@@ -174,8 +186,8 @@ Result: Efficient hardware delay
 ### **Custom Version** (Educational & Flexible)
 ```impala
 // Same effect, manual implementation
-delayTime = ((int)global params[3] * 500 / 255) + 50;  // Same param[3]
-feedback = ((int)global params[4] * 200 / 255);         // Same param[4]
+delayTime = ((int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 500 / 255) + 50;  // Same param[3]
+feedback = ((int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX] * 200 / 255);         // Same param[4]
 
 // Manual memory management (what SUB does automatically)
 int readPosition = global writePosition - delayTime;

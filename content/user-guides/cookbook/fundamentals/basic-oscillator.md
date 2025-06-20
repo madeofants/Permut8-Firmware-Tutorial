@@ -32,10 +32,10 @@ No Audio Input → [Custom oscillator algorithm generates samples] → Audio Out
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Frequency (0-255, controls pitch)
-- `params[1]`: Waveform type (0-255, selects wave shape)
-- `params[2]`: Amplitude (0-255, controls volume)
-- `params[3]`: Fine tune (0-255, pitch adjustment)
+- `params[CLOCK_FREQ_PARAM_INDEX]`: Frequency (0-255, controls pitch)
+- `params[SWITCHES_PARAM_INDEX]`: Waveform type (0-255, selects wave shape)
+- `params[OPERATOR_1_PARAM_INDEX]`: Amplitude (0-255, controls volume)
+- `params[OPERAND_1_HIGH_PARAM_INDEX]`: Fine tune (0-255, pitch adjustment)
 
 **Waveform Types:**
 - **Sine**: Pure tone, no harmonics
@@ -50,26 +50,37 @@ No Audio Input → [Custom oscillator algorithm generates samples] → Audio Out
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Simple oscillator state
 global int phase = 0            // Current phase position (0-65535)
 
-function process()
+function process() locals int var1, int var2
 locals int frequency, int wave_type, int amplitude, int fine_tune, int phase_inc, int wave_output, int output
 {
     loop {
         // Read parameters
-        frequency = ((int)global params[0] << 4) + 100;  // 100-4196 range
-        wave_type = ((int)global params[1] >> 6);         // 0-3 wave types
-        amplitude = ((int)global params[2] << 3);         // 0-2040 amplitude
-        fine_tune = ((int)global params[3] >> 3) - 16;    // -16 to +15 fine tune
+        frequency = ((int)global params[CLOCK_FREQ_PARAM_INDEX] << 4) + 100;  // 100-4196 range
+        wave_type = ((int)global params[SWITCHES_PARAM_INDEX] >> 6);         // 0-3 wave types
+        amplitude = ((int)global params[OPERATOR_1_PARAM_INDEX] << 3);         // 0-2040 amplitude
+        fine_tune = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 3) - 16;    // -16 to +15 fine tune
         
         // Calculate phase increment (determines frequency)
         phase_inc = frequency + fine_tune;
@@ -155,28 +166,28 @@ locals int frequency, int wave_type, int amplitude, int fine_tune, int phase_inc
 
 ```impala
 // Deep bass sine
-params[0] = 50;   // Low frequency
-params[1] = 32;   // Sine wave
-params[2] = 200;  // Medium volume
-params[3] = 128;  // Center tune
+params[CLOCK_FREQ_PARAM_INDEX] = 50;   // Low frequency
+params[SWITCHES_PARAM_INDEX] = 32;   // Sine wave
+params[OPERATOR_1_PARAM_INDEX] = 200;  // Medium volume
+params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Center tune
 
 // Classic square lead
-params[0] = 150;  // Mid frequency
-params[1] = 100;  // Square wave
-params[2] = 180;  // Good volume
-params[3] = 128;  // Center tune
+params[CLOCK_FREQ_PARAM_INDEX] = 150;  // Mid frequency
+params[SWITCHES_PARAM_INDEX] = 100;  // Square wave
+params[OPERATOR_1_PARAM_INDEX] = 180;  // Good volume
+params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Center tune
 
 // Bright sawtooth
-params[0] = 200;  // Higher frequency
-params[1] = 160;  // Sawtooth wave
-params[2] = 160;  // Moderate volume
-params[3] = 128;  // Center tune
+params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Higher frequency
+params[SWITCHES_PARAM_INDEX] = 160;  // Sawtooth wave
+params[OPERATOR_1_PARAM_INDEX] = 160;  // Moderate volume
+params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Center tune
 
 // Warm triangle
-params[0] = 120;  // Low-mid frequency
-params[1] = 220;  // Triangle wave
-params[2] = 200;  // Good volume
-params[3] = 128;  // Center tune
+params[CLOCK_FREQ_PARAM_INDEX] = 120;  // Low-mid frequency
+params[SWITCHES_PARAM_INDEX] = 220;  // Triangle wave
+params[OPERATOR_1_PARAM_INDEX] = 200;  // Good volume
+params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Center tune
 ```
 
 ## Understanding Waveforms

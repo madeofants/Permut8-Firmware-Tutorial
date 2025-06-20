@@ -8,21 +8,34 @@ Implement state management that allows external systems to save, recall, and syn
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // State management globals
-global array saved_params[8]    // Saved parameter values
+global array saved_params[PARAM_COUNT]    // Saved parameter values
 global int saved_mode = 0       // Saved processing mode
 global int current_mode = 0     // Current processing mode
 global array param_targets[8]   // Target values for smooth transitions
 global array param_steps[8]     // Step sizes for smooth transitions
 global int smooth_active = 0    // Smoothing in progress flag
+
 ```
 
 ## State Capture & Restoration
@@ -111,8 +124,8 @@ function handle_state_commands()
 locals int save_trigger, int restore_trigger, int param_set_mode
 {
     // Read command triggers from higher parameter slots
-    save_trigger = (int)global params[6];      // Save state when > 127
-    restore_trigger = (int)global params[7];   // Restore state when > 127
+    save_trigger = (int)global (int)global params[OPERAND_2_HIGH_PARAM_INDEX];      // Save state when > 127
+    restore_trigger = (int)global (int)global params[OPERAND_2_LOW_PARAM_INDEX];   // Restore state when > 127
     
     // Save state command
     if (save_trigger > 127) {
@@ -124,12 +137,12 @@ locals int save_trigger, int restore_trigger, int param_set_mode
         restore_saved_state();
     }
     
-    // Direct parameter setting mode (params[5] selects which param to set)
-    param_set_mode = (int)global params[5];
+    // Direct parameter setting mode ((int)global params[OPERATOR_2_PARAM_INDEX] selects which param to set)
+    param_set_mode = (int)global (int)global params[OPERATOR_2_PARAM_INDEX];
     if (param_set_mode < 8) {
         // Set specific parameter via external control
-        // Value comes from params[4]
-        global params[param_set_mode] = (int)global params[4];
+        // Value comes from (int)global params[OPERAND_1_LOW_PARAM_INDEX]
+        global params[param_set_mode] = (int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX];
     }
 }
 ```
@@ -145,7 +158,7 @@ global int current_snapshot = 0   // Currently selected snapshot
 function save_to_snapshot()
 locals int slot, int base_index, int i
 {
-    slot = ((int)global params[5] >> 6);  // 0-3 from parameter bits
+    slot = ((int)global (int)global params[OPERATOR_2_PARAM_INDEX] >> 6);  // 0-3 from parameter bits
     if (slot >= 4) return;
     
     base_index = slot * 8;
@@ -169,7 +182,7 @@ locals int slot, int base_index, int i
 function recall_from_snapshot()
 locals int slot, int base_index, int i
 {
-    slot = ((int)global params[5] >> 6);  // 0-3 from parameter bits
+    slot = ((int)global (int)global params[OPERATOR_2_PARAM_INDEX] >> 6);  // 0-3 from parameter bits
     if (slot >= 4) return;
     
     base_index = slot * 8;
@@ -208,7 +221,7 @@ locals int input_sample, int output_sample, int mix_level, int mode_processing
         
         // Process audio based on current mode
         input_sample = (int)global signal[0];
-        mix_level = (int)global params[0];
+        mix_level = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];
         
         if (global current_mode == 0) {
             // Mode 0: Clean pass-through
@@ -241,7 +254,12 @@ locals int input_sample, int output_sample, int mix_level, int mode_processing
         global displayLEDs[0] = mix_level;                    // Main parameter
         global displayLEDs[1] = global current_mode << 6;    // Current mode
         global displayLEDs[2] = global current_snapshot << 6; // Active snapshot
-        global displayLEDs[3] = global smooth_active ? 255 : 64; // Smoothing indicator
+        // Smoothing indicator
+        if (global smooth_active) {
+            global displayLEDs[3] = 255;
+        } else {
+            global displayLEDs[3] = 64;
+        }
         
         yield();
     }

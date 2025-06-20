@@ -22,11 +22,22 @@ Lookup tables (LUTs) replace expensive runtime calculations with pre-computed va
 
 ### Before: Runtime Calculation
 ```impala
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // Expensive: calculates sine wave every sample
 global float osc_phase = 0.0;
 
 function operate1() {
-    float frequency = params[0] * 0.01; // 0-100 Hz
+    float frequency = (int)global params[CLOCK_FREQ_PARAM_INDEX] * 0.01; // 0-100 Hz
     
     int i = 0;
     loop {
@@ -36,6 +47,7 @@ function operate1() {
         i = i + 1;
     }
 }
+
 ```
 
 ### After: Sine Wave Lookup Table
@@ -58,7 +70,7 @@ function initializeSineTable() {
 
 // Fast: table lookup every sample
 function operate1() {
-    float frequency = params[0] * 0.01;
+    float frequency = (int)global params[CLOCK_FREQ_PARAM_INDEX] * 0.01;
     int phase_increment = (frequency * SINE_TABLE_SIZE) / SAMPLE_RATE;
     
     int i = 0;
@@ -173,7 +185,7 @@ function initializeWaveTable() {
 
 // Fast waveform switching
 function operate1() {
-    int waveform = params[0] >> 5;  // 0-3 waveform selection
+    int waveform = (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 5;  // 0-3 waveform selection
     int table_offset = waveform * TABLE_SIZE;
     
     int i = 0;
@@ -209,8 +221,8 @@ function initializeEnvelopeTable() {
 
 // Fast envelope processing
 function operate2() {
-    int attack_time = params[0] * 10;   // 0-1000ms attack
-    int decay_time = params[1] * 10;    // 0-1000ms decay
+    int attack_time = (int)global params[CLOCK_FREQ_PARAM_INDEX] * 10;   // 0-1000ms attack
+    int decay_time = (int)global params[SWITCHES_PARAM_INDEX] * 10;    // 0-1000ms decay
     
     int i = 0;
     loop {

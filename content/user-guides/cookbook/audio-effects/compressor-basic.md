@@ -9,10 +9,10 @@ Automatically reduces the volume of loud signals while leaving quieter signals u
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Threshold (0-255, level where compression starts)
-- `params[1]`: Ratio (0-255, amount of compression)
-- `params[2]`: Attack (0-255, how fast compression engages)
-- `params[3]`: Release (0-255, how fast compression disengages)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Threshold (0-255, level where compression starts)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Ratio (0-255, amount of compression)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Attack (0-255, how fast compression engages)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Release (0-255, how fast compression disengages)
 
 **Key Concepts:** Envelope following, threshold detection, gain reduction, attack/release timing
 
@@ -21,12 +21,24 @@ Automatically reduces the volume of loud signals while leaving quieter signals u
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Simple compressor state
@@ -48,10 +60,10 @@ locals int release_factor
 {
     loop {
         // Read parameters
-        threshold = ((int)global params[0] << 2) + 256;   // 256-1276 range (within audio range)
-        ratio = ((int)global params[1] >> 4) + 2;         // 2-17 ratio (reasonable compression range)
-        attack = ((int)global params[2] >> 5) + 1;        // 1-8 attack speed
-        release = ((int)global params[3] >> 5) + 1;       // 1-8 release speed
+        threshold = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] << 2) + 256;   // 256-1276 range (within audio range)
+        ratio = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 4) + 2;         // 2-17 ratio (reasonable compression range)
+        attack = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 5) + 1;        // 1-8 attack speed
+        release = ((int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 5) + 1;       // 1-8 release speed
         
         // Convert to proper envelope factors
         attack_factor = attack & 7;                       // Limit to 0-7 for reasonable response
@@ -119,6 +131,7 @@ locals int release_factor
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -141,16 +154,16 @@ locals int release_factor
 
 ```impala
 // Gentle vocal compression
-params[0] = 180;  // High threshold
-params[1] = 64;   // 8:1 ratio
-params[2] = 32;   // Medium attack
-params[3] = 128;  // Slow release
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // High threshold
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // 8:1 ratio
+(int)global params[OPERATOR_1_PARAM_INDEX] = 32;   // Medium attack
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Slow release
 
 // Drum compression
-params[0] = 120;  // Lower threshold
-params[1] = 96;   // 12:1 ratio  
-params[2] = 8;    // Fast attack
-params[3] = 64;   // Medium release
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 120;  // Lower threshold
+(int)global params[SWITCHES_PARAM_INDEX] = 96;   // 12:1 ratio  
+(int)global params[OPERATOR_1_PARAM_INDEX] = 8;    // Fast attack
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Medium release
 ```
 
 ## Try These Changes

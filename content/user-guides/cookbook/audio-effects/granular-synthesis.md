@@ -9,10 +9,10 @@ Creates granular synthesis by capturing audio into a buffer and playing back sma
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Grain size (20-100 samples, controls grain duration)
-- `params[1]`: Playback position (0-255, where in buffer to read)
-- `params[2]`: Grain trigger rate (0-255, how often new grains start)
-- `params[3]`: Dry/wet mix (0-255, blend control)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Grain size (20-100 samples, controls grain duration)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Playback position (0-255, where in buffer to read)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Grain trigger rate (0-255, how often new grains start)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Dry/wet mix (0-255, blend control)
 
 **Key Concepts:** Circular buffering, grain windowing, position control, texture creation
 
@@ -21,6 +21,18 @@ Creates granular synthesis by capturing audio into a buffer and playing back sma
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 extern native read              // Read from delay line memory
@@ -28,7 +40,7 @@ extern native write             // Write to delay line memory
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Simple granular state
@@ -54,10 +66,10 @@ locals int read_pos
 {
     loop {
         // Read parameters
-        grain_size = ((int)global params[0] >> 2) + 20;  // 20-83 samples
-        position = (int)global params[1];                // 0-255 position
-        trigger_rate = ((int)global params[2] >> 3) + 1; // 1-32 rate
-        mix = (int)global params[3];                     // 0-255 mix
+        grain_size = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 2) + 20;  // 20-83 samples
+        position = (int)global (int)global params[SWITCHES_PARAM_INDEX];                // 0-255 position
+        trigger_rate = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 3) + 1; // 1-32 rate
+        mix = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];                     // 0-255 mix
         
         // Safety bounds for grain size
         if (grain_size > 100) grain_size = 100;
@@ -142,6 +154,7 @@ locals int read_pos
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -166,16 +179,16 @@ locals int read_pos
 
 ```impala
 // Smooth texture
-params[0] = 200;  // Large grains
-params[1] = 64;   // Slight delay
-params[2] = 128;  // Medium rate
-params[3] = 128;  // 50% mix
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Large grains
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Slight delay
+(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Medium rate
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // 50% mix
 
 // Glitchy texture
-params[0] = 50;   // Small grains
-params[1] = 200;  // Distant position
-params[2] = 32;   // Fast triggers
-params[3] = 200;  // Mostly wet
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 50;   // Small grains
+(int)global params[SWITCHES_PARAM_INDEX] = 200;  // Distant position
+(int)global params[OPERATOR_1_PARAM_INDEX] = 32;   // Fast triggers
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Mostly wet
 ```
 
 ## Try These Changes

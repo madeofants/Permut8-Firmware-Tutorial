@@ -22,9 +22,21 @@ Copy this exact code into your file:
 // My First Filter Plugin
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Global variables that Permut8 provides
 global array signal[2]          // Left/Right audio samples  
-global array params[8]          // Knob values (0-255)
+global array params[PARAM_COUNT]          // Knob values (0-255)
 global array displayLEDs[4]     // LED displays (0-255)
 
 // Our filter state variables
@@ -44,6 +56,7 @@ function process()
         yield()
     }
 }
+
 ```
 
 ### 1.3 Test the Empty Plugin
@@ -74,7 +87,7 @@ function process()
 {
     loop {
         // Get cutoff frequency from first knob (0-255)
-        int cutoffParam = params[3]
+        int cutoffParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]
         
         // Convert to filter coefficient (0-200 for stability)
         int filterMix = (cutoffParam * 200) / 255
@@ -116,7 +129,7 @@ function process()
 {
     loop {
         // Get cutoff frequency from first knob
-        int cutoffParam = params[3]
+        int cutoffParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]
         int filterMix = (cutoffParam * 200) / 255
         
         // Apply filter
@@ -179,8 +192,8 @@ function process()
 {
     loop {
         // Get controls from knobs
-        int cutoffParam = params[3]     // Knob 1: Cutoff frequency
-        int resonanceParam = params[4]  // Knob 2: Resonance amount
+        int cutoffParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]     // Knob 1: Cutoff frequency
+        int resonanceParam = (int)global params[OPERAND_1_LOW_PARAM_INDEX]  // Knob 2: Resonance amount
         
         // Convert to usable values
         int filterMix = (cutoffParam * 200) / 255
@@ -246,8 +259,8 @@ function process()
 {
     loop {
         // Get parameters
-        int cutoffParam = params[3]
-        int resonanceParam = params[4]
+        int cutoffParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]
+        int resonanceParam = (int)global params[OPERAND_1_LOW_PARAM_INDEX]
         int filterMix = (cutoffParam * 200) / 255
         int resonance = (resonanceParam * 150) / 255
         
@@ -293,7 +306,7 @@ Your final `my_filter.impala` should look like this:
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 // Filter state variables
@@ -304,8 +317,8 @@ function process()
 {
     loop {
         // Get parameters from hardware knobs
-        int cutoffParam = params[3]     // Knob 1: Cutoff frequency (0-255)
-        int resonanceParam = params[4]  // Knob 2: Resonance amount (0-255)
+        int cutoffParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]     // Knob 1: Cutoff frequency (0-255)
+        int resonanceParam = (int)global params[OPERAND_1_LOW_PARAM_INDEX]  // Knob 2: Resonance amount (0-255)
         
         // Convert to filter coefficients
         int filterMix = (cutoffParam * 200) / 255      // 0-200 range for stability

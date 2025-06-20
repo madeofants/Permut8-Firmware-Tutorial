@@ -37,7 +37,19 @@ Memory management using fixed-size arrays with no dynamic allocation (no malloc/
 **yield()**  
 Native function that returns control to the audio engine every sample, essential for real-time processing. Must be called once per processing cycle.
 ```impala
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 yield(); // Return control to host
+
 ```
 
 **extern native**  
@@ -83,10 +95,10 @@ Global audio I/O array for stereo processing (left/right channels). Audio sample
 global array signal[2]  // [left, right] audio samples
 ```
 
-**params[8]**  
+**params[PARAM_COUNT]**  
 Global parameter array for hardware knob values (0-255 range).
 ```impala
-global array params[8]  // Knob values (0-255)
+global array params[PARAM_COUNT]  // Knob values (0-255)
 ```
 
 **displayLEDs[4]**  

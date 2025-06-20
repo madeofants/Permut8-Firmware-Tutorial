@@ -9,9 +9,9 @@ Implements studio-style dB (decibel) gain control with logarithmic response that
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Gain level (0-255, mapped to dB range)
-- `params[1]`: Response curve (0-255, controls logarithmic shape)
-- `params[2]`: Smoothing speed (0-255, controls gain change rate)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Gain level (0-255, mapped to dB range)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Response curve (0-255, controls logarithmic shape)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Smoothing speed (0-255, controls gain change rate)
 
 **Common dB Levels:**
 - **Unity Gain**: 0dB (no level change)
@@ -27,12 +27,24 @@ Implements studio-style dB (decibel) gain control with logarithmic response that
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // dB gain control state
@@ -44,9 +56,9 @@ locals int gain_param, int curve_param, int smooth_speed, int gain_step, int out
 {
     loop {
         // Read parameters
-        gain_param = (int)global params[0];     // 0-255 gain level
-        curve_param = (int)global params[1];    // 0-255 response curve
-        smooth_speed = ((int)global params[2] >> 4) + 1;  // 1-16 smoothing rate
+        gain_param = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];     // 0-255 gain level
+        curve_param = (int)global (int)global params[SWITCHES_PARAM_INDEX];    // 0-255 response curve
+        smooth_speed = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;  // 1-16 smoothing rate
         
         // Calculate target gain with logarithmic curve
         if (gain_param == 0) {
@@ -107,6 +119,7 @@ locals int gain_param, int curve_param, int smooth_speed, int gain_step, int out
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -128,24 +141,24 @@ locals int gain_param, int curve_param, int smooth_speed, int gain_step, int out
 
 ```impala
 // Studio mixing level
-params[0] = 192;  // Near unity gain (0dB)
-params[1] = 128;  // Balanced curve
-params[2] = 64;   // Moderate smoothing
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 192;  // Near unity gain (0dB)
+(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Balanced curve
+(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Moderate smoothing
 
 // Background music
-params[0] = 80;   // Quiet level (-20dB)
-params[1] = 64;   // More linear response
-params[2] = 32;   // Faster response
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 80;   // Quiet level (-20dB)
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // More linear response
+(int)global params[OPERATOR_1_PARAM_INDEX] = 32;   // Faster response
 
 // Vocal booth monitoring
-params[0] = 160;  // Moderate level (-6dB)
-params[1] = 200;  // More exponential curve
-params[2] = 128;  // Smooth changes
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 160;  // Moderate level (-6dB)
+(int)global params[SWITCHES_PARAM_INDEX] = 200;  // More exponential curve
+(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Smooth changes
 
 // Mastering chain
-params[0] = 200;  // Light boost (+2dB)
-params[1] = 100;  // Professional curve
-params[2] = 200;  // Very smooth changes
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Light boost (+2dB)
+(int)global params[SWITCHES_PARAM_INDEX] = 100;  // Professional curve
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Very smooth changes
 ```
 
 ## Understanding dB Control

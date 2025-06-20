@@ -39,7 +39,7 @@ global array params[8]  // params[0] through params[7]
 **Raw knob values (0-255) rarely match what you need:**
 ```impala
 // Raw knob value
-int knobValue = params[3]  // 0 to 255
+int knobValue = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // 0 to 255
 
 // What you actually want
 int volume = ?             // 0 to 1000 (for volume control)
@@ -68,7 +68,7 @@ function process()
 {
     loop {
         // Read knob 1 value (0-255)
-        int knobValue = params[3]  // params[3] = first knob
+        int knobValue = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // First knob
         
         // Convert knob to volume (0-255 works fine for volume)
         int volume = knobValue
@@ -149,9 +149,9 @@ function process()
 {
     loop {
         // Read multiple knobs
-        int frequencyKnob = params[3]  // Knob 1: Frequency
-        int volumeKnob = params[4]     // Knob 2: Volume
-        int waveformKnob = params[5]   // Knob 3: Waveform type
+        int frequencyKnob = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // Knob 1: Frequency
+        int volumeKnob = (int)global params[OPERAND_2_LOW_PARAM_INDEX]     // Knob 2: Volume
+        int waveformKnob = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]   // Knob 3: Waveform type
         
         // Scale knob values to useful ranges
         int frequency = 50 + ((frequencyKnob * 950) / 255)  // 50 to 1000
@@ -231,8 +231,8 @@ function process()
 {
     loop {
         // Read knobs
-        int frequencyKnob = params[3]
-        int volumeKnob = params[4]
+        int frequencyKnob = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
+        int volumeKnob = (int)global params[OPERAND_2_LOW_PARAM_INDEX]
         
         // Calculate target values
         int targetFrequency = 50 + ((frequencyKnob * 950) / 255)
@@ -287,11 +287,11 @@ int frequency = 50 + ((scaledKnob * 1950) / 255) // More control in low range
 
 ```impala
 // Quantized parameter (snaps to specific values)
-int rawValue = params[3]
+int rawValue = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
 int quantizedValue = (rawValue / 32) * 32  // Snaps to 0, 32, 64, 96, 128, etc.
 
 // Musical note quantization
-int noteKnob = params[3]
+int noteKnob = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
 int note = noteKnob / 21  // Snaps to 12 different notes (255/21 ≈ 12)
 ```
 
@@ -346,10 +346,10 @@ function process()
         int targetLFODepth = (lfoKnob * 100) / 255
         
         // Smooth all parameters
-        smoothedFrequency += (targetFrequency - smoothedFrequency) / 16
-        smoothedVolume += (targetVolume - smoothedVolume) / 16
-        smoothedFilterCutoff += (targetFilter - smoothedFilterCutoff) / 16
-        smoothedLFODepth += (targetLFODepth - smoothedLFODepth) / 16
+        smoothedFrequency = smoothedFrequency + (targetFrequency - smoothedFrequency) / 16
+        smoothedVolume = smoothedVolume + (targetVolume - smoothedVolume) / 16
+        smoothedFilterCutoff = smoothedFilterCutoff + (targetFilter - smoothedFilterCutoff) / 16
+        smoothedLFODepth = smoothedLFODepth + (targetLFODepth - smoothedLFODepth) / 16
         
         // Generate LFO for frequency modulation
         lfoPhase = (lfoPhase + 50) % 65536

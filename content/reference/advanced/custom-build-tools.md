@@ -658,8 +658,8 @@ class DSPGenerator:
                 float a2 = 1.0 - alpha;
                 ''',
                 'normalization': '''
-                b0 /= a0; b1 /= a0; b2 /= a0;
-                a1 /= a0; a2 /= a0;
+                b0 = b0 / a0; b1 = b1 / a0; b2 = b2 / a0;
+                a1 = a1 / a0; a2 = a2 / a0;
                 '''
             },
             'highpass': {
@@ -678,8 +678,8 @@ class DSPGenerator:
                 float a2 = 1.0 - alpha;
                 ''',
                 'normalization': '''
-                b0 /= a0; b1 /= a0; b2 /= a0;
-                a1 /= a0; a2 /= a0;
+                b0 = b0 / a0; b1 = b1 / a0; b2 = b2 / a0;
+                a1 = a1 / a0; a2 = a2 / a0;
                 '''
             },
             'bandpass': {
@@ -698,8 +698,8 @@ class DSPGenerator:
                 float a2 = 1.0 - alpha;
                 ''',
                 'normalization': '''
-                b0 /= a0; b1 /= a0; b2 /= a0;
-                a1 /= a0; a2 /= a0;
+                b0 = b0 / a0; b1 = b1 / a0; b2 = b2 / a0;
+                a1 = a1 / a0; a2 = a2 / a0;
                 '''
             }
         }

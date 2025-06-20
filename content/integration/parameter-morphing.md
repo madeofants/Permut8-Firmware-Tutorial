@@ -366,7 +366,7 @@ function process() {
         
         // Use morphed parameters for audio processing
         int input = global signal[0];
-        int filtered = apply_filter(input, global params[1]);  // Uses morphed filter cutoff
+        int filtered = apply_filter(input, (int)global params[SWITCHES_PARAM_INDEX]);  // Uses morphed filter cutoff
         global signal[1] = filtered;
         
         // Visual feedback - show envelope and LFO activity

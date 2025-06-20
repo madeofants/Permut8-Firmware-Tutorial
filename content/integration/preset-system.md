@@ -8,19 +8,32 @@ Design firmware that works seamlessly with external preset management systems, a
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Preset state management
-global array preset_params[4]   // Stored parameter values
+global array preset_(int)global params[OPERAND_1_LOW_PARAM_INDEX]   // Stored parameter values
 global int preset_led_state = 0 // Stored LED state
 global int preset_mode = 0      // Stored internal mode
 global int smooth_counter = 0   // Parameter smoothing counter
+
 ```
 
 ## Preset Recall Implementation
@@ -61,18 +74,18 @@ function handle_preset_change()
 locals int cc_num, int value
 {
     // Read CC number from parameter 4
-    cc_num = (int)global params[4];
+    cc_num = (int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX];
     // Read CC value from parameter 5
-    value = (int)global params[5];
+    value = (int)global (int)global params[OPERATOR_2_PARAM_INDEX];
     
     if (cc_num == 0) {
-        global params[0] = value << 3;  // CC0 -> param 0
+        global (int)global params[CLOCK_FREQ_PARAM_INDEX] = value << 3;  // CC0 -> param 0
     } else if (cc_num == 1) {
-        global params[1] = value << 3;  // CC1 -> param 1
+        global (int)global params[SWITCHES_PARAM_INDEX] = value << 3;  // CC1 -> param 1
     } else if (cc_num == 2) {
-        global params[2] = value << 3;  // CC2 -> param 2
+        global (int)global params[OPERATOR_1_PARAM_INDEX] = value << 3;  // CC2 -> param 2
     } else if (cc_num == 3) {
-        global params[3] = value << 3;  // CC3 -> param 3
+        global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] = value << 3;  // CC3 -> param 3
     }
 }
 
@@ -80,7 +93,7 @@ locals int cc_num, int value
 function handle_program_change()
 locals int program_num
 {
-    program_num = (int)global params[6];
+    program_num = (int)global (int)global params[OPERAND_2_HIGH_PARAM_INDEX];
     if (program_num < 4) {  // Support 4 presets
         recall_preset();
     }
@@ -99,7 +112,7 @@ locals int input_sample, int output_sample, int mix_level
         input_sample = (int)global signal[0];
         
         // Apply basic processing using preset-controlled parameters
-        mix_level = (int)global params[0];  // Main control
+        mix_level = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];  // Main control
         output_sample = (input_sample * mix_level) >> 8;
         
         // Prevent clipping
@@ -113,7 +126,7 @@ locals int input_sample, int output_sample, int mix_level
         // Show activity on LEDs
         global displayLEDs[1] = mix_level;
         global displayLEDs[2] = global preset_mode << 6;
-        global displayLEDs[3] = (int)global params[3];
+        global displayLEDs[3] = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
         
         yield();
     }

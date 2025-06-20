@@ -9,10 +9,10 @@ Provides frequency domain filtering that operates directly on spectral component
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Cutoff frequency (0-255, selects frequency bin 0-7)
-- `params[1]`: Filter slope (0-255, steepness control)
-- `params[2]`: Resonance (0-255, peak boost at cutoff)
-- `params[3]`: Filter type (0-255, selects filter characteristic)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Cutoff frequency (0-255, selects frequency bin 0-7)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Filter slope (0-255, steepness control)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Resonance (0-255, peak boost at cutoff)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Filter type (0-255, selects filter characteristic)
 
 **Core Techniques:**
 - **Frequency domain filtering**: Direct spectral manipulation
@@ -27,12 +27,24 @@ Provides frequency domain filtering that operates directly on spectral component
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Spectral filtering state
@@ -47,10 +59,10 @@ locals int i, int cutoff_freq, int filter_slope, int filter_resonance, int input
 {
     loop {
         // Read control parameters
-        cutoff_freq = (int)global params[0] >> 5;        // 0-7 range (cutoff frequency bin)
-        filter_slope = ((int)global params[1] >> 6) + 1; // 1-4 range (filter steepness)
-        filter_resonance = (int)global params[2];        // 0-255 range (resonance amount)
-        global filter_type = (int)global params[3] >> 6; // 0-3 range (filter type)
+        cutoff_freq = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 5;        // 0-7 range (cutoff frequency bin)
+        filter_slope = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 6) + 1; // 1-4 range (filter steepness)
+        filter_resonance = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];        // 0-255 range (resonance amount)
+        global filter_type = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 6; // 0-3 range (filter type)
         
         // Simple frequency analysis from input signal
         global update_counter = global update_counter + 1;
@@ -192,6 +204,7 @@ locals int i, int cutoff_freq, int filter_slope, int filter_resonance, int input
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -224,22 +237,22 @@ locals int i, int cutoff_freq, int filter_slope, int filter_resonance, int input
 
 ```impala
 // Low-pass filter with resonance
-params[0] = 128;  // Mid cutoff frequency (bin 4)
-params[1] = 128;  // Medium slope
-params[2] = 200;  // High resonance
-params[3] = 0;    // Low-pass type
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Mid cutoff frequency (bin 4)
+(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Medium slope
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // High resonance
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 0;    // Low-pass type
 
 // High-pass filter
-params[0] = 64;   // Low cutoff frequency (bin 2)
-params[1] = 192;  // Steep slope
-params[2] = 100;  // Moderate resonance
-params[3] = 64;   // High-pass type
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Low cutoff frequency (bin 2)
+(int)global params[SWITCHES_PARAM_INDEX] = 192;  // Steep slope
+(int)global params[OPERATOR_1_PARAM_INDEX] = 100;  // Moderate resonance
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // High-pass type
 
 // Notch filter for removing specific frequency
-params[0] = 160;  // Higher cutoff (bin 5)
-params[1] = 255;  // Maximum slope
-params[2] = 255;  // Maximum resonance
-params[3] = 192;  // Notch type
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 160;  // Higher cutoff (bin 5)
+(int)global params[SWITCHES_PARAM_INDEX] = 255;  // Maximum slope
+(int)global params[OPERATOR_1_PARAM_INDEX] = 255;  // Maximum resonance
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 192;  // Notch type
 ```
 
 ## Understanding Frequency Bins

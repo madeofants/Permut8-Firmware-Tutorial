@@ -29,25 +29,37 @@ This effect uses all four instruction operands as custom knob controls:
 
 **Suggested Panel Layout**:
 ```impala
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 readonly array panelTextRows[8] = {
     "",
     "",
     "",
-    "CRUSH |-- BIT DEPTH --| |--- DRY/WET ---|",  // params[3] & params[6]
+    "CRUSH |-- BIT DEPTH --| |--- DRY/WET ---|",  // (int)global params[OPERAND_1_HIGH_PARAM_INDEX] & (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
     "",
     "",
     "",
-    "CRUSH |-- RATE DIV ---| |--- GAIN -----|"   // params[4] & params[7]
+    "CRUSH |-- RATE DIV ---| |--- GAIN -----|"   // (int)global params[OPERAND_1_LOW_PARAM_INDEX] & (int)global params[OPERAND_2_LOW_PARAM_INDEX]
 };
+
 ```
 
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[3]`: Bit depth (Instruction 1 High Operand, 0-255, controls quantization amount)
-- `params[4]`: Sample rate reduction (Instruction 1 Low Operand, 0-255, hold factor) 
-- `params[6]`: Dry/wet mix (Instruction 2 High Operand, 0-255, blend control)
-- `params[7]`: Output gain (Instruction 2 Low Operand, 0-255, level compensation)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Bit depth (Instruction 1 High Operand, 0-255, controls quantization amount)
+- `(int)global params[OPERAND_1_LOW_PARAM_INDEX]`: Sample rate reduction (Instruction 1 Low Operand, 0-255, hold factor) 
+- `(int)global params[OPERAND_2_HIGH_PARAM_INDEX]`: Dry/wet mix (Instruction 2 High Operand, 0-255, blend control)
+- `(int)global params[OPERAND_2_LOW_PARAM_INDEX]`: Output gain (Instruction 2 Low Operand, 0-255, level compensation)
 
 **Key Concepts:** Quantization distortion, sample-and-hold, digital artifacts, aliasing effects
 
@@ -73,7 +85,7 @@ extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Simple bitcrusher state
@@ -98,10 +110,10 @@ locals int output_right
 {
     loop {
         // Read parameters (Instruction operands)
-        bits = ((int)global params[3] >> 4) + 1;        // 1-16 effective bit depth (Instruction 1 High)
-        rate_div = ((int)global params[4] >> 3) + 1;    // 1-32 rate division (Instruction 1 Low)
-        mix = (int)global params[6];                    // 0-255 dry/wet mix (Instruction 2 High)
-        gain = ((int)global params[7] >> 1) + 64;       // 64-191 output gain (Instruction 2 Low)
+        bits = ((int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 4) + 1;        // 1-16 effective bit depth (Instruction 1 High)
+        rate_div = ((int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX] >> 3) + 1;    // 1-32 rate division (Instruction 1 Low)
+        mix = (int)global (int)global params[OPERAND_2_HIGH_PARAM_INDEX];                    // 0-255 dry/wet mix (Instruction 2 High)
+        gain = ((int)global (int)global params[OPERAND_2_LOW_PARAM_INDEX] >> 1) + 64;       // 64-191 output gain (Instruction 2 Low)
         
         // Sample rate reduction (hold samples)
         global hold_counter = global hold_counter + 1;
@@ -175,14 +187,14 @@ locals int output_right
 
 ```impala
 // Vintage lo-fi (moderate crushing)
-params[0] = 128;  // 8-bit depth
-params[1] = 64;   // 8x rate reduction  
-params[2] = 180;  // 70% wet mix
-params[3] = 200;  // +6dB gain compensation
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // 8-bit depth
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // 8x rate reduction  
+(int)global params[OPERATOR_1_PARAM_INDEX] = 180;  // 70% wet mix
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // +6dB gain compensation
 
 // Extreme digital destruction  
-params[0] = 32;   // 2-bit depth
-params[1] = 200;  // 25x rate reduction
-params[2] = 255;  // 100% wet
-params[3] = 255;  // Maximum gain
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 32;   // 2-bit depth
+(int)global params[SWITCHES_PARAM_INDEX] = 200;  // 25x rate reduction
+(int)global params[OPERATOR_1_PARAM_INDEX] = 255;  // 100% wet
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 255;  // Maximum gain
 ```

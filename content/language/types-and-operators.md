@@ -23,7 +23,8 @@ Use for control logic and state flags:
 ```impala
 int gate_open = 1                    // Use 1 for true, 0 for false
 int effect_bypass = 0
-if (params[7] > 128) effect_bypass = 1
+// CORRECT: Always use parameter constants
+if ((int)global params[OPERAND_2_LOW_PARAM_INDEX] > 128) effect_bypass = 1;
 
 if (gate_open && (effect_bypass == 0)) {
     // Process audio
@@ -35,6 +36,13 @@ if (gate_open && (effect_bypass == 0)) {
 Fixed-size arrays for buffers and lookup tables:
 
 ```impala
+// Standard global arrays (required)
+global int clock = 0
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global array signal[2]
+
+// Custom arrays for your firmware
 global array delay_line[1024]               // 1024-sample delay buffer
 global array sine_table[256]                // Lookup table for oscillator
 global array coefficients[8] = {64, 32, 16, 8, 4, 2, 1, 1}  // Filter coefficients

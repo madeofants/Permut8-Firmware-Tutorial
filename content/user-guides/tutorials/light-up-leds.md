@@ -164,8 +164,8 @@ function process()
 {
     loop {
         // Read knob values
-        int knob1 = params[3]  // 0-255
-        int knob2 = params[4]  // 0-255
+        int knob1 = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // 0-255
+        int knob2 = (int)global params[OPERAND_2_LOW_PARAM_INDEX]  // 0-255
         
         // Convert to LED bar graphs
         int leds1 = 0
@@ -401,7 +401,7 @@ function process()
 {
     loop {
         // Display 1: Knob 1 value as bar graph
-        int knob1Value = params[3]
+        int knob1Value = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
         displayLEDs[0] = valueToBarGraph(knob1Value)
         
         // Display 2: Audio level meter for left channel
@@ -413,7 +413,7 @@ function process()
         // Display 3: Moving dot based on knob 2 speed
         static int dotPosition = 0
         static int dotCounter = 0
-        int speed = 100 + ((params[4] * 2000) / 255)  // Speed control from knob 2
+        int speed = 100 + (((int)global params[OPERAND_2_LOW_PARAM_INDEX] * 2000) / 255)  // Speed control from knob 2
         
         dotCounter = (dotCounter + 1) % speed
         if (dotCounter == 0) {

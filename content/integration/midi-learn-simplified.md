@@ -8,12 +8,24 @@ Enable dynamic MIDI controller assignment, allowing users to assign any MIDI CC 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // MIDI Learn mapping storage
@@ -23,6 +35,7 @@ global array midi_active[4]      // Active mapping flags (0=inactive, 1=active)
 global int learn_mode = 0        // Learn mode active flag
 global int learn_target = -1     // Parameter being learned (-1 = none)
 global int learn_blink = 0       // LED blink counter for learn mode
+
 ```
 
 ## Learn Mode Implementation
@@ -33,7 +46,7 @@ function enter_learn_mode()
 locals int target_param
 {
     // Use parameter 4 to select which parameter to learn (0-3)
-    target_param = ((int)global params[4] >> 6);  // 0-3 from top 2 bits
+    target_param = ((int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX] >> 6);  // 0-3 from top 2 bits
     
     if (target_param < 4) {
         global learn_mode = 1;
@@ -52,8 +65,8 @@ locals int cc_number, int cc_value, int slot
     if (global learn_mode == 0 || global learn_target < 0) return;
     
     // Read incoming MIDI CC from parameters 5 and 6
-    cc_number = (int)global params[5];  // CC number (0-127)
-    cc_value = (int)global params[6];   // CC value (0-127)
+    cc_number = (int)global (int)global params[OPERATOR_2_PARAM_INDEX];  // CC number (0-127)
+    cc_value = (int)global (int)global params[OPERAND_2_HIGH_PARAM_INDEX];   // CC value (0-127)
     
     // Only process if we have a valid CC
     if (cc_number >= 0 && cc_number <= 127) {
@@ -80,7 +93,7 @@ function check_learn_triggers()
 locals int learn_button
 {
     // Use parameter 7 as learn mode button
-    learn_button = (int)global params[7];
+    learn_button = (int)global (int)global params[OPERAND_2_LOW_PARAM_INDEX];
     
     if (learn_button > 127 && global learn_mode == 0) {
         enter_learn_mode();
@@ -96,8 +109,8 @@ function handle_midi_cc()
 locals int cc_number, int cc_value, int i, int target_param, int scaled_value
 {
     // Read MIDI input from parameters
-    cc_number = (int)global params[5];  // CC number
-    cc_value = (int)global params[6];   // CC value (0-127)
+    cc_number = (int)global (int)global params[OPERATOR_2_PARAM_INDEX];  // CC number
+    cc_value = (int)global (int)global params[OPERAND_2_HIGH_PARAM_INDEX];   // CC value (0-127)
     
     // Check if in learn mode first
     if (global learn_mode == 1) {
@@ -174,7 +187,7 @@ function apply_parameter_inversion()
 locals int invert_mask, int param_idx, int value
 {
     // Use bits of parameter 3 to control which parameters are inverted
-    invert_mask = (int)global params[3];
+    invert_mask = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
     
     param_idx = 0;
     loop {
@@ -208,9 +221,9 @@ locals int input_sample, int output_sample, int mix_level, int filter_amount, in
         
         // Process audio using learned parameters
         input_sample = (int)global signal[0];
-        mix_level = (int)global params[0];      // Can be MIDI controlled
-        filter_amount = (int)global params[1];  // Can be MIDI controlled
-        feedback = (int)global params[2];       // Can be MIDI controlled
+        mix_level = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];      // Can be MIDI controlled
+        filter_amount = (int)global (int)global params[SWITCHES_PARAM_INDEX];  // Can be MIDI controlled
+        feedback = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];       // Can be MIDI controlled
         
         // Simple effect processing
         output_sample = input_sample;
@@ -256,7 +269,7 @@ locals int i
         }
     } else {
         // Show mapping status
-        global displayLEDs[0] = (int)global params[0];  // Show main parameter
+        global displayLEDs[0] = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];  // Show main parameter
         
         // Show active mappings
         i = 0;
@@ -286,10 +299,10 @@ locals int i
 
 ### Parameter Usage:
 - **params[0-3]**: Main audio processing parameters (can be MIDI controlled)
-- **params[4]**: Learn target selection (which parameter to learn)
-- **params[5]**: Incoming MIDI CC number
-- **params[6]**: Incoming MIDI CC value
-- **params[7]**: Learn mode trigger and clear command
+- **(int)global params[OPERAND_1_LOW_PARAM_INDEX]**: Learn target selection (which parameter to learn)
+- **(int)global params[OPERATOR_2_PARAM_INDEX]**: Incoming MIDI CC number
+- **(int)global params[OPERAND_2_HIGH_PARAM_INDEX]**: Incoming MIDI CC value
+- **(int)global params[OPERAND_2_LOW_PARAM_INDEX]**: Learn mode trigger and clear command
 
 ## Benefits
 

@@ -9,10 +9,10 @@ Provides efficient multi-signal mixing techniques for combining oscillators, eff
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Input 1 level (0-255)
-- `params[1]`: Input 2 level (0-255) 
-- `params[2]`: Input 3 level (0-255)
-- `params[3]`: Master level (0-255)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Input 1 level (0-255)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Input 2 level (0-255) 
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Input 3 level (0-255)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Master level (0-255)
 
 **Core Techniques:**
 - **Signal summing**: Linear addition of multiple sources
@@ -27,12 +27,24 @@ Provides efficient multi-signal mixing techniques for combining oscillators, eff
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Mixer state variables
@@ -46,10 +58,10 @@ locals int input1_level, int input2_level, int input3_level, int master_level, i
 {
     loop {
         // Read mixer parameters
-        input1_level = (int)global params[0];      // Input 1 level (0-255)
-        input2_level = (int)global params[1];      // Input 2 level (0-255)
-        input3_level = (int)global params[2];      // Input 3 level (0-255)
-        master_level = (int)global params[3];      // Master level (0-255)
+        input1_level = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];      // Input 1 level (0-255)
+        input2_level = (int)global (int)global params[SWITCHES_PARAM_INDEX];      // Input 2 level (0-255)
+        input3_level = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];      // Input 3 level (0-255)
+        master_level = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];      // Master level (0-255)
         
         // Generate test signals
         // Signal 1: Sine wave
@@ -106,6 +118,7 @@ locals int input1_level, int input2_level, int input3_level, int master_level, i
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -128,28 +141,28 @@ locals int input1_level, int input2_level, int input3_level, int master_level, i
 
 ```impala
 // Balanced mix of all sources
-params[0] = 128;  // 50% sine wave
-params[1] = 128;  // 50% sawtooth
-params[2] = 64;   // 25% noise (background)
-params[3] = 200;  // 78% master level
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // 50% sine wave
+(int)global params[SWITCHES_PARAM_INDEX] = 128;  // 50% sawtooth
+(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // 25% noise (background)
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // 78% master level
 
 // Sine wave dominant
-params[0] = 200;  // 78% sine wave
-params[1] = 64;   // 25% sawtooth
-params[2] = 32;   // 12% noise
-params[3] = 150;  // 59% master level
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // 78% sine wave
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // 25% sawtooth
+(int)global params[OPERATOR_1_PARAM_INDEX] = 32;   // 12% noise
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // 59% master level
 
 // Noise texture emphasis
-params[0] = 100;  // 39% sine wave
-params[1] = 80;   // 31% sawtooth
-params[2] = 180;  // 70% noise
-params[3] = 120;  // 47% master level
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // 39% sine wave
+(int)global params[SWITCHES_PARAM_INDEX] = 80;   // 31% sawtooth
+(int)global params[OPERATOR_1_PARAM_INDEX] = 180;  // 70% noise
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 120;  // 47% master level
 
 // Clean oscillator mix
-params[0] = 160;  // 63% sine wave
-params[1] = 160;  // 63% sawtooth
-params[2] = 0;    // 0% noise
-params[3] = 180;  // 70% master level
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 160;  // 63% sine wave
+(int)global params[SWITCHES_PARAM_INDEX] = 160;  // 63% sawtooth
+(int)global params[OPERATOR_1_PARAM_INDEX] = 0;    // 0% noise
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // 70% master level
 ```
 
 ## Understanding Mixing Mathematics

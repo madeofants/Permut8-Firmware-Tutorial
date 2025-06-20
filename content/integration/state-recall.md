@@ -11,11 +11,23 @@ All code examples have been tested and verified. For a minimal implementation wi
 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
+
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 extern native yield
 
 // Standard Permut8 globals
 global array signal[2]          // Audio I/O: [left, right]
-global array params[8]          // Knob values: 0-255
+global array params[PARAM_COUNT]          // Knob values: 0-255
 global array displayLEDs[4]     // LED displays
 
 // Complete firmware state using parallel arrays (Impala doesn't have structs)
@@ -36,6 +48,7 @@ global int filter_memory = 0
 global int delay_write_pos = 0
 global int oscillator_phase = 0
 global int envelope_state = 0
+
 ```
 
 ## State Capture & Restoration
@@ -359,7 +372,7 @@ function undo_last_change() {
 
 // Automatic undo point creation
 global int last_param_change_time = 0
-global array previous_params[8] = {0,0,0,0,0,0,0,0}
+global array previous_params[PARAM_COUNT] = {0,0,0,0,0,0,0,0}
 global int sample_counter = 0
 const int undo_threshold = 1000  // Create undo point after 1000 samples of no changes
 

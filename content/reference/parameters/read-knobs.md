@@ -26,12 +26,24 @@ Shows how to read knob values from parameters and convert them to useful ranges 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 function process()
@@ -39,10 +51,10 @@ locals int knob1, int knob2, int knob3, int knob4, int gain_level, int cutoff_fr
 {
     loop {
         // Read all knob values (always 0-255 from hardware)
-        knob1 = (int)global params[0];    // First knob
-        knob2 = (int)global params[1];    // Second knob
-        knob3 = (int)global params[2];    // Third knob
-        knob4 = (int)global params[3];    // Fourth knob
+        knob1 = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];    // First knob
+        knob2 = (int)global (int)global params[SWITCHES_PARAM_INDEX];    // Second knob
+        knob3 = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];    // Third knob
+        knob4 = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];    // Fourth knob
         
         // === PARAMETER SCALING EXAMPLES ===
         
@@ -111,6 +123,7 @@ locals int knob1, int knob2, int knob3, int knob4, int gain_level, int cutoff_fr
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -133,28 +146,28 @@ locals int knob1, int knob2, int knob3, int knob4, int gain_level, int cutoff_fr
 
 ```impala
 // Clean signal
-params[0] = 128;  // Medium gain
-params[1] = 200;  // High cutoff (bright)
-params[2] = 0;    // Minimum steps (clean)
-params[3] = 50;   // Light mix
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium gain
+(int)global params[SWITCHES_PARAM_INDEX] = 200;  // High cutoff (bright)
+(int)global params[OPERATOR_1_PARAM_INDEX] = 0;    // Minimum steps (clean)
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 50;   // Light mix
 
 // Distorted sound
-params[0] = 200;  // High gain
-params[1] = 80;   // Low cutoff (dark)
-params[2] = 200;  // High steps (distortion)
-params[3] = 180;  // Heavy mix
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High gain
+(int)global params[SWITCHES_PARAM_INDEX] = 80;   // Low cutoff (dark)
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // High steps (distortion)
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Heavy mix
 
 // Subtle processing
-params[0] = 100;  // Low gain
-params[1] = 150;  // Medium cutoff
-params[2] = 100;  // Medium steps
-params[3] = 80;   // Moderate mix
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Low gain
+(int)global params[SWITCHES_PARAM_INDEX] = 150;  // Medium cutoff
+(int)global params[OPERATOR_1_PARAM_INDEX] = 100;  // Medium steps
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 80;   // Moderate mix
 
 // Extreme effect
-params[0] = 255;  // Maximum gain
-params[1] = 255;  // Maximum cutoff
-params[2] = 255;  // Maximum steps
-params[3] = 255;  // Full wet
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 255;  // Maximum gain
+(int)global params[SWITCHES_PARAM_INDEX] = 255;  // Maximum cutoff
+(int)global params[OPERATOR_1_PARAM_INDEX] = 255;  // Maximum steps
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 255;  // Full wet
 ```
 
 ## Understanding Parameter Reading

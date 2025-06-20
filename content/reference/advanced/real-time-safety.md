@@ -45,7 +45,8 @@ bool pool_allocated[POOL_SIZE] = {false};
 
 int allocate_buffer() {
     // O(1) allocation - bounded execution time
-    for (int i = 0; i < POOL_SIZE; i++) {
+    int i;
+    for (i = 0 to POOL_SIZE) {
         if (!pool_allocated[i]) {
             pool_allocated[i] = true;
             return i;
@@ -208,7 +209,12 @@ void process() {
     float dry = signal[0];
     
     // Branchless selection: 0.0 = bypass, 1.0 = effect
-    float mix = bypass_enabled ? 0.0f : 1.0f;
+    float mix;
+    if (bypass_enabled) {
+        mix = 0.0f;
+    } else {
+        mix = 1.0f;
+    }
     signal[0] = dry * (1.0f - mix) + processed * mix;
 }
 
@@ -235,7 +241,11 @@ float apply_distortion(float input, int type) {
     } else if (type == 1) {
         return tanh(input * 3.0f);
     } else if (type == 2) {
-        return input > 0 ? sqrt(input) : -sqrt(-input);
+        if (input > 0) {
+            return sqrt(input);
+        } else {
+            return -sqrt(-input);
+        }
     } else {
         return input;
     }
@@ -246,7 +256,13 @@ typedef float (*distortion_func)(float);
 
 float hard_clip(float x) { return x * 2.0f; }
 float soft_sat(float x) { return tanh(x * 3.0f); }
-float tube_sim(float x) { return x > 0 ? sqrt(x) : -sqrt(-x); }
+float tube_sim(float x) { 
+    if (x > 0) {
+        return sqrt(x);
+    } else {
+        return -sqrt(-x);
+    }
+}
 float pass_through(float x) { return x; }
 
 static distortion_func distortion_table[] = {
@@ -270,7 +286,8 @@ Audio interrupts must complete within strict deadlines. ISR design directly impa
 // ❌ DANGEROUS: Complex ISR processing
 void audio_interrupt_handler() {
     // Complex processing in ISR increases latency
-    for (int i = 0; i < BLOCK_SIZE; i++) {
+    int i;
+    for (i = 0 to BLOCK_SIZE) {
         float sample = input_buffer[i];
         sample = complex_effect_chain(sample);  // Unbounded execution time
         output_buffer[i] = sample;
@@ -294,7 +311,8 @@ void audio_interrupt_handler() {
 void main_loop() {
     if (audio_ready) {
         // Process audio in main thread context
-        for (int i = 0; i < BLOCK_SIZE; i++) {
+        int i;
+        for (i = 0 to BLOCK_SIZE) {
             process_input[i] = complex_effect_chain(process_input[i]);
         }
         
@@ -362,7 +380,7 @@ struct voice voices[16];  // Array of structures
 void process_voices() {
     // Poor cache usage - loads entire voice struct for each parameter
     for (int i = 0; i < 16; i++) {
-        voices[i].phase += voices[i].frequency * delta_time;
+        voices[i].phase = voices[i].phase + voices[i].frequency * delta_time;
         float sample = sin(voices[i].phase) * voices[i].amplitude;
         // ... more processing ...
     }
@@ -382,11 +400,12 @@ static struct voice_bank voices;
 
 void process_voices() {
     // Excellent cache usage - sequential access to same parameter type
-    for (int i = 0; i < 16; i++) {
-        voices.phase[i] += voices.frequency[i] * delta_time;
+    int i;
+    for (i = 0 to 16) {
+        voices.phase[i] = voices.phase[i] + voices.frequency[i] * delta_time;
     }
     
-    for (int i = 0; i < 16; i++) {
+    for (i = 0 to 16) {
         float sample = sin(voices.phase[i]) * voices.amplitude[i];
         // Process in batches for maximum cache efficiency
     }
@@ -409,22 +428,24 @@ void apply_reverb_random() {
                       delay_buffer[delay_tap2] * 0.2f +
                       delay_buffer[delay_tap3] * 0.1f;
         
-        signal[i] += reverb;
+        signal[i] = signal[i] + reverb;
     }
 }
 
 // ✅ BETTER: Sequential with prefetch
 void apply_reverb_sequential() {
     // Process delay taps in sequential chunks
-    for (int tap = 0; tap < 3; tap++) {
+    int tap;
+    for (tap = 0 to 3) {
         int tap_delays[] = {123, 456, 789};
         float tap_gains[] = {0.3f, 0.2f, 0.1f};
         
         int base_delay = (delay_pos - tap_delays[tap]) & DELAY_MASK;
         
-        for (int i = 0; i < BLOCK_SIZE; i++) {
+        int i;
+        for (i = 0 to BLOCK_SIZE) {
             int delay_index = (base_delay + i) & DELAY_MASK;
-            signal[i] += delay_buffer[delay_index] * tap_gains[tap];
+            signal[i] = signal[i] + delay_buffer[delay_index] * tap_gains[tap];
         }
     }
 }
@@ -456,7 +477,7 @@ void process() {
     uint32_t elapsed = end_cycles - start_cycles;
     
     // Lock-free statistics update
-    perf.cycle_count_total += elapsed;
+    perf.cycle_count_total = perf.cycle_count_total + elapsed;
     if (elapsed > perf.cycle_count_max) {
         perf.cycle_count_max = elapsed;
     }
@@ -690,7 +711,7 @@ void process_envelope(struct envelope* env) {
     
     switch (current_state) {
         case ENV_ATTACK:
-            env->level += env->rate;
+            env->level = env->level + env->rate;
             if (env->level >= env->target) {
                 env->level = env->target;
                 env->target = sustain_level;
@@ -756,19 +777,26 @@ struct stress_test tests[] = {
 };
 
 void run_stress_tests() {
-    for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
+    int i;
+    for (i = 0 to sizeof(tests)/sizeof(tests[0])) {
         printf("Running %s...\n", tests[i].name);
         
         if (tests[i].setup) tests[i].setup();
         
         bool passed = true;
-        for (int iter = 0; iter < tests[i].max_iterations && passed; iter++) {
+        int iter;
+        for (iter = 0 to tests[i].max_iterations) {
+            if (!passed) break;
             passed = tests[i].execute(iter);
         }
         
         if (tests[i].teardown) tests[i].teardown();
         
-        printf("%s: %s\n", tests[i].name, passed ? "PASSED" : "FAILED");
+        if (passed) {
+            printf("%s: PASSED\n", tests[i].name);
+        } else {
+            printf("%s: FAILED\n", tests[i].name);
+        }
     }
 }
 ```

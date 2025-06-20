@@ -27,12 +27,24 @@ Parameter smoothing prevents zipper noise by gradually transitioning between par
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Parameter smoothing state
@@ -46,10 +58,10 @@ locals int cutoff_target, int resonance_target, int volume_target, int input_sam
 {
     loop {
         // Read target parameters from knobs
-        cutoff_target = 200 + (((int)global params[0] * 1800) >> 8);   // 200-2000 Hz range
-        resonance_target = 256 + (((int)global params[1] * 1280) >> 8); // 256-1536 range
-        volume_target = ((int)global params[2] << 3);                   // 0-2040 range
-        global smooth_rate = ((int)global params[3] >> 4) + 1;         // 1-16 rate
+        cutoff_target = 200 + (((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] * 1800) >> 8);   // 200-2000 Hz range
+        resonance_target = 256 + (((int)global (int)global params[SWITCHES_PARAM_INDEX] * 1280) >> 8); // 256-1536 range
+        volume_target = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] << 3);                   // 0-2040 range
+        global smooth_rate = ((int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 4) + 1;         // 1-16 rate
         
         // Smooth cutoff frequency to prevent zipper noise
         global smooth_cutoff = global smooth_cutoff + 
@@ -110,6 +122,7 @@ locals int cutoff_target, int resonance_target, int volume_target, int input_sam
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -132,28 +145,28 @@ locals int cutoff_target, int resonance_target, int volume_target, int input_sam
 
 ```impala
 // Fast, responsive controls
-params[0] = 128;  // Medium cutoff
-params[1] = 100;  // Light resonance
-params[2] = 150;  // Medium volume
-params[3] = 200;  // Fast smoothing
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium cutoff
+(int)global params[SWITCHES_PARAM_INDEX] = 100;  // Light resonance
+(int)global params[OPERATOR_1_PARAM_INDEX] = 150;  // Medium volume
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Fast smoothing
 
 // Slow, ambient changes
-params[0] = 80;   // Lower cutoff
-params[1] = 150;  // More resonance
-params[2] = 120;  // Moderate volume
-params[3] = 32;   // Very slow smoothing
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 80;   // Lower cutoff
+(int)global params[SWITCHES_PARAM_INDEX] = 150;  // More resonance
+(int)global params[OPERATOR_1_PARAM_INDEX] = 120;  // Moderate volume
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 32;   // Very slow smoothing
 
 // Musical transitions
-params[0] = 200;  // Higher cutoff
-params[1] = 80;   // Low resonance
-params[2] = 180;  // Louder volume
-params[3] = 100;  // Medium smoothing
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Higher cutoff
+(int)global params[SWITCHES_PARAM_INDEX] = 80;   // Low resonance
+(int)global params[OPERATOR_1_PARAM_INDEX] = 180;  // Louder volume
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Medium smoothing
 
 // Instant changes (no smoothing)
-params[0] = 255;  // Maximum cutoff
-params[1] = 200;  // High resonance
-params[2] = 255;  // Full volume
-params[3] = 255;  // Maximum rate (instant)
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 255;  // Maximum cutoff
+(int)global params[SWITCHES_PARAM_INDEX] = 200;  // High resonance
+(int)global params[OPERATOR_1_PARAM_INDEX] = 255;  // Full volume
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 255;  // Maximum rate (instant)
 ```
 
 ## Understanding Parameter Smoothing

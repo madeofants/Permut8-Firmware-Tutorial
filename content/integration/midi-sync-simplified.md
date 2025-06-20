@@ -11,9 +11,20 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // MIDI clock state management
@@ -33,9 +44,9 @@ function process_midi_clock()
 locals int midi_message, int start_message, int stop_message, int clock_tick
 {
     // Read MIDI messages from parameters
-    midi_message = (int)global params[4];   // MIDI status byte
-    start_message = (int)global params[5];  // Start/stop commands
-    clock_tick = (int)global params[6];     // Clock tick input
+    midi_message = (int)global params[OPERAND_1_LOW_PARAM_INDEX];   // MIDI status byte
+    start_message = (int)global params[OPERATOR_2_PARAM_INDEX];  // Start/stop commands
+    clock_tick = (int)global params[OPERAND_2_HIGH_PARAM_INDEX];     // Clock tick input
     
     // Handle MIDI Start (FA)
     if (start_message == 250) {  // 0xFA
@@ -131,7 +142,7 @@ locals int division, int clocks_per_note, int samples_per_note, int target_delay
 locals int input, int delayed, int feedback, int output
 {
     // Read delay division setting from parameter
-    division = (int)global params[1] >> 6;  // 0-3 from top 2 bits
+    division = (int)global params[SWITCHES_PARAM_INDEX] >> 6;  // 0-3 from top 2 bits
     
     // Division settings: 1/4, 1/8, 1/16, 1/32 notes
     if (division == 0) {
@@ -158,7 +169,7 @@ locals int input, int delayed, int feedback, int output
     
     // Process delay
     input = (int)global signal[0];
-    feedback = (int)global params[2];  // Feedback amount
+    feedback = (int)global params[OPERATOR_1_PARAM_INDEX];  // Feedback amount
     
     // Read from delay buffer
     delayed = global delay_buffer[global delay_write_pos];
@@ -173,7 +184,7 @@ locals int input, int delayed, int feedback, int output
     }
     
     // Mix delayed signal with input
-    output = input + ((delayed * (int)global params[3]) >> 8);  // Wet level
+    output = input + ((delayed * (int)global params[OPERAND_1_HIGH_PARAM_INDEX]) >> 8);  // Wet level
     
     return output;
 }
@@ -190,7 +201,7 @@ function generate_synced_lfo()
 locals int lfo_division, int clocks_per_cycle, int phase_increment, int lfo_output
 {
     // Read LFO rate from parameter
-    lfo_division = (int)global params[7] >> 5;  // 0-7 divisions
+    lfo_division = (int)global params[OPERAND_2_LOW_PARAM_INDEX] >> 5;  // 0-7 divisions
     
     // Set clock division for LFO rate
     if (lfo_division == 0) {
@@ -265,14 +276,18 @@ locals int gate_open, int gate_level, int audio_sample
     if (gate_open == 1) {
         gate_level = 255;  // Gate open
     } else {
-        gate_level = (int)global params[0] >> 2;  // Closed level (0-63)
+        gate_level = (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 2;  // Closed level (0-63)
     }
     
     // Apply gate
     audio_sample = (audio_sample * gate_level) >> 8;
     
     // Visual feedback
-    global displayLEDs[1] = gate_open ? 255 : 32;
+    if (gate_open) {
+        global displayLEDs[1] = 255;
+    } else {
+        global displayLEDs[1] = 32;
+    }
     global displayLEDs[2] = global current_step << 4;  // Show step
     
     return audio_sample;
@@ -344,14 +359,14 @@ function update_sync_display()
 ## Parameter Usage Guide
 
 ### Control Parameters:
-- **params[0]**: Gate closed level (how much signal when gate closed)
-- **params[1]**: Delay division (bits 6-7: 0=1/4, 1=1/8, 2=1/16, 3=1/32)
-- **params[2]**: Delay feedback amount
-- **params[3]**: Delay wet level
-- **params[4]**: MIDI message input (status bytes)
-- **params[5]**: MIDI start/stop commands
-- **params[6]**: MIDI clock tick input
-- **params[7]**: LFO rate division (bits 5-7)
+- **params[CLOCK_FREQ_PARAM_INDEX]**: Gate closed level (how much signal when gate closed)
+- **params[SWITCHES_PARAM_INDEX]**: Delay division (bits 6-7: 0=1/4, 1=1/8, 2=1/16, 3=1/32)
+- **params[OPERATOR_1_PARAM_INDEX]**: Delay feedback amount
+- **params[OPERAND_1_HIGH_PARAM_INDEX]**: Delay wet level
+- **params[OPERAND_1_LOW_PARAM_INDEX]**: MIDI message input (status bytes)
+- **params[OPERATOR_2_PARAM_INDEX]**: MIDI start/stop commands
+- **params[OPERAND_2_HIGH_PARAM_INDEX]**: MIDI clock tick input
+- **params[OPERAND_2_LOW_PARAM_INDEX]**: LFO rate division (bits 5-7)
 
 ## Key Benefits
 

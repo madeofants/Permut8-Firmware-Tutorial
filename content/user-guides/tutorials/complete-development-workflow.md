@@ -149,6 +149,18 @@ project-name/
 
 // === CONSTANTS AND CONFIGURATION ===
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
+
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // [Project-specific constants]
 
 // === GLOBAL STATE ===
@@ -436,7 +448,7 @@ PikaCmd.exe impala.pika compile -optimize source.impala output.gazl
 function process()
 {
     loop {
-        int result = expensiveCalculation(global params[0])
+        int result = expensiveCalculation((int)global params[CLOCK_FREQ_PARAM_INDEX])
         global signal[0] = result
         yield()
     }
@@ -447,7 +459,7 @@ global int precalculatedValue = 0
 
 function update()
 {
-    global precalculatedValue = expensiveCalculation(global params[0])
+    global precalculatedValue = expensiveCalculation((int)global params[CLOCK_FREQ_PARAM_INDEX])
 }
 
 function process()
@@ -644,8 +656,8 @@ locals int input, int output, int debugCounter
 function update()
 {
     trace("Params updated:")
-    trace("  P1: " + intToString(global params[0]))
-    trace("  P2: " + intToString(global params[1]))
+    trace("  P1: " + intToString((int)global params[CLOCK_FREQ_PARAM_INDEX]))
+    trace("  P2: " + intToString((int)global params[SWITCHES_PARAM_INDEX]))
     
     // Process parameters...
 }
@@ -730,13 +742,13 @@ global int filterState = 0  // Known starting value
 // BUG: No parameter validation
 function update()
 {
-    global frequency = global params[0] * 1000  // Could be huge!
+    global frequency = (int)global params[CLOCK_FREQ_PARAM_INDEX] * 1000  // Could be huge!
 }
 
 // FIX: Validate and clamp parameters
 function update()
 {
-    int param = global params[0]
+    int param = (int)global params[CLOCK_FREQ_PARAM_INDEX]
     if (param < 0) param = 0
     if (param > 255) param = 255
     global frequency = 20 + (param * 19980 / 255)  // 20Hz to 20kHz

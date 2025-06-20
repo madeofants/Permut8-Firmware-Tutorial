@@ -9,7 +9,7 @@ Switches and modes provide discrete control options that complement continuous p
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0-7]`: Switch inputs (0-127=off, 128-255=on)
+- `params[CLOCK_FREQ_PARAM_INDEX-OPERAND_2_LOW_PARAM_INDEX]`: Switch inputs (0-127=off, 128-255=on)
 - `mode_count`: Number of available states
 - `current_mode`: Active processing mode
 - `last_switch`: Previous switch state (for edge detection)
@@ -27,12 +27,23 @@ Switches and modes provide discrete control options that complement continuous p
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Switch and mode state
@@ -46,7 +57,7 @@ locals int switch_input, int switch_pressed, int mode_select, int input_sample, 
 {
     loop {
         // Read mode switch with debouncing
-        switch_input = (int)global params[0];
+        switch_input = (int)global params[CLOCK_FREQ_PARAM_INDEX];
         switch_pressed = 0;
         
         // Convert parameter to binary switch state
@@ -77,14 +88,14 @@ locals int switch_input, int switch_pressed, int mode_select, int input_sample, 
         }
         
         // Read bypass switch from second parameter
-        if ((int)global params[1] > 127) {
+        if ((int)global params[SWITCHES_PARAM_INDEX] > 127) {
             global bypass_active = 1;
         } else {
             global bypass_active = 0;
         }
         
         // Read mode selection from third parameter (direct select)
-        mode_select = ((int)global params[2] * 3) >> 8;  // 0-255 → 0-3
+        mode_select = ((int)global params[OPERATOR_1_PARAM_INDEX] * 3) >> 8;  // 0-255 → 0-3
         
         // Use direct mode select if different from current mode
         if (mode_select == global current_mode) {
@@ -168,24 +179,24 @@ locals int switch_input, int switch_pressed, int mode_select, int input_sample, 
 
 ```impala
 // Mode cycling with button
-params[0] = 200;  // Button pressed
-params[1] = 64;   // Bypass off
-params[2] = 0;    // Direct select off
+params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Button pressed
+params[SWITCHES_PARAM_INDEX] = 64;   // Bypass off
+params[OPERATOR_1_PARAM_INDEX] = 0;    // Direct select off
 
 // Direct mode selection
-params[0] = 64;   // Button not pressed
-params[1] = 64;   // Bypass off
-params[2] = 128;  // Select mode 1
+params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Button not pressed
+params[SWITCHES_PARAM_INDEX] = 64;   // Bypass off
+params[OPERATOR_1_PARAM_INDEX] = 128;  // Select mode 1
 
 // Bypass active
-params[0] = 64;   // Button not pressed
-params[1] = 200;  // Bypass on
-params[2] = 200;  // Any mode
+params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Button not pressed
+params[SWITCHES_PARAM_INDEX] = 200;  // Bypass on
+params[OPERATOR_1_PARAM_INDEX] = 200;  // Any mode
 
 // Clean signal
-params[0] = 64;   // Button not pressed
-params[1] = 64;   // Bypass off
-params[2] = 0;    // Mode 0 (clean)
+params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Button not pressed
+params[SWITCHES_PARAM_INDEX] = 64;   // Bypass off
+params[OPERATOR_1_PARAM_INDEX] = 0;    // Mode 0 (clean)
 ```
 
 ## Understanding Switch Control

@@ -9,10 +9,10 @@ Creates tempo-synchronized effects using internal timing for rhythmic delays, ga
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Tempo/BPM (0-255)
-- `params[1]`: Subdivision (whole, half, quarter, eighth notes)
-- `params[2]`: Gate width (0-255)
-- `params[3]`: Effect amount (0-255)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Tempo/BPM (0-255)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Subdivision (whole, half, quarter, eighth notes)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Gate width (0-255)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Effect amount (0-255)
 
 **Core Techniques:**
 - **Beat tracking**: Count samples to track musical beats
@@ -27,12 +27,24 @@ Creates tempo-synchronized effects using internal timing for rhythmic delays, ga
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Tempo synchronization state
@@ -48,10 +60,10 @@ locals int tempo_param, int subdivision, int gate_width, int effect_amount, int 
 {
     loop {
         // Read tempo and timing parameters
-        tempo_param = (int)global params[0];      // 0-255 tempo control
-        subdivision = (int)global params[1] >> 6; // 0-3 subdivision (4 types)
-        gate_width = (int)global params[2];       // 0-255 gate width
-        effect_amount = (int)global params[3];    // 0-255 effect intensity
+        tempo_param = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];      // 0-255 tempo control
+        subdivision = (int)global (int)global params[SWITCHES_PARAM_INDEX] >> 6; // 0-3 subdivision (4 types)
+        gate_width = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];       // 0-255 gate width
+        effect_amount = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];    // 0-255 effect intensity
         
         // Calculate BPM from parameter (60-180 BPM range)
         bpm_value = 60 + ((tempo_param * 120) >> 8);  // 60-180 BPM
@@ -145,6 +157,7 @@ locals int tempo_param, int subdivision, int gate_width, int effect_amount, int 
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -171,28 +184,28 @@ locals int tempo_param, int subdivision, int gate_width, int effect_amount, int 
 
 ```impala
 // Fast rhythmic gating
-params[0] = 200;  // High tempo (170 BPM)
-params[1] = 192;  // Eighth note subdivision
-params[2] = 100;  // Short gate width
-params[3] = 150;  // Medium delay feedback
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High tempo (170 BPM)
+(int)global params[SWITCHES_PARAM_INDEX] = 192;  // Eighth note subdivision
+(int)global params[OPERATOR_1_PARAM_INDEX] = 100;  // Short gate width
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Medium delay feedback
 
 // Slow tempo with long gates
-params[0] = 80;   // Low tempo (100 BPM)
-params[1] = 64;   // Half note subdivision
-params[2] = 200;  // Long gate width
-params[3] = 100;  // Light delay feedback
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 80;   // Low tempo (100 BPM)
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Half note subdivision
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Long gate width
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Light delay feedback
 
 // Medium tempo, quarter notes
-params[0] = 128;  // Medium tempo (120 BPM)
-params[1] = 128;  // Quarter note subdivision
-params[2] = 128;  // 50% gate width
-params[3] = 180;  // Heavy delay feedback
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium tempo (120 BPM)
+(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Quarter note subdivision
+(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // 50% gate width
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Heavy delay feedback
 
 // Very slow whole notes
-params[0] = 60;   // Slow tempo (90 BPM)
-params[1] = 0;    // Whole note subdivision
-params[2] = 255;  // Full gate width
-params[3] = 80;   // Subtle delay
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 60;   // Slow tempo (90 BPM)
+(int)global params[SWITCHES_PARAM_INDEX] = 0;    // Whole note subdivision
+(int)global params[OPERATOR_1_PARAM_INDEX] = 255;  // Full gate width
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 80;   // Subtle delay
 ```
 
 ## Understanding Tempo Sync

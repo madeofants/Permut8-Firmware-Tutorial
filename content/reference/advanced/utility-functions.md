@@ -315,8 +315,8 @@ namespace Profiler {
     // End timing measurement
     void endTimer(PerformanceCounter* counter) {
         int elapsed = getCurrentCycles() - counter->startTime;
-        counter->totalTime += elapsed;
-        counter->callCount++;
+        counter->totalTime = counter->totalTime + elapsed;
+        counter->callCount = counter->callCount + 1;
         if (elapsed > counter->maxTime) {
             counter->maxTime = elapsed;
         }
@@ -365,9 +365,9 @@ namespace MemoryDebug {
     void* debugMalloc(int size, const char* file, int line) {
         void* ptr = malloc(size);
         if (ptr) {
-            memStats.totalAllocated += size;
-            memStats.currentUsage += size;
-            memStats.allocationCount++;
+            memStats.totalAllocated = memStats.totalAllocated + size;
+            memStats.currentUsage = memStats.currentUsage + size;
+            memStats.allocationCount = memStats.allocationCount + 1;
             
             if (memStats.currentUsage > memStats.peakUsage) {
                 memStats.peakUsage = memStats.currentUsage;
@@ -384,8 +384,8 @@ namespace MemoryDebug {
     void debugFree(void* ptr, int size, const char* file, int line) {
         if (ptr) {
             free(ptr);
-            memStats.currentUsage -= size;
-            memStats.freeCount++;
+            memStats.currentUsage = memStats.currentUsage - size;
+            memStats.freeCount = memStats.freeCount + 1;
             
             #ifdef DEBUG
                 printf("FREE: %p, size=%d, %s:%d\n", ptr, size, file, line);
@@ -502,8 +502,8 @@ namespace Diagnostics {
             float sample = buffer[i];
             if (sample < min) min = sample;
             if (sample > max) max = sample;
-            sum += sample;
-            sumSquares += sample * sample;
+            sum = sum + sample;
+            sumSquares = sumSquares + (sample * sample);
         }
         
         float mean = sum / size;
@@ -549,12 +549,12 @@ namespace UnitTest {
     
     // Test assertion
     void testAssert(bool condition, const char* testName) {
-        testStats.totalTests++;
+        testStats.totalTests = testStats.totalTests + 1;
         if (condition) {
-            testStats.passedTests++;
+            testStats.passedTests = testStats.passedTests + 1;
             printf("PASS: %s\n", testName);
         } else {
-            testStats.failedTests++;
+            testStats.failedTests = testStats.failedTests + 1;
             printf("FAIL: %s\n", testName);
         }
     }
@@ -656,7 +656,8 @@ void advancedFirmware() {
     // Diagnostic output (debug builds only)
     #ifdef DEBUG
         static int debugCounter = 0;
-        if (++debugCounter % 48000 == 0) {  // Every second
+        debugCounter = debugCounter + 1;
+        if (debugCounter % 48000 == 0) {  // Every second
             Diagnostics::logMessage(LOG_INFO, "Average processing time: %.2f cycles", 
                                    Profiler::getAverageTime(&mainCounter));
         }

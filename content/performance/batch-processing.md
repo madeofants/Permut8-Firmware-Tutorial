@@ -22,6 +22,17 @@ Batch processing is a fundamental optimization technique for DSP firmware that p
 
 ### Before: Single-Sample Processing
 ```impala
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // Inefficient: processes one sample at a time
 function process() {
     int i = 0;
@@ -44,6 +55,7 @@ function applySaturation(float sample) returns float result {
         result = sample;
     }
 }
+
 ```
 
 ### After: Batch Processing
@@ -165,8 +177,8 @@ function operate1() {
 ```impala
 // Efficient batch delay processing
 function operate2() {
-    float delay_samples = params[0] * 0.1; // 0-100ms delay
-    float feedback = params[1] * 0.01;     // 0-100% feedback
+    float delay_samples = (int)global params[CLOCK_FREQ_PARAM_INDEX] * 0.1; // 0-100ms delay
+    float feedback = (int)global params[SWITCHES_PARAM_INDEX] * 0.01;     // 0-100% feedback
     
     // Process in batches of 16 for optimal cache usage
     int i = 0;

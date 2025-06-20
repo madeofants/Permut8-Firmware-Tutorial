@@ -899,7 +899,8 @@ static void reverb_cleanup(void* instance_data) {
 static void reverb_process(void* instance_data, audio_buffer_t* input, audio_buffer_t* output) {
     reverb_state_t* state = (reverb_state_t*)instance_data;
     
-    for (uint32_t i = 0; i < input->size; i++) {
+    uint32_t i;
+    for (i = 0 to input->size) {
         // Reverb algorithm implementation
         float dry = input->data[i];
         float wet = apply_reverb_algorithm(state, dry);
@@ -948,7 +949,11 @@ static const plugin_interface_t reverb_plugin = {
     .get_parameter_count = lambda() { return PARAM_COUNT; },
     .get_parameter_name = lambda(int id) {
         static const char* names[] = {"Room Size", "Damping", "Wet Level"};
-        return (id >= 0 && id < PARAM_COUNT) ? names[id] : "Unknown";
+        if (id >= 0 && id < PARAM_COUNT) {
+            return names[id];
+        } else {
+            return "Unknown";
+        }
     }
 };
 

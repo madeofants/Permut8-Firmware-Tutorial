@@ -9,9 +9,9 @@ Level metering displays audio signal levels using LED indicators. It shows peak 
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Meter sensitivity (0-255, controls response speed)
-- `params[1]`: Display mode (0-255, selects different meter types)
-- `params[2]`: Peak hold time (0-255, how long peaks are displayed)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Meter sensitivity (0-255, controls response speed)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Display mode (0-255, selects different meter types)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Peak hold time (0-255, how long peaks are displayed)
 
 **Meter Types:**
 - **Peak meter**: Shows instantaneous signal peaks
@@ -25,12 +25,24 @@ Level metering displays audio signal levels using LED indicators. It shows peak 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Level meter state
@@ -44,9 +56,9 @@ locals int sensitivity, int meter_mode, int hold_time, int left_level, int right
 {
     loop {
         // Read parameters
-        sensitivity = ((int)global params[0] >> 4) + 1;  // 1-16 sensitivity
-        meter_mode = ((int)global params[1] >> 6);        // 0-3 meter types
-        hold_time = ((int)global params[2] << 4);         // 0-4080 hold time
+        sensitivity = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 4) + 1;  // 1-16 sensitivity
+        meter_mode = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 6);        // 0-3 meter types
+        hold_time = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] << 4);         // 0-4080 hold time
         
         // Get absolute signal levels
         left_level = (int)global signal[0];
@@ -117,6 +129,7 @@ locals int sensitivity, int meter_mode, int hold_time, int left_level, int right
         }
         
         yield();
+
 ```
 
 ## How It Works
@@ -142,24 +155,24 @@ locals int sensitivity, int meter_mode, int hold_time, int left_level, int right
 
 ```impala
 // Standard peak meter
-params[0] = 128;  // Medium sensitivity
-params[1] = 0;    // Peak mode
-params[2] = 100;  // Short peak hold
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium sensitivity
+(int)global params[SWITCHES_PARAM_INDEX] = 0;    // Peak mode
+(int)global params[OPERATOR_1_PARAM_INDEX] = 100;  // Short peak hold
 
 // Average level meter
-params[0] = 64;   // Lower sensitivity
-params[1] = 64;   // Average mode
-params[2] = 0;    // No peak hold
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Lower sensitivity
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Average mode
+(int)global params[OPERATOR_1_PARAM_INDEX] = 0;    // No peak hold
 
 // Combined display
-params[0] = 200;  // High sensitivity
-params[1] = 192;  // Combined mode
-params[2] = 200;  // Long peak hold
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High sensitivity
+(int)global params[SWITCHES_PARAM_INDEX] = 192;  // Combined mode
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Long peak hold
 
 // Slow monitoring
-params[0] = 32;   // Very low sensitivity
-params[1] = 128;  // Peak hold mode
-params[2] = 255;  // Maximum hold time
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 32;   // Very low sensitivity
+(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Peak hold mode
+(int)global params[OPERATOR_1_PARAM_INDEX] = 255;  // Maximum hold time
 ```
 
 ## Understanding Level Metering

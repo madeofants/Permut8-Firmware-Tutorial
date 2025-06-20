@@ -11,8 +11,8 @@ Parameter mapping transforms raw operand values (0-255) into meaningful ranges f
 ### **Understanding the Interface System**
 
 **Original Permut8 Interface:**
-- **Instruction 1**: High Operand (`params[3]`) + Low Operand (`params[4]`)
-- **Instruction 2**: High Operand (`params[6]`) + Low Operand (`params[7]`)
+- **Instruction 1**: High Operand (`params[OPERAND_1_HIGH_PARAM_INDEX]`) + Low Operand (`params[OPERAND_1_LOW_PARAM_INDEX]`)
+- **Instruction 2**: High Operand (`params[OPERAND_2_HIGH_PARAM_INDEX]`) + Low Operand (`params[OPERAND_2_LOW_PARAM_INDEX]`)
 - **User Control**: Scrollable LED displays + bit switches (8 switches per operand)
 - **Display**: Each operand shows as hex value (00-FF) representing 0-255
 
@@ -30,14 +30,14 @@ Parameter mapping transforms raw operand values (0-255) into meaningful ranges f
 //    Custom: User turns knob to middle position
 //
 // 2. Parameter Storage:
-//    params[3] = 128  (same value, different input method)
+//    params[OPERAND_1_HIGH_PARAM_INDEX] = 128  (same value, different input method)
 //
 // 3. Algorithm Processing:
-int cutoff_freq = ((int)params[3] * 8000) / 255;  // 0-8000 Hz range
+int cutoff_freq = ((int)params[OPERAND_1_HIGH_PARAM_INDEX] * 8000) / 255;  // 0-8000 Hz range
 //    Result: 128 * 8000 / 255 = ~4000 Hz
 //
 // 4. LED Feedback:
-displayLEDs[0] = params[3];  // Show current parameter state
+displayLEDs[0] = params[OPERAND_1_HIGH_PARAM_INDEX];  // Show current parameter state
 ```
 
 ### **panelTextRows Layout System**
@@ -46,24 +46,24 @@ readonly array panelTextRows[8] = {
     "",                                // Row 0
     "",                                // Row 1
     "",                                // Row 2
-    "FILTER |-- CUTOFF --| |-- RESO --|", // Row 3: params[3] left, params[6] right
+    "FILTER |-- CUTOFF --| |-- RESO --|", // Row 3: params[OPERAND_1_HIGH_PARAM_INDEX] left, params[OPERAND_2_HIGH_PARAM_INDEX] right
     "",                                // Row 4
     "",                                // Row 5
     "",                                // Row 6
-    "EFFECT |-- MIX -----| |-- GAIN --|"  // Row 7: params[4] left, params[7] right
+    "EFFECT |-- MIX -----| |-- GAIN --|"  // Row 7: params[OPERAND_1_LOW_PARAM_INDEX] left, params[OPERAND_2_LOW_PARAM_INDEX] right
 };
 
 // Layout maps to parameter positions:
-// Row 3: Instruction High Operands (params[3], params[6])
-// Row 7: Instruction Low Operands (params[4], params[7])
+// Row 3: Instruction High Operands (params[OPERAND_1_HIGH_PARAM_INDEX], params[OPERAND_2_HIGH_PARAM_INDEX])
+// Row 7: Instruction Low Operands (params[OPERAND_1_LOW_PARAM_INDEX], params[OPERAND_2_LOW_PARAM_INDEX])
 ```
 
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[3,4,6,7]`: Instruction operand values (0-255)
-- `params[0]`: Clock frequency (system controlled)
-- `params[1]`: Switch states (bitmask)
+- `params[OPERAND_1_HIGH_PARAM_INDEX,OPERAND_1_LOW_PARAM_INDEX,OPERAND_2_HIGH_PARAM_INDEX,OPERAND_2_LOW_PARAM_INDEX]`: Instruction operand values (0-255)
+- `params[CLOCK_FREQ_PARAM_INDEX]`: Clock frequency (system controlled)
+- `params[SWITCHES_PARAM_INDEX]`: Switch states (bitmask)
 - `target_range`: Your algorithm's useful range (often 0-2047)
 - `smoothing`: Prevents parameter clicks during changes
 
@@ -80,12 +80,23 @@ readonly array panelTextRows[8] = {
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Parameter smoothing state
@@ -98,14 +109,14 @@ locals int cutoff_target, int resonance_target, int mix_target, int filtered_sig
 {
     loop {
         // Linear mapping: Mix control (0-2047 range)
-        mix_target = ((int)global params[0] << 3);  // 0-255 → 0-2040
+        mix_target = ((int)global params[CLOCK_FREQ_PARAM_INDEX] << 3);  // 0-255 → 0-2040
         
         // Exponential mapping: Cutoff frequency (200-2000 range)
-        cutoff_target = 200 + (((int)global params[1] * (int)global params[1]) >> 4); // Quadratic curve
+        cutoff_target = 200 + (((int)global params[SWITCHES_PARAM_INDEX] * (int)global params[SWITCHES_PARAM_INDEX]) >> 4); // Quadratic curve
         if (cutoff_target > 2000) cutoff_target = 2000;
         
         // Linear with offset: Resonance (256-1792 range for stable filter)
-        resonance_target = 256 + (((int)global params[2] * 1536) >> 8);
+        resonance_target = 256 + (((int)global params[OPERATOR_1_PARAM_INDEX] * 1536) >> 8);
         
         // Smooth parameter changes to prevent clicks
         global smooth_cutoff = global smooth_cutoff + ((cutoff_target - global smooth_cutoff) >> 4);
@@ -139,7 +150,7 @@ locals int cutoff_target, int resonance_target, int mix_target, int filtered_sig
         global displayLEDs[0] = global smooth_cutoff >> 3; // Show cutoff
         global displayLEDs[1] = global smooth_resonance >> 3; // Show resonance
         global displayLEDs[2] = global smooth_mix >> 3;   // Show mix level
-        global displayLEDs[3] = (int)global params[3];    // Show raw param 4
+        global displayLEDs[3] = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];    // Show raw param 4
         
         yield();
     }
@@ -165,24 +176,24 @@ locals int cutoff_target, int resonance_target, int mix_target, int filtered_sig
 
 ```impala
 // Smooth mixing
-params[0] = 128;  // 50% mix
-params[1] = 100;  // Low cutoff
-params[2] = 80;   // Light resonance
+params[CLOCK_FREQ_PARAM_INDEX] = 128;  // 50% mix
+params[SWITCHES_PARAM_INDEX] = 100;  // Low cutoff
+params[OPERATOR_1_PARAM_INDEX] = 80;   // Light resonance
 
 // Bright sound
-params[0] = 200;  // Heavy wet signal
-params[1] = 200;  // High cutoff
-params[2] = 60;   // Low resonance
+params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Heavy wet signal
+params[SWITCHES_PARAM_INDEX] = 200;  // High cutoff
+params[OPERATOR_1_PARAM_INDEX] = 60;   // Low resonance
 
 // Dark sound
-params[0] = 80;   // Light wet signal
-params[1] = 50;   // Very low cutoff
-params[2] = 150;  // High resonance
+params[CLOCK_FREQ_PARAM_INDEX] = 80;   // Light wet signal
+params[SWITCHES_PARAM_INDEX] = 50;   // Very low cutoff
+params[OPERATOR_1_PARAM_INDEX] = 150;  // High resonance
 
 // Extreme effect
-params[0] = 255;  // Full wet
-params[1] = 255;  // Maximum cutoff
-params[2] = 200;  // Strong resonance
+params[CLOCK_FREQ_PARAM_INDEX] = 255;  // Full wet
+params[SWITCHES_PARAM_INDEX] = 255;  // Maximum cutoff
+params[OPERATOR_1_PARAM_INDEX] = 200;  // Strong resonance
 ```
 
 ## Understanding Parameter Curves

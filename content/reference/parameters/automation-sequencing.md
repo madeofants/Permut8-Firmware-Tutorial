@@ -9,10 +9,10 @@ Provides step-based automation sequencing for parameters, enabling complex evolv
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Sequence speed (0-255)
-- `params[1]`: Step length (1-16 steps)
-- `params[2]`: Pattern type (0-255)
-- `params[3]`: Sequence enable (>128 = on)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Sequence speed (0-255)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Step length (1-16 steps)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Pattern type (0-255)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Sequence enable (>128 = on)
 
 **Core Techniques:**
 - **Step sequencing**: Preset parameter values advance over time
@@ -27,12 +27,24 @@ Provides step-based automation sequencing for parameters, enabling complex evolv
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Automation sequencer state
@@ -47,10 +59,10 @@ locals int sequence_speed, int pattern_length, int pattern_type, int sequence_en
 {
     loop {
         // Read sequencer control parameters
-        sequence_speed = (int)global params[0];           // 0-255 speed
-        pattern_length = ((int)global params[1] >> 5) + 1; // 1-8 steps
-        pattern_type = (int)global params[2] >> 6;        // 0-3 pattern types
-        sequence_enable = (int)global params[3];          // Enable/disable
+        sequence_speed = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];           // 0-255 speed
+        pattern_length = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 5) + 1; // 1-8 steps
+        pattern_type = (int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 6;        // 0-3 pattern types
+        sequence_enable = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];          // Enable/disable
         
         // Calculate step timing based on speed
         step_length = 11025 - ((sequence_speed * 10800) >> 8); // 225-11025 samples
@@ -158,6 +170,7 @@ locals int sequence_speed, int pattern_length, int pattern_type, int sequence_en
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -184,28 +197,28 @@ locals int sequence_speed, int pattern_length, int pattern_type, int sequence_en
 
 ```impala
 // Fast rhythmic filter
-params[0] = 200;  // Fast speed
-params[1] = 64;   // 3-step pattern
-params[2] = 64;   // Alternating pattern
-params[3] = 200;  // Sequence on
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Fast speed
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // 3-step pattern
+(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Alternating pattern
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Sequence on
 
 // Slow evolution
-params[0] = 50;   // Slow speed
-params[1] = 255;  // 8-step pattern
-params[2] = 0;    // Rising pattern
-params[3] = 200;  // Sequence on
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 50;   // Slow speed
+(int)global params[SWITCHES_PARAM_INDEX] = 255;  // 8-step pattern
+(int)global params[OPERATOR_1_PARAM_INDEX] = 0;    // Rising pattern
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Sequence on
 
 // Random variations
-params[0] = 128;  // Medium speed
-params[1] = 160;  // 6-step pattern
-params[2] = 128;  // Random pattern
-params[3] = 200;  // Sequence on
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium speed
+(int)global params[SWITCHES_PARAM_INDEX] = 160;  // 6-step pattern
+(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Random pattern
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Sequence on
 
 // Sequence off (manual control)
-params[0] = 100;  // Any speed
-params[1] = 100;  // Any length
-params[2] = 100;  // Any pattern
-params[3] = 64;   // Sequence off
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Any speed
+(int)global params[SWITCHES_PARAM_INDEX] = 100;  // Any length
+(int)global params[OPERATOR_1_PARAM_INDEX] = 100;  // Any pattern
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Sequence off
 ```
 
 ## Understanding Automation Sequencing

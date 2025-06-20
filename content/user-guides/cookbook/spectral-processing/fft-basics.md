@@ -9,10 +9,10 @@ Provides simplified frequency domain analysis by computing basic spectral compon
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Spectral sensitivity (0-255, adjusts frequency detection)
-- `params[1]`: Window type (0-255, future enhancement)
-- `params[2]`: Analysis rate (0-255, controls update frequency)
-- `params[3]`: Display mode (0-255, visualization style)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Spectral sensitivity (0-255, adjusts frequency detection)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Window type (0-255, future enhancement)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Analysis rate (0-255, controls update frequency)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Display mode (0-255, visualization style)
 
 **Core Techniques:**
 - **8-point DFT**: Simplified frequency analysis
@@ -27,12 +27,24 @@ Provides simplified frequency domain analysis by computing basic spectral compon
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Simple spectral analysis (8-point DFT approximation)
@@ -46,9 +58,9 @@ locals int analysis_rate, int window_type, int display_mode, int i, int real_par
 {
     loop {
         // Read control parameters
-        analysis_rate = ((int)global params[2] >> 6) + 1;  // 1-4 range (update rate)
-        window_type = (int)global params[1] >> 6;           // 0-3 range (window type)
-        display_mode = (int)global params[3] >> 6;          // 0-3 range (display mode)
+        analysis_rate = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 6) + 1;  // 1-4 range (update rate)
+        window_type = (int)global (int)global params[SWITCHES_PARAM_INDEX] >> 6;           // 0-3 range (window type)
+        display_mode = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 6;          // 0-3 range (display mode)
         
         // Read input and store in buffer
         global input_buffer[(int)global buffer_index] = (int)global signal[0];
@@ -146,6 +158,7 @@ locals int analysis_rate, int window_type, int display_mode, int i, int real_par
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -177,22 +190,22 @@ Each LED on ring 0 shows the energy in one frequency bin.
 
 ```impala
 // Fast spectral analysis
-params[0] = 200;  // High sensitivity
-params[1] = 0;    // Basic window
-params[2] = 255;  // Fastest update rate
-params[3] = 0;    // Standard display
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High sensitivity
+(int)global params[SWITCHES_PARAM_INDEX] = 0;    // Basic window
+(int)global params[OPERATOR_1_PARAM_INDEX] = 255;  // Fastest update rate
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 0;    // Standard display
 
 // Slow detailed analysis
-params[0] = 128;  // Normal sensitivity
-params[1] = 64;   // Enhanced window
-params[2] = 64;   // Slower updates
-params[3] = 128;  // Enhanced display
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Normal sensitivity
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Enhanced window
+(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Slower updates
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Enhanced display
 
 // Real-time monitoring
-params[0] = 150;  // Good sensitivity
-params[1] = 128;  // Advanced window
-params[2] = 200;  // Fast updates
-params[3] = 64;   // Visual mode
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 150;  // Good sensitivity
+(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Advanced window
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Fast updates
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Visual mode
 ```
 
 ## Understanding Spectral Analysis

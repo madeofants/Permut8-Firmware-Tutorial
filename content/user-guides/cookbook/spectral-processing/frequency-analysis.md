@@ -9,10 +9,10 @@ Analyzes frequency content to extract musically meaningful information from audi
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Peak threshold (0-255, minimum level for peak detection)
-- `params[1]`: Noise floor (0-255, background noise level)
-- `params[2]`: Mid-frequency boost (0-255, emphasis control)
-- `params[3]`: High-frequency boost (0-255, brightness control)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Peak threshold (0-255, minimum level for peak detection)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Noise floor (0-255, background noise level)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Mid-frequency boost (0-255, emphasis control)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: High-frequency boost (0-255, brightness control)
 
 **Core Techniques:**
 - **Peak detection**: Find dominant frequency components
@@ -27,12 +27,24 @@ Analyzes frequency content to extract musically meaningful information from audi
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Frequency analysis state
@@ -48,8 +60,8 @@ locals int i, int peak_threshold, int noise_floor, int total_energy, int weighte
 {
     loop {
         // Read control parameters
-        peak_threshold = (int)global params[0];    // Peak detection threshold
-        noise_floor = (int)global params[1] >> 1;  // Noise floor level
+        peak_threshold = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];    // Peak detection threshold
+        noise_floor = (int)global (int)global params[SWITCHES_PARAM_INDEX] >> 1;  // Noise floor level
         
         // Simple magnitude calculation from input signal
         global update_counter = global update_counter + 1;
@@ -72,8 +84,8 @@ locals int i, int peak_threshold, int noise_floor, int total_energy, int weighte
             global magnitude[7] = i >> 8;  // Harmonics
             
             // Add some variation based on parameters
-            global magnitude[1] = (int)global magnitude[1] + ((int)global params[2] >> 3);
-            global magnitude[2] = (int)global magnitude[2] + ((int)global params[3] >> 2);
+            global magnitude[1] = (int)global magnitude[1] + ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 3);
+            global magnitude[2] = (int)global magnitude[2] + ((int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 2);
             
             // Peak detection - find dominant frequency bin
             max_bin = 0;
@@ -199,6 +211,7 @@ locals int i, int peak_threshold, int noise_floor, int total_energy, int weighte
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -231,22 +244,22 @@ locals int i, int peak_threshold, int noise_floor, int total_energy, int weighte
 
 ```impala
 // Sensitive pitch detection
-params[0] = 64;   // Low threshold
-params[1] = 32;   // Low noise floor
-params[2] = 128;  // Moderate mid boost
-params[3] = 64;   // Slight high boost
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Low threshold
+(int)global params[SWITCHES_PARAM_INDEX] = 32;   // Low noise floor
+(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Moderate mid boost
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Slight high boost
 
 // Harmonic analysis
-params[0] = 128;  // Medium threshold
-params[1] = 64;   // Medium noise floor
-params[2] = 200;  // Strong mid emphasis
-params[3] = 100;  // Moderate high boost
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium threshold
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Medium noise floor
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Strong mid emphasis
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Moderate high boost
 
 // Timbral analysis
-params[0] = 100;  // Medium-low threshold
-params[1] = 80;   // Higher noise floor
-params[2] = 64;   // Subtle mid boost
-params[3] = 200;  // Strong high emphasis
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Medium-low threshold
+(int)global params[SWITCHES_PARAM_INDEX] = 80;   // Higher noise floor
+(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Subtle mid boost
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Strong high emphasis
 ```
 
 ## Musical Applications

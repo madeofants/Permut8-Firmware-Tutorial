@@ -9,10 +9,10 @@ Creates basic pitch shifting by using a variable delay line with modulated read 
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Pitch shift (0-255, where 128 = no shift)
-- `params[1]`: Buffer size (0-255, affects quality vs latency)
-- `params[2]`: Smoothing (0-255, reduces glitches)
-- `params[3]`: Dry/wet mix (0-255, blend control)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Pitch shift (0-255, where 128 = no shift)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Buffer size (0-255, affects quality vs latency)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Smoothing (0-255, reduces glitches)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Dry/wet mix (0-255, blend control)
 
 **Key Concepts:** Variable delay, read speed modulation, simple time-stretch, pitch-time relationship
 
@@ -21,6 +21,18 @@ Creates basic pitch shifting by using a variable delay line with modulated read 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 extern native read              // Read from delay line memory
@@ -28,7 +40,7 @@ extern native write             // Write to delay line memory
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Simple pitch shifter state
@@ -56,10 +68,10 @@ locals int smooth_factor
 {
     loop {
         // Read parameters
-        pitch_shift = (int)global params[0];             // 0-255 pitch control
-        buffer_size = ((int)global params[1] >> 2) + 32; // 32-95 buffer size
-        smoothing = ((int)global params[2] >> 3) + 1;    // 1-32 smoothing
-        mix = (int)global params[3];                     // 0-255 dry/wet mix
+        pitch_shift = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];             // 0-255 pitch control
+        buffer_size = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 2) + 32; // 32-95 buffer size
+        smoothing = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 3) + 1;    // 1-32 smoothing
+        mix = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];                     // 0-255 dry/wet mix
         
         // Safety bounds for buffer size
         if (buffer_size > 1000) buffer_size = 1000;
@@ -147,6 +159,7 @@ locals int smooth_factor
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -171,22 +184,22 @@ locals int smooth_factor
 
 ```impala
 // Octave up
-params[0] = 200;  // Fast read speed
-params[1] = 128;  // Medium buffer
-params[2] = 64;   // Some smoothing
-params[3] = 200;  // Mostly wet
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Fast read speed
+(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Medium buffer
+(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Some smoothing
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Mostly wet
 
 // Octave down
-params[0] = 64;   // Slow read speed
-params[1] = 180;  // Large buffer
-params[2] = 128;  // More smoothing
-params[3] = 180;  // Mostly wet
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Slow read speed
+(int)global params[SWITCHES_PARAM_INDEX] = 180;  // Large buffer
+(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // More smoothing
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Mostly wet
 
 // Subtle detuning
-params[0] = 140;  // Slightly fast
-params[1] = 64;   // Small buffer
-params[2] = 32;   // Light smoothing
-params[3] = 128;  // 50% mix
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 140;  // Slightly fast
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Small buffer
+(int)global params[OPERATOR_1_PARAM_INDEX] = 32;   // Light smoothing
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // 50% mix
 ```
 
 ## Limitations & Improvements

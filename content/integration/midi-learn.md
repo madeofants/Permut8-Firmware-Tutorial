@@ -13,14 +13,25 @@ All code examples have been tested and verified. For a minimal implementation wi
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 extern native yield
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // MIDI Learn mapping using parallel arrays (Impala doesn't have structs)
 global array midi_cc_numbers[8] = {-1, -1, -1, -1, -1, -1, -1, -1}    // CC numbers for each mapping
-global array midi_param_indices[8] = {0, 1, 2, 3, 4, 5, 6, 7}        // Target parameter for each mapping  
+global array midi_param_indices[8] = {(int)global params[CLOCK_FREQ_PARAM_INDEX], (int)global params[SWITCHES_PARAM_INDEX], (int)global params[OPERATOR_1_PARAM_INDEX], (int)global params[OPERAND_1_HIGH_PARAM_INDEX], (int)global params[OPERAND_1_LOW_PARAM_INDEX], (int)global params[OPERATOR_2_PARAM_INDEX], (int)global params[OPERAND_2_HIGH_PARAM_INDEX], (int)global params[OPERAND_2_LOW_PARAM_INDEX]}        // Target parameter for each mapping  
 global array midi_min_values[8] = {0, 0, 0, 0, 0, 0, 0, 0}           // Minimum scaled values
 global array midi_max_values[8] = {255, 255, 255, 255, 255, 255, 255, 255} // Maximum scaled values
 global array midi_active_flags[8] = {0, 0, 0, 0, 0, 0, 0, 0}         // 1=active, 0=inactive
@@ -126,7 +137,7 @@ function applyLearnedMapping(int mapping_index, int midi_value) {
     
     // Update the target parameter
     int target_param = global midi_param_indices[mapping_index];
-    if (target_param >= 0 && target_param < 8) {
+    if (target_param >= 0 && target_param < PARAM_COUNT) {
         global params[target_param] = scaled_value;
     }
 }
@@ -152,7 +163,7 @@ global array prev_switch_state[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 // Switch-based learn mode activation
 function checkLearnSwitches() {
-    int switches = (int)global params[1];  // Read switch states from params[1]
+    int switches = (int)global params[SWITCHES_PARAM_INDEX];  // Read switch states from switches parameter
     
     // Hold switch 1 (bit 0) + press other switches to enter learn
     if ((switches & 0x01) != 0) {  // Switch 1 held
@@ -167,8 +178,16 @@ function checkLearnSwitches() {
     }
     
     // Update previous switch states
-    global prev_switch_state[1] = (switches & 0x02) != 0 ? 1 : 0;
-    global prev_switch_state[2] = (switches & 0x04) != 0 ? 1 : 0;
+    if ((switches & 0x02) != 0) {
+        global prev_switch_state[1] = 1;
+    } else {
+        global prev_switch_state[1] = 0;
+    }
+    if ((switches & 0x04) != 0) {
+        global prev_switch_state[2] = 1;
+    } else {
+        global prev_switch_state[2] = 0;
+    }
 }
 
 // Clear all learned mappings
@@ -235,8 +254,8 @@ function process() {
         
         // Simulate receiving MIDI CC message
         // In real implementation, this would come from MIDI input
-        int incoming_cc = (int)global params[5];    // Simulate CC number input
-        int incoming_value = (int)global params[6]; // Simulate CC value input
+        int incoming_cc = (int)global params[OPERATOR_2_PARAM_INDEX];    // Simulate CC number input
+        int incoming_value = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]; // Simulate CC value input
         
         // Process MIDI if valid range
         if (incoming_cc > 0 && incoming_cc < 128) {
@@ -244,7 +263,7 @@ function process() {
         }
         
         // Audio processing (example: simple gain control)
-        int gain = (int)global params[0];  // This can be controlled by MIDI learn
+        int gain = (int)global params[CLOCK_FREQ_PARAM_INDEX];  // This can be controlled by MIDI learn
         global signal[0] = (global signal[0] * gain) >> 8;  // Apply gain
         global signal[1] = (global signal[1] * gain) >> 8;
         

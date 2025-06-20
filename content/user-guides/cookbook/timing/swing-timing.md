@@ -9,10 +9,10 @@ Adds groove and humanization to rhythmic sequences by applying swing timing and 
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Swing amount (0-255)
-- `params[1]`: Humanization level (0-255)
-- `params[2]`: Groove pattern (0-255)
-- `params[3]`: Effect intensity (0-255)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Swing amount (0-255)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Humanization level (0-255)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Groove pattern (0-255)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Effect intensity (0-255)
 
 **Core Techniques:**
 - **Swing timing**: Delay off-beat events for groove
@@ -27,12 +27,24 @@ Adds groove and humanization to rhythmic sequences by applying swing timing and 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Swing timing system state
@@ -47,10 +59,10 @@ locals int swing_amount, int humanization, int groove_pattern, int effect_intens
 {
     loop {
         // Read swing and timing parameters
-        swing_amount = (int)global params[0];       // 0-255 swing amount
-        humanization = (int)global params[1];      // 0-255 humanization
-        groove_pattern = (int)global params[2] >> 6; // 0-3 groove types
-        effect_intensity = (int)global params[3];  // 0-255 effect level
+        swing_amount = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];       // 0-255 swing amount
+        humanization = (int)global (int)global params[SWITCHES_PARAM_INDEX];      // 0-255 humanization
+        groove_pattern = (int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 6; // 0-3 groove types
+        effect_intensity = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];  // 0-255 effect level
         
         // Advance step counter
         global step_counter = global step_counter + 1;
@@ -153,6 +165,7 @@ locals int swing_amount, int humanization, int groove_pattern, int effect_intens
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -179,28 +192,28 @@ locals int swing_amount, int humanization, int groove_pattern, int effect_intens
 
 ```impala
 // Straight timing (no swing)
-params[0] = 128;  // No swing
-params[1] = 16;   // Minimal humanization
-params[2] = 0;    // Straight pattern
-params[3] = 100;  // Light effect
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // No swing
+(int)global params[SWITCHES_PARAM_INDEX] = 16;   // Minimal humanization
+(int)global params[OPERATOR_1_PARAM_INDEX] = 0;    // Straight pattern
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Light effect
 
 // Light jazz swing
-params[0] = 180;  // Moderate swing
-params[1] = 32;   // Light humanization
-params[2] = 64;   // Standard swing pattern
-params[3] = 150;  // Medium effect
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // Moderate swing
+(int)global params[SWITCHES_PARAM_INDEX] = 32;   // Light humanization
+(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Standard swing pattern
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Medium effect
 
 // Heavy shuffle
-params[0] = 220;  // Heavy swing
-params[1] = 64;   // More humanization
-params[2] = 128;  // Shuffle pattern
-params[3] = 200;  // Strong effect
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 220;  // Heavy swing
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // More humanization
+(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Shuffle pattern
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Strong effect
 
 // Complex groove
-params[0] = 200;  // Strong swing
-params[1] = 80;   // Significant humanization
-params[2] = 192;  // Complex pattern
-params[3] = 180;  // Heavy effect
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Strong swing
+(int)global params[SWITCHES_PARAM_INDEX] = 80;   // Significant humanization
+(int)global params[OPERATOR_1_PARAM_INDEX] = 192;  // Complex pattern
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Heavy effect
 ```
 
 ## Understanding Swing Timing

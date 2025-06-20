@@ -9,9 +9,9 @@ Stereo processing manipulates the relationship between left and right audio chan
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Panning position (0-255, left to right)
-- `params[1]`: Stereo width (0-255, mono to wide)
-- `params[2]`: Channel routing (0-255, normal to swapped)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Panning position (0-255, left to right)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Stereo width (0-255, mono to wide)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Channel routing (0-255, normal to swapped)
 
 **Core Techniques:**
 - **Panning**: Position mono signals in stereo field
@@ -26,12 +26,24 @@ Stereo processing manipulates the relationship between left and right audio chan
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 function process()
@@ -39,9 +51,9 @@ locals int pan_position, int stereo_width, int channel_mode, int left_input, int
 {
     loop {
         // Read parameters
-        pan_position = (int)global params[0];    // 0-255 panning
-        stereo_width = (int)global params[1];    // 0-255 width control
-        channel_mode = (int)global params[2];    // 0-255 routing mode
+        pan_position = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];    // 0-255 panning
+        stereo_width = (int)global (int)global params[SWITCHES_PARAM_INDEX];    // 0-255 width control
+        channel_mode = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];    // 0-255 routing mode
         
         // Store input signals
         left_input = (int)global signal[0];
@@ -116,6 +128,7 @@ locals int pan_position, int stereo_width, int channel_mode, int left_input, int
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -137,24 +150,24 @@ locals int pan_position, int stereo_width, int channel_mode, int left_input, int
 
 ```impala
 // Mono to stereo panning
-params[0] = 128;  // Center pan
-params[1] = 128;  // Normal width
-params[2] = 32;   // Panning mode
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Center pan
+(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Normal width
+(int)global params[OPERATOR_1_PARAM_INDEX] = 32;   // Panning mode
 
 // Stereo width adjustment
-params[0] = 64;   // Wide left
-params[1] = 200;  // Increased width
-params[2] = 96;   // Width control mode
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Wide left
+(int)global params[SWITCHES_PARAM_INDEX] = 200;  // Increased width
+(int)global params[OPERATOR_1_PARAM_INDEX] = 96;   // Width control mode
 
 // Channel swap
-params[0] = 128;  // Any position
-params[1] = 128;  // Any width
-params[2] = 160;  // Swap mode
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Any position
+(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Any width
+(int)global params[OPERATOR_1_PARAM_INDEX] = 160;  // Swap mode
 
 // Mid-side monitoring
-params[0] = 128;  // Any position
-params[1] = 128;  // Any width
-params[2] = 224;  // Monitor mode
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Any position
+(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Any width
+(int)global params[OPERATOR_1_PARAM_INDEX] = 224;  // Monitor mode
 ```
 
 ## Understanding Stereo Processing

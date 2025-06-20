@@ -115,7 +115,7 @@ readonly array cosineTable[360] = {
 function fastCos(int scaledAngle) returns int result {
     int degrees = (scaledAngle * 360) / 6283;  // Convert to degrees
     degrees = degrees % 360;  // Wrap to 0-359
-    if (degrees < 0) degrees += 360;
+    if (degrees < 0) degrees = degrees + 360;
     result = cosineTable[degrees];
 }
 ```
@@ -263,7 +263,7 @@ function safeArrayAccess(array buffer[1024], int index, int value) {
 function circularBufferAccess(array buffer[512], int index, int value) {
     // Ensure positive index and wrap
     int safeIndex = index % 512;
-    if (safeIndex < 0) safeIndex += 512;
+    if (safeIndex < 0) safeIndex = safeIndex + 512;
     buffer[safeIndex] = value;
 }
 ```

@@ -24,7 +24,7 @@ This tutorial shows you how to manually implement what Permut8's SUB operator do
 ### **What We'll Do Manually**
 - **Manual Memory**: Track `writePosition` ourselves
 - **Manual Reading**: Calculate `readPosition = writePosition - delayTime`
-- **Same Parameters**: Use `params[3]` (Instruction 1 High) for delay time
+- **Same Parameters**: Use `params[OPERAND_1_HIGH_PARAM_INDEX]` (Instruction 1 High) for delay time
 - **Same Effect**: Create delay, just different implementation
 
 ## The Custom Delay Implementation
@@ -53,7 +53,18 @@ readonly array panelTextRows[8] = {
 }
 
 global array signal[2]
-global array params[8]
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 // Delay state (what SUB operator manages automatically)
@@ -65,15 +76,15 @@ locals int delayTime, int feedback, int input, int delayed, int output
 {
     loop {
         // Same parameters that SUB operator uses, but with custom control
-        delayTime = ((int)global params[3] * 500 / 255) + 50;  // 50-550 samples (Instruction 1 High)
-        feedback = ((int)global params[4] * 200 / 255);         // 0-200 feedback (Instruction 1 Low)
+        delayTime = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 500 / 255) + 50;  // 50-550 samples (Instruction 1 High)
+        feedback = ((int)global params[OPERAND_1_LOW_PARAM_INDEX] * 200 / 255);         // 0-200 feedback (Instruction 1 Low)
         
         // Manual delay processing (what SUB operator does automatically)
         input = (int)global signal[0];
         
         // Read delayed sample from memory (read position = write position - delay time)
         int readPosition = global writePosition - delayTime;
-        if (readPosition < 0) readPosition += 65536;  // Wrap around
+        if (readPosition < 0) readPosition = readPosition + 65536;  // Wrap around
         
         read(readPosition, 1, global tempBuffer);
         delayed = global tempBuffer[0];
@@ -114,7 +125,7 @@ locals int delayTime, int feedback, int input, int delayed, int output
 ```impala
 // 1. Calculate where to read from
 int readPosition = global writePosition - delayTime;
-if (readPosition < 0) readPosition += 65536;  // Handle wraparound
+if (readPosition < 0) readPosition = readPosition + 65536;  // Handle wraparound
 
 // 2. Read the delayed audio
 read(readPosition, 1, global tempBuffer);
@@ -151,10 +162,10 @@ global writePosition = (global writePosition + 1) % 65536;
 
 ```impala
 // Transform abstract operand values into musical parameters  
-delayTime = ((int)global params[3] * 500 / 255) + 50;  // 50-550 samples
+delayTime = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 500 / 255) + 50;  // 50-550 samples
 // At 44.1kHz: 50 samples = ~1.1ms, 550 samples = ~12.5ms
 
-feedback = ((int)global params[4] * 200 / 255);         // 0-200 (0-78% feedback)
+feedback = ((int)global params[OPERAND_1_LOW_PARAM_INDEX] * 200 / 255);         // 0-200 (0-78% feedback)
 // Linear scaling prevents runaway feedback while allowing rich echoes
 ```
 
@@ -228,7 +239,7 @@ Each preset has `Operator1: "8"` which means:
 - **"8" = SUB operator** (Subtract - creates delays)
 - **Same operator** that would create delays using the built-in system
 - **Our custom firmware replaces it** with manual implementation
-- **Same parameters**: Both use `params[3]` for delay time, `params[4]` for feedback
+- **Same parameters**: Both use `params[OPERAND_1_HIGH_PARAM_INDEX]` for delay time, `params[OPERAND_1_LOW_PARAM_INDEX]` for feedback
 
 **The Connection**: This demonstrates how custom firmware can **replace** built-in operators while using the same parameter system.
 
@@ -253,8 +264,8 @@ Each preset has `Operator1: "8"` which means:
 ### **Interface Transformation**
 
 **What Just Happened?**
-- **Original**: `params[3]` controlled via LED display showing hex values
-- **Your Firmware**: Same `params[3]` becomes intuitive "DELAY TIME" control
+- **Original**: `params[OPERAND_1_HIGH_PARAM_INDEX]` controlled via LED display showing hex values
+- **Your Firmware**: Same `params[OPERAND_1_HIGH_PARAM_INDEX]` becomes intuitive "DELAY TIME" control
 - **Same Parameter, Better Interface**: Clear labels instead of abstract operands
 
 ## Advanced Modifications
@@ -277,7 +288,7 @@ output = input + (filteredFeedback * feedback / 255);
 ```impala
 // Sync delay time to musical divisions
 int tempoDelayTime = 11025;  // Quarter note at 120 BPM, 44.1kHz
-if (global params[5] > 127) tempoDelayTime = 5512;  // Eighth note
+if ((int)global params[OPERATOR_2_PARAM_INDEX] > 127) tempoDelayTime = 5512;  // Eighth note
 ```
 
 ### **4. Ping-Pong Delay**
@@ -309,8 +320,8 @@ read(readPosition, 4, batchBuffer);  // Read 4 samples at once
 ### **Memory Safety**
 ```impala
 // Always validate array bounds
-if (readPosition < 0) readPosition += 65536;
-if (readPosition >= 65536) readPosition -= 65536;
+if (readPosition < 0) readPosition = readPosition + 65536;
+if (readPosition >= 65536) readPosition = readPosition - 65536;
 ```
 
 ## Comparison with SUB Operator

@@ -35,7 +35,11 @@ Create type-generic data structures and algorithms using advanced macro techniqu
     } \
     \
     TYPE get##NAME##Array(struct NAME##Array* arr, int index) { \
-        return (index >= 0 && index < arr->size) ? arr->data[index] : (TYPE)0; \
+        if (index >= 0 && index < arr->size) { \
+            return arr->data[index]; \
+        } else { \
+            return (TYPE)0; \
+        } \
     } \
     \
     void clear##NAME##Array(struct NAME##Array* arr) { \
@@ -146,7 +150,8 @@ Build sophisticated macro systems for code generation:
     }; \
     \
     void init##NAME##Filter(struct NAME##Filter* filter) { \
-        for (int i = 0; i <= ORDER; i++) { \
+        int i; \
+        for (i = 0 to ORDER + 1) { \
             filter->x[i] = 0.0f; \
             filter->y[i] = 0.0f; \
         } \
@@ -160,12 +165,12 @@ Build sophisticated macro systems for code generation:
         f32 output = 0.0f; \
         static const f32 coefficients[][ORDER + 1] = COEFFS; \
         \
-        for (int i = 0; i <= ORDER; i++) { \
+        for (i = 0 to ORDER + 1) { \
             int xIndex = (filter->pos - i + ORDER + 1) % (ORDER + 1); \
             int yIndex = (filter->pos - i + ORDER + 1) % (ORDER + 1); \
-            output += coefficients[0][i] * filter->x[xIndex]; \
+            output = output + coefficients[0][i] * filter->x[xIndex]; \
             if (i > 0) { \
-                output -= coefficients[1][i] * filter->y[yIndex]; \
+                output = output - coefficients[1][i] * filter->y[yIndex]; \
             } \
         } \
         \
@@ -251,7 +256,11 @@ Implement container-like patterns with type safety:
                 struct NAME##Node* toDelete = *current; \
                 *current = (*current)->next; \
                 if (toDelete == list->tail) { \
-                    list->tail = (list->head == toDelete) ? null : list->head; \
+                    if (list->head == toDelete) { \
+                        list->tail = null; \
+                    } else { \
+                        list->tail = list->head; \
+                    } \
                 } \
                 deallocate(toDelete); \
                 list->count--; \
@@ -309,7 +318,8 @@ Create function templates using macro-based approaches:
 // Generic sorting algorithm
 #define DECLARE_SORT(TYPE, NAME, COMPARE_FUNC) \
     void sort##NAME(TYPE* array, int size) { \
-        for (int i = 1; i < size; i++) { \
+        int i; \
+        for (i = 1 to size) { \
             TYPE key = array[i]; \
             int j = i - 1; \
             \
@@ -523,7 +533,8 @@ Create sophisticated build configuration management:
 #if ENABLE_SIMD_OPTIMIZATIONS
 FORCE_INLINE void vectorAdd(f32* a, f32* b, f32* result, int count) {
     // SIMD implementation
-    for (int i = 0; i < count; i += 4) {
+    int i;
+    for (i = 0 to count; i = i + 4) {
         __m128 va = _mm_load_ps(&a[i]);
         __m128 vb = _mm_load_ps(&b[i]);
         __m128 vr = _mm_add_ps(va, vb);
@@ -533,7 +544,8 @@ FORCE_INLINE void vectorAdd(f32* a, f32* b, f32* result, int count) {
 #else
 FORCE_INLINE void vectorAdd(f32* a, f32* b, f32* result, int count) {
     // Scalar implementation
-    for (int i = 0; i < count; i++) {
+    int i;
+    for (i = 0 to count) {
         result[i] = a[i] + b[i];
     }
 }
@@ -618,7 +630,8 @@ bool reverbInit(AudioProcessor* proc) {
 void reverbProcess(AudioProcessor* proc, f32* input, f32* output, int samples) {
     struct ReverbData* data = (struct ReverbData*)proc->instanceData;
     // Reverb processing implementation
-    for (int i = 0; i < samples; i++) {
+    int i;
+    for (i = 0 to samples) {
         f32 wet = processReverbAlgorithm(input[i], data);
         output[i] = data->dryLevel * input[i] + data->wetLevel * wet;
     }
@@ -719,13 +732,14 @@ struct EventDispatcher {
 static struct EventDispatcher eventDispatcher;
 
 void initEventDispatcher() {
-    for (int i = 0; i < 16; i++) {
+    int i;
+    for (i = 0 to 16) {
         eventDispatcher.callbacks[i] = null;
     }
     
     // Initialize free list
     eventDispatcher.freeNodes = null;
-    for (int i = 0; i < MAX_CALLBACKS; i++) {
+    for (i = 0 to MAX_CALLBACKS) {
         eventDispatcher.nodePool[i].next = eventDispatcher.freeNodes;
         eventDispatcher.freeNodes = &eventDispatcher.nodePool[i];
     }
@@ -927,7 +941,8 @@ void init%NAME%Oscillator(struct %NAME%Oscillator* osc, f32 freq) {
     osc->useTable = false;
     
     // Pre-compute wave table for efficiency
-    for (int i = 0; i < WAVE_TABLE_SIZE; i++) {
+    int i;
+    for (i = 0 to WAVE_TABLE_SIZE) {
         f32 x = (f32)i / WAVE_TABLE_SIZE * TWO_PI;
         osc->waveTable[i] = (%TYPE%)%WAVE_FUNC%(x);
     }
@@ -951,9 +966,9 @@ void init%NAME%Oscillator(struct %NAME%Oscillator* osc, f32 freq) {
     }
     
     // Update phase
-    osc->phase += osc->frequency * PHASE_INCREMENT;
+    osc->phase = osc->phase + osc->frequency * PHASE_INCREMENT;
     if (osc->phase >= TWO_PI) {
-        osc->phase -= TWO_PI;
+        osc->phase = osc->phase - TWO_PI;
     }
     
     return result * osc->amplitude;
@@ -976,7 +991,8 @@ void init%NAME%Oscillator(struct %NAME%Oscillator* osc, f32 freq) {
         osc->amplitude = 1.0f; \
         osc->useTable = false; \
         \
-        for (int i = 0; i < WAVE_TABLE_SIZE; i++) { \
+        int i; \
+        for (i = 0 to WAVE_TABLE_SIZE) { \
             f32 x = (f32)i / WAVE_TABLE_SIZE * TWO_PI; \
             osc->waveTable[i] = (TYPE)WAVE_FUNC(x); \
         } \
@@ -997,9 +1013,9 @@ void init%NAME%Oscillator(struct %NAME%Oscillator* osc, f32 freq) {
             result = (TYPE)WAVE_FUNC(osc->phase); \
         } \
         \
-        osc->phase += osc->frequency * PHASE_INCREMENT; \
+        osc->phase = osc->phase + osc->frequency * PHASE_INCREMENT; \
         if (osc->phase >= TWO_PI) { \
-            osc->phase -= TWO_PI; \
+            osc->phase = osc->phase - TWO_PI; \
         } \
         \
         return result * osc->amplitude; \
@@ -1022,7 +1038,11 @@ f32 sawtoothWave(f32 phase) {
 }
 
 f32 squareWave(f32 phase) {
-    return (phase < PI) ? 1.0f : -1.0f;
+    if (phase < PI) {
+        return 1.0f;
+    } else {
+        return -1.0f;
+    }
 }
 
 // Usage
@@ -1035,7 +1055,8 @@ void useOscillators() {
     initTriangleOscillator(&triangle, 220.0f);
     initSawtoothOscillator(&sawtooth, 110.0f);
     
-    for (int i = 0; i < BUFFER_SIZE; i++) {
+    int i;
+    for (i = 0 to BUFFER_SIZE) {
         f32 sineOutput = processSineOscillator(&sine);
         f32 triangleOutput = processTriangleOscillator(&triangle);
         f32 sawtoothOutput = processSawtoothOscillator(&sawtooth);

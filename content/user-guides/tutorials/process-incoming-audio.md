@@ -115,7 +115,7 @@ function process()
         int inputRight = signal[1]
         
         // Get gain from knob 1 (0-255)
-        int gainKnob = params[3]
+        int gainKnob = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
         
         // Convert knob to useful gain range (0-512)
         // 0 = silent, 128 = normal, 255 = double volume
@@ -184,7 +184,7 @@ function process()
         int inputRight = signal[1]
         
         // Get filter amount from knob 1
-        int filterKnob = params[3]  // 0-255
+        int filterKnob = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // 0-255
         
         // Convert to filter strength (0-255)
         int filterAmount = filterKnob
@@ -248,7 +248,7 @@ function process()
         int inputRight = signal[1]
         
         // Get drive amount from knob 1
-        int driveKnob = params[3]  // 0-255
+        int driveKnob = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // 0-255
         
         // Convert to drive multiplier (1x to 8x)
         int drive = 256 + (driveKnob * 7)  // 256 to 2048 (1x to 8x)
@@ -326,10 +326,10 @@ function process()
         int inputRight = signal[1]
         
         // Read all control knobs
-        int gainKnob = params[3]      // Knob 1: Input gain
-        int filterKnob = params[4]    // Knob 2: Filter cutoff
-        int driveKnob = params[5]     // Knob 3: Distortion drive
-        int outputKnob = params[6]    // Knob 4: Output level
+        int gainKnob = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]      // Knob 1: Input gain
+        int filterKnob = (int)global params[OPERAND_2_LOW_PARAM_INDEX]    // Knob 2: Filter cutoff
+        int driveKnob = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]     // Knob 3: Distortion drive
+        int outputKnob = (int)global params[OPERAND_1_LOW_PARAM_INDEX]    // Knob 4: Output level
         
         // STAGE 1: Input gain
         int gain = (gainKnob * 3) + 64  // 64 to 829 (0.25x to 3.25x)
@@ -413,7 +413,7 @@ previousValue = currentOutput
 **Parameter Scaling:**
 ```impala
 // Convert knob values to useful ranges
-int knobValue = params[3]  // 0-255
+int knobValue = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // 0-255
 int usefulValue = minRange + ((knobValue * (maxRange - minRange)) / 255)
 ```
 

@@ -9,10 +9,10 @@ An envelope controls how a parameter changes over time, most commonly the volume
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Attack time (0-255, how fast sound reaches full volume)
-- `params[1]`: Decay time (0-255, how fast it drops to sustain level)
-- `params[2]`: Sustain level (0-255, ongoing level while held)
-- `params[3]`: Release time (0-255, how fast it fades when released)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Attack time (0-255, how fast sound reaches full volume)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Decay time (0-255, how fast it drops to sustain level)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Sustain level (0-255, ongoing level while held)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Release time (0-255, how fast it fades when released)
 
 **ADSR Stages:**
 - **Attack**: Rise to peak volume
@@ -27,12 +27,24 @@ An envelope controls how a parameter changes over time, most commonly the volume
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Simple ADSR envelope state
@@ -46,18 +58,18 @@ locals int attack, int decay, int sustain, int release, int stage_time, int targ
 {
     loop {
         // Read parameters
-        attack = ((int)global params[0] >> 3) + 1;     // 1-32 attack speed
-        decay = ((int)global params[1] >> 3) + 1;      // 1-32 decay speed
-        sustain = ((int)global params[2] << 3);        // 0-2040 sustain level
-        release = ((int)global params[3] >> 3) + 1;    // 1-32 release speed
+        attack = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 3) + 1;     // 1-32 attack speed
+        decay = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 3) + 1;      // 1-32 decay speed
+        sustain = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] << 3);        // 0-2040 sustain level
+        release = ((int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 3) + 1;    // 1-32 release speed
         
         // Simple gate trigger (could be connected to note input)
         // For demo: use knob position to trigger envelope
-        if ((int)global params[4] > 128 && global gate_trigger == 0) {
+        if ((int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX] > 128 && global gate_trigger == 0) {
             global gate_trigger = 1;
             global envelope_stage = 1;  // Start attack
             global stage_counter = 0;
-        } else if ((int)global params[4] <= 128 && global gate_trigger == 1) {
+        } else if ((int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX] <= 128 && global gate_trigger == 1) {
             global gate_trigger = 0;
             global envelope_stage = 4;  // Start release
             global stage_counter = 0;
@@ -123,6 +135,7 @@ locals int attack, int decay, int sustain, int release, int stage_time, int targ
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -146,28 +159,28 @@ locals int attack, int decay, int sustain, int release, int stage_time, int targ
 
 ```impala
 // Piano envelope
-params[0] = 8;    // Fast attack
-params[1] = 64;   // Medium decay
-params[2] = 100;  // Low sustain
-params[3] = 64;   // Medium release
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 8;    // Fast attack
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Medium decay
+(int)global params[OPERATOR_1_PARAM_INDEX] = 100;  // Low sustain
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Medium release
 
 // Pad envelope
-params[0] = 200;  // Slow attack
-params[1] = 150;  // Slow decay
-params[2] = 200;  // High sustain
-params[3] = 200;  // Long release
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Slow attack
+(int)global params[SWITCHES_PARAM_INDEX] = 150;  // Slow decay
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // High sustain
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Long release
 
 // Percussion envelope
-params[0] = 8;    // Very fast attack
-params[1] = 32;   // Fast decay
-params[2] = 0;    // No sustain
-params[3] = 32;   // Fast release
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 8;    // Very fast attack
+(int)global params[SWITCHES_PARAM_INDEX] = 32;   // Fast decay
+(int)global params[OPERATOR_1_PARAM_INDEX] = 0;    // No sustain
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 32;   // Fast release
 
 // Bass envelope
-params[0] = 16;   // Quick attack
-params[1] = 32;   // Short decay
-params[2] = 220;  // High sustain
-params[3] = 32;   // Short release
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 16;   // Quick attack
+(int)global params[SWITCHES_PARAM_INDEX] = 32;   // Short decay
+(int)global params[OPERATOR_1_PARAM_INDEX] = 220;  // High sustain
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 32;   // Short release
 ```
 
 ## Understanding ADSR

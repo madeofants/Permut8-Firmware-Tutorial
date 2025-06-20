@@ -13,19 +13,31 @@ Permut8's constrained environment demands efficient code, but premature optimiza
 The most important optimization principle: **write correct code first, then optimize**. Permut8's real-time constraints are strict, but buggy optimized code is worse than slightly slower correct code.
 
 ```impala
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // Bad: Premature optimization that introduces bugs
 function process() {
     // Complex unrolled loop with edge case bugs
-    global signal[0] = ((global params[0] * 3547) >> 12) + global offset; // Magic numbers!
+    global signal[0] = ((global (int)global params[CLOCK_FREQ_PARAM_INDEX] * 3547) >> 12) + global offset; // Magic numbers!
 }
 
 // Good: Clear, correct code ready for optimization
 function process() 
 locals int gain
 {
-    gain = global params[0] >> 4;  // Divide by 16 for scaling
+    gain = global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 4;  // Divide by 16 for scaling
     global signal[0] = global input * gain + global offset;
 }
+
 ```
 
 ### Measure Before Optimizing
@@ -322,18 +334,18 @@ locals int cutoff_freq, int q, int filter_coeff
 
 // Good: Update coefficients only when parameters change
 global int cached_coeff = 0
-global array last_params[2]
+global array last_(int)global params[OPERATOR_1_PARAM_INDEX]
 
 function process_sample_optimized(input) returns int
 locals int cutoff_freq, int q
 {
-    if (global params[CUTOFF] != global last_params[0] || 
-        global params[RESONANCE] != global last_params[1]) {
+    if (global params[CUTOFF] != global last_(int)global params[CLOCK_FREQ_PARAM_INDEX] || 
+        global params[RESONANCE] != global last_(int)global params[SWITCHES_PARAM_INDEX]) {
         cutoff_freq = (global params[CUTOFF] * SAMPLE_RATE) >> 1;
         q = global params[RESONANCE] * 10 + 128;
         global cached_coeff = calculate_filter_coeffs(cutoff_freq, q);
-        global last_params[0] = global params[CUTOFF];
-        global last_params[1] = global params[RESONANCE];
+        global last_(int)global params[CLOCK_FREQ_PARAM_INDEX] = global params[CUTOFF];
+        global last_(int)global params[SWITCHES_PARAM_INDEX] = global params[RESONANCE];
     }
     return apply_filter(input, global cached_coeff);
 }

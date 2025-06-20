@@ -38,10 +38,22 @@ The most basic distortion is just **making audio louder than it should be**:
 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
+
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 extern native yield
 
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 function process() {
@@ -53,6 +65,7 @@ function process() {
         yield();
     }
 }
+
 ```
 
 ### Try It Right Now
@@ -86,13 +99,13 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 extern native yield
 
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 function process() {
     loop {
         // Read knob for distortion amount
-        int distortionKnob = params[0];  // 0-255
+        int distortionKnob = (int)global params[CLOCK_FREQ_PARAM_INDEX];  // 0-255
         int gainAmount = 1 + (distortionKnob / 32);  // 1x to 9x gain
         
         // Apply gain to both channels
@@ -163,7 +176,7 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 extern native yield
 
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 function softClip(int input, int threshold) {
@@ -182,8 +195,8 @@ function softClip(int input, int threshold) {
 function process() {
     loop {
         // Distortion controls from knobs
-        int driveKnob = params[0];     // 0-255: Distortion amount
-        int toneKnob = params[1];      // 0-255: Clipping threshold
+        int driveKnob = (int)global params[CLOCK_FREQ_PARAM_INDEX];     // 0-255: Distortion amount
+        int toneKnob = (int)global params[SWITCHES_PARAM_INDEX];      // 0-255: Clipping threshold
         
         // Calculate gain (1x to 8x)
         int gainAmount = 1 + (driveKnob / 36);

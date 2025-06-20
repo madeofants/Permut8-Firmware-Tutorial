@@ -187,7 +187,11 @@ function efficientLoop()
 locals int i, int threshold, int should_continue
 {
     threshold = global params[0];
-    should_continue = (threshold > 50) ? 1 : 0;
+    if (threshold > 50) {
+        should_continue = 1;
+    } else {
+        should_continue = 0;
+    }
     
     if (should_continue == 1) {
         for (i = 0 to BUFFER_SIZE - 1) {
@@ -667,7 +671,11 @@ locals int passed, int total
         trace("Total:", total);
     }
     
-    return (passed == total) ? 1 : 0;
+    if (passed == total) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 function runTest(testName, testFunction) 

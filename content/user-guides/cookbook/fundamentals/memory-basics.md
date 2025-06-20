@@ -27,12 +27,24 @@ Memory management is fundamental for reliable firmware development. This covers 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Memory management demonstration
@@ -46,9 +58,9 @@ locals int delay_time, int read_pos, int feedback, int input_sample, int delayed
 {
     loop {
         // Read parameters safely
-        delay_time = ((int)global params[0] >> 1) + 1;    // 1-128 delay range
-        feedback = (int)global params[1];                 // 0-255 feedback
-        wet_amount = (int)global params[2];               // 0-255 wet level
+        delay_time = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 1) + 1;    // 1-128 delay range
+        feedback = (int)global (int)global params[SWITCHES_PARAM_INDEX];                 // 0-255 feedback
+        wet_amount = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];               // 0-255 wet level
         
         // Read current input sample
         input_sample = (int)global signal[0];
@@ -135,6 +147,7 @@ locals int i, int angle, int sine_sample
         i = i + 1;
     }
 }
+
 ```
 
 ## How It Works
@@ -156,24 +169,24 @@ locals int i, int angle, int sine_sample
 
 ```impala
 // Short delay with feedback
-params[0] = 32;   // Short delay time
-params[1] = 128;  // Medium feedback
-params[2] = 100;  // Light wet mix
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 32;   // Short delay time
+(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Medium feedback
+(int)global params[OPERATOR_1_PARAM_INDEX] = 100;  // Light wet mix
 
 // Long delay, clean
-params[0] = 200;  // Long delay time
-params[1] = 64;   // Light feedback
-params[2] = 150;  // More wet signal
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Long delay time
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Light feedback
+(int)global params[OPERATOR_1_PARAM_INDEX] = 150;  // More wet signal
 
 // Vibrato effect
-params[0] = 8;    // Very short delay
-params[1] = 200;  // High feedback
-params[2] = 80;   // Subtle wet mix
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 8;    // Very short delay
+(int)global params[SWITCHES_PARAM_INDEX] = 200;  // High feedback
+(int)global params[OPERATOR_1_PARAM_INDEX] = 80;   // Subtle wet mix
 
 // Echo chamber
-params[0] = 255;  // Maximum delay
-params[1] = 180;  // Strong feedback
-params[2] = 120;  // Balanced mix
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 255;  // Maximum delay
+(int)global params[SWITCHES_PARAM_INDEX] = 180;  // Strong feedback
+(int)global params[OPERATOR_1_PARAM_INDEX] = 120;  // Balanced mix
 ```
 
 ## Understanding Memory Management

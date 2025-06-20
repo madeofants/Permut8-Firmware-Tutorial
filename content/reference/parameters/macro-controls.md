@@ -9,10 +9,10 @@ Allows a single knob to control multiple parameters with custom relationships. T
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Brightness macro (filter + tone)
-- `params[1]`: Drive macro (distortion + gain)
-- `params[2]`: Space macro (reverb + delay)
-- `params[3]`: Energy macro (levels + speed)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Brightness macro (filter + tone)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Drive macro (distortion + gain)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Space macro (reverb + delay)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Energy macro (levels + speed)
 
 **Core Techniques:**
 - **Multi-parameter mapping**: One knob controls several values
@@ -27,12 +27,24 @@ Allows a single knob to control multiple parameters with custom relationships. T
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Macro control state
@@ -46,10 +58,10 @@ locals int brightness_macro, int drive_macro, int space_macro, int energy_macro,
 {
     loop {
         // Read macro control knobs
-        brightness_macro = (int)global params[0];   // 0-255 brightness
-        drive_macro = (int)global params[1];        // 0-255 drive
-        space_macro = (int)global params[2];        // 0-255 space
-        energy_macro = (int)global params[3];       // 0-255 energy
+        brightness_macro = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];   // 0-255 brightness
+        drive_macro = (int)global (int)global params[SWITCHES_PARAM_INDEX];        // 0-255 drive
+        space_macro = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];        // 0-255 space
+        energy_macro = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];       // 0-255 energy
         
         // === BRIGHTNESS MACRO (Filter + Tone) ===
         // Controls filter cutoff, resonance, and tone shaping
@@ -116,6 +128,7 @@ locals int brightness_macro, int drive_macro, int space_macro, int energy_macro,
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -138,28 +151,28 @@ locals int brightness_macro, int drive_macro, int space_macro, int energy_macro,
 
 ```impala
 // Clean, bright sound
-params[0] = 200;  // High brightness
-params[1] = 64;   // Light drive
-params[2] = 80;   // Moderate space
-params[3] = 150;  // Good energy
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High brightness
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Light drive
+(int)global params[OPERATOR_1_PARAM_INDEX] = 80;   // Moderate space
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Good energy
 
 // Dark, driven sound
-params[0] = 80;   // Low brightness
-params[1] = 180;  // Heavy drive
-params[2] = 120;  // More space
-params[3] = 200;  // High energy
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 80;   // Low brightness
+(int)global params[SWITCHES_PARAM_INDEX] = 180;  // Heavy drive
+(int)global params[OPERATOR_1_PARAM_INDEX] = 120;  // More space
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // High energy
 
 // Ambient, spacious
-params[0] = 120;  // Medium brightness
-params[1] = 100;  // Medium drive
-params[2] = 200;  // Lots of space
-params[3] = 100;  // Moderate energy
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 120;  // Medium brightness
+(int)global params[SWITCHES_PARAM_INDEX] = 100;  // Medium drive
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Lots of space
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Moderate energy
 
 // Aggressive, punchy
-params[0] = 255;  // Maximum brightness
-params[1] = 255;  // Maximum drive
-params[2] = 50;   // Dry signal
-params[3] = 255;  // Maximum energy
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 255;  // Maximum brightness
+(int)global params[SWITCHES_PARAM_INDEX] = 255;  // Maximum drive
+(int)global params[OPERATOR_1_PARAM_INDEX] = 50;   // Dry signal
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 255;  // Maximum energy
 ```
 
 ## Understanding Macro Controls

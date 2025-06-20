@@ -71,6 +71,17 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 extern native yield
 
+// Parameter index constants (required for parameter access)
+const int CLOCK_FREQ_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int PARAM_COUNT
+
 // Custom interface labels
 readonly array panelTextRows[8] = {
     "",
@@ -92,7 +103,7 @@ locals int volume, int inputL, int inputR, int outputL, int outputR
 {
     loop {
         // Get volume from knob (0-255) and convert to gain (0-512 for 2x boost)
-        volume = (int)global params[3] * 2;  // 0-510 range
+        volume = (int)global params[OPERAND_2_HIGH_PARAM_INDEX] * 2;  // 0-510 range
         
         // Get input audio
         inputL = (int)global signal[0];
@@ -114,9 +125,27 @@ locals int volume, int inputL, int inputR, int outputL, int outputR
         
         // Visual feedback - show volume level
         global displayLEDs[0] = volume >> 1;  // Volume indicator
-        global displayLEDs[1] = (outputL > 1000) ? 0xFF : 0x00;  // Left channel activity
-        global displayLEDs[2] = (outputR > 1000) ? 0xFF : 0x00;  // Right channel activity  
-        global displayLEDs[3] = (volume > 200) ? 0xFF : 0x00;    // Boost indicator
+        
+        // Left channel activity
+        if (outputL > 1000) {
+            global displayLEDs[1] = 0xFF;
+        } else {
+            global displayLEDs[1] = 0x00;
+        }
+        
+        // Right channel activity
+        if (outputR > 1000) {
+            global displayLEDs[2] = 0xFF;
+        } else {
+            global displayLEDs[2] = 0x00;
+        }
+        
+        // Boost indicator
+        if (volume > 200) {
+            global displayLEDs[3] = 0xFF;
+        } else {
+            global displayLEDs[3] = 0x00;
+        }
         
         yield();
     }
@@ -136,8 +165,8 @@ Audio Input → Volume Calculation → Audio Output
 - **Output**: Write processed audio back to `global signal[0]` and `global signal[1]`
 
 #### **Parameter Control**:
-- **`params[3]`**: Gets knob position (0-255)
-- **Volume Calculation**: `params[3] * 2` gives 0-510 range (up to 2x boost)
+- **`params[OPERAND_2_HIGH_PARAM_INDEX]`**: Gets knob position (0-255)
+- **Volume Calculation**: `params[OPERAND_2_HIGH_PARAM_INDEX] * 2` gives 0-510 range (up to 2x boost)
 - **Audio Scaling**: `(input * volume) / 255` applies the gain
 
 #### **Visual Feedback**:

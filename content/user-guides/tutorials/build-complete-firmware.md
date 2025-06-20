@@ -123,7 +123,18 @@ const int LFO_DEPTH_MAX = 4000      // Maximum LFO modulation depth
 
 // Required Permut8 globals
 global array signal[2]
-global array params[8]
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 // Filter state variables (per channel)
@@ -266,10 +277,10 @@ returns int smoothedValue
 function updateParameterSmoothing()
 {
     // Read raw parameter values
-    int frequencyParam = params[3]      // Knob 1: Filter frequency
-    int resonanceParam = params[4]      // Knob 2: Resonance
-    int driveParam = params[5]          // Knob 3: Drive amount  
-    int levelParam = params[6]          // Knob 4: Output level
+    int frequencyParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]      // Knob 1: Filter frequency
+    int resonanceParam = (int)global params[OPERAND_1_LOW_PARAM_INDEX]      // Knob 2: Resonance
+    int driveParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]          // Knob 3: Drive amount  
+    int levelParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]          // Knob 4: Output level
     
     // Map parameters to useful ranges with musical scaling
     int targetFrequency = MIN_FREQUENCY + ((frequencyParam * (MAX_FREQUENCY - MIN_FREQUENCY)) / 255)
@@ -374,7 +385,7 @@ function updateLEDDisplay()
     displayLEDs[2] = (global smoothedDrive * 255) / MAX_DRIVE
     
     // LED 4: Filter type and activity indicator
-    int filterType = params[7] / 64  // 0-3 filter types
+    int filterType = (int)global params[SWITCHES_PARAM_INDEX] / 64  // 0-3 filter types
     int activityMask = 0
     
     // Base pattern shows filter type
@@ -428,8 +439,8 @@ function process()
         // PARAMETER MAPPING
         // ====================================================================
         
-        // Get filter type from knob 4 (params[7])
-        int filterType = params[7] / 64  // Maps 0-255 to 0-3
+        // Get filter type from switches (params[SWITCHES_PARAM_INDEX])
+        int filterType = (int)global params[SWITCHES_PARAM_INDEX] / 64  // Maps 0-255 to 0-3
         
         // Apply frequency modulation
         int modulatedFrequency = applyFrequencyModulation(global smoothedFrequency)
@@ -553,8 +564,9 @@ function advancedLEDDisplay()
     // Spectrum analyzer style frequency display
     int freqBand = global smoothedFrequency / 1000  // 0-8 bands
     int pattern = 0
-    for (int i = 0; i <= freqBand; i++) {
-        pattern = pattern | (1 << i)  // Progressive bar
+    int i;
+    for (i = 0 to freqBand) {
+        pattern = pattern | (1 << i);  // Progressive bar
     }
     displayLEDs[0] = pattern
 }

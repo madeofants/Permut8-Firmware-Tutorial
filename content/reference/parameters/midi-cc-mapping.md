@@ -9,10 +9,10 @@ Demonstrates parameter automation and external control concepts that can be appl
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Control source value (0-255)
-- `params[1]`: Target parameter select (0-255)
-- `params[2]`: Response curve type (0-255)
-- `params[3]`: Scale amount (0-255)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Control source value (0-255)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Target parameter select (0-255)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Response curve type (0-255)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Scale amount (0-255)
 
 **Core Techniques:**
 - **Parameter automation**: Dynamic parameter control
@@ -27,12 +27,24 @@ Demonstrates parameter automation and external control concepts that can be appl
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Parameter automation state
@@ -46,10 +58,10 @@ locals int control_input, int param_select, int curve_select, int scale_input, i
 {
     loop {
         // Read automation control inputs
-        control_input = (int)global params[0];     // 0-255 control source
-        param_select = (int)global params[1] >> 5; // 0-7 parameter selection  
-        curve_select = (int)global params[2] >> 6; // 0-3 curve types
-        scale_input = (int)global params[3];       // 0-255 scale factor
+        control_input = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];     // 0-255 control source
+        param_select = (int)global (int)global params[SWITCHES_PARAM_INDEX] >> 5; // 0-7 parameter selection  
+        curve_select = (int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 6; // 0-3 curve types
+        scale_input = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];       // 0-255 scale factor
         
         // Apply response curve to control input
         if (curve_select == 0) {
@@ -131,6 +143,7 @@ locals int control_input, int param_select, int curve_select, int scale_input, i
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -157,28 +170,28 @@ locals int control_input, int param_select, int curve_select, int scale_input, i
 
 ```impala
 // Linear cutoff control
-params[0] = 180;  // High control value
-params[1] = 0;    // Control cutoff
-params[2] = 0;    // Linear curve
-params[3] = 200;  // High sensitivity
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // High control value
+(int)global params[SWITCHES_PARAM_INDEX] = 0;    // Control cutoff
+(int)global params[OPERATOR_1_PARAM_INDEX] = 0;    // Linear curve
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // High sensitivity
 
 // Exponential resonance control
-params[0] = 100;  // Medium control value
-params[1] = 32;   // Control resonance
-params[2] = 64;   // Exponential curve
-params[3] = 150;  // Medium sensitivity
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Medium control value
+(int)global params[SWITCHES_PARAM_INDEX] = 32;   // Control resonance
+(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Exponential curve
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Medium sensitivity
 
 // Combined control with log curve
-params[0] = 150;  // Control value
-params[1] = 64;   // Combined control
-params[2] = 128;  // Logarithmic curve
-params[3] = 100;  // Lower sensitivity
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 150;  // Control value
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Combined control
+(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Logarithmic curve
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Lower sensitivity
 
 // Inverted control
-params[0] = 200;  // High input
-params[1] = 96;   // Any parameter
-params[2] = 192;  // Inverted curve
-params[3] = 255;  // Maximum sensitivity
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High input
+(int)global params[SWITCHES_PARAM_INDEX] = 96;   // Any parameter
+(int)global params[OPERATOR_1_PARAM_INDEX] = 192;  // Inverted curve
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 255;  // Maximum sensitivity
 ```
 
 ## Understanding Parameter Automation

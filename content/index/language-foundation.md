@@ -38,7 +38,7 @@ Provide authoritative, comprehensive documentation for all Impala language featu
 **Language Benefit**: Professional global variable usage preventing state management bugs
 
 **Critical Global Variables Covered**:
-- `params[8]` - Parameter array (0-255 range, real-time safe access)
+- `params[PARAM_COUNT]` - Parameter array (0-255 range, real-time safe access)
 - `signal[2]` - Audio input/output arrays (-2047 to 2047 range)
 - `positions[8]` - Fixed-point position variables (20-bit, 4 fractional)
 - `displayLEDs[]` - LED control array (8-bit shift register patterns)

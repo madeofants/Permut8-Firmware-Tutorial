@@ -9,10 +9,10 @@ Provides real-time monitoring of input signals for level detection, peak measure
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Presence threshold (0-255)
-- `params[1]`: Release time (0-255)
-- `params[2]`: Peak hold time (0-255)
-- `params[3]`: Monitoring mode (0-255)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Presence threshold (0-255)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Release time (0-255)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Peak hold time (0-255)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Monitoring mode (0-255)
 
 **Core Techniques:**
 - **Peak detection**: Track maximum instantaneous levels
@@ -27,12 +27,24 @@ Provides real-time monitoring of input signals for level detection, peak measure
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Input monitoring state
@@ -51,10 +63,10 @@ locals int input_sample, int abs_input, int presence_threshold, int release_time
         input_sample = (int)global signal[0];
         
         // Read control parameters
-        presence_threshold = (int)global params[0];        // 0-255 threshold
-        release_time = ((int)global params[1] >> 4) + 1;   // 1-16 release speed
-        peak_hold_time = ((int)global params[2] << 4) + 512; // 512-4608 samples
-        monitor_mode = (int)global params[3];              // 0-255 mode select
+        presence_threshold = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];        // 0-255 threshold
+        release_time = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 4) + 1;   // 1-16 release speed
+        peak_hold_time = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] << 4) + 512; // 512-4608 samples
+        monitor_mode = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];              // 0-255 mode select
         
         // Calculate absolute value
         if (input_sample < 0) {
@@ -132,6 +144,7 @@ locals int input_sample, int abs_input, int presence_threshold, int release_time
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -152,28 +165,28 @@ locals int input_sample, int abs_input, int presence_threshold, int release_time
 
 ```impala
 // Sensitive peak monitoring
-params[0] = 64;   // Low threshold - sensitive
-params[1] = 32;   // Slow release
-params[2] = 200;  // Long peak hold
-params[3] = 64;   // Peak-based presence
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Low threshold - sensitive
+(int)global params[SWITCHES_PARAM_INDEX] = 32;   // Slow release
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Long peak hold
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Peak-based presence
 
 // RMS-based monitoring
-params[0] = 128;  // Medium threshold
-params[1] = 80;   // Medium release
-params[2] = 100;  // Medium peak hold
-params[3] = 200;  // RMS-based presence
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium threshold
+(int)global params[SWITCHES_PARAM_INDEX] = 80;   // Medium release
+(int)global params[OPERATOR_1_PARAM_INDEX] = 100;  // Medium peak hold
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // RMS-based presence
 
 // Fast response monitoring
-params[0] = 100;  // Medium threshold
-params[1] = 200;  // Fast release
-params[2] = 50;   // Short peak hold
-params[3] = 80;   // Peak-based
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Medium threshold
+(int)global params[SWITCHES_PARAM_INDEX] = 200;  // Fast release
+(int)global params[OPERATOR_1_PARAM_INDEX] = 50;   // Short peak hold
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 80;   // Peak-based
 
 // Noise-resistant monitoring
-params[0] = 180;  // High threshold
-params[1] = 64;   // Slow release
-params[2] = 150;  // Medium hold
-params[3] = 180;  // RMS-based
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // High threshold
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Slow release
+(int)global params[OPERATOR_1_PARAM_INDEX] = 150;  // Medium hold
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // RMS-based
 ```
 
 ## Understanding Peak vs RMS

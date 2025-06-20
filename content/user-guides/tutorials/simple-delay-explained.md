@@ -67,7 +67,7 @@ Create `simple_delay.impala`:
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 // Delay buffer - 22050 samples (timing varies with sample rate)
@@ -142,8 +142,8 @@ function process()
         // Step 1: Get input
         int input = signal[0]
         
-        // Step 2: Get delay time from knob 1 (params[3])
-        int delayTimeParam = params[3]  // 0-255 from knob
+        // Step 2: Get delay time from knob 1
+        int delayTimeParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // 0-255 from knob
         
         // Step 3: Convert to delay samples
         // Map 0-255 to 1000-20000 samples (about 0.02-0.45 seconds)
@@ -200,8 +200,8 @@ function process()
 {
     loop {
         // Get parameters
-        int delayTimeParam = params[3]  // Knob 1: Delay time
-        int feedbackParam = params[4]   // Knob 2: Feedback amount
+        int delayTimeParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // Knob 1: Delay time
+        int feedbackParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]   // Knob 2: Feedback amount
         
         // Convert parameters to useful ranges
         int delaySamples = 1000 + ((delayTimeParam * 19000) / 255)
@@ -271,9 +271,9 @@ function process()
 {
     loop {
         // Get all three parameters
-        int delayTimeParam = params[3]  // Knob 1: Delay time
-        int feedbackParam = params[4]   // Knob 2: Feedback
-        int mixParam = params[5]        // Knob 3: Dry/wet mix
+        int delayTimeParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // Knob 1: Delay time
+        int feedbackParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]   // Knob 2: Feedback
+        int mixParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]        // Knob 3: Dry/wet mix
         
         // Convert to useful ranges
         int delaySamples = 1000 + ((delayTimeParam * 19000) / 255)
@@ -357,7 +357,7 @@ Here's your complete delay with all features:
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 global array delayBuffer[22050]  // 0.5 second maximum delay
@@ -367,9 +367,9 @@ function process()
 {
     loop {
         // Read parameters from hardware knobs
-        int delayTimeParam = params[3]  // Knob 1: Delay time (0-255)
-        int feedbackParam = params[4]   // Knob 2: Feedback amount (0-255)
-        int mixParam = params[5]        // Knob 3: Dry/wet mix (0-255)
+        int delayTimeParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // Knob 1: Delay time (0-255)
+        int feedbackParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]   // Knob 2: Feedback amount (0-255)
+        int mixParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]        // Knob 3: Dry/wet mix (0-255)
         
         // Convert parameters to useful ranges
         int delaySamples = 1000 + ((delayTimeParam * 19000) / 255)  // 1000-20000 samples

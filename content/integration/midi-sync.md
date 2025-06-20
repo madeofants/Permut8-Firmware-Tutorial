@@ -12,6 +12,18 @@ All code examples have been tested and verified. For a minimal implementation wi
 ### Clock Reception and Processing
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
+
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 extern native yield
 
 // MIDI clock state using global variables (Impala doesn't have structs)
@@ -42,6 +54,7 @@ function calculateSamplesPerClock(int tempo) returns int result {
         result = 1000;  // Default safe value
     }
 }
+
 ```
 
 ### MIDI Message Processing
@@ -258,7 +271,7 @@ function handleLateClockCompensation() {
 ```impala
 // Standard global arrays for Permut8
 global array signal[2]          // Audio I/O: [left, right]
-global array params[8]          // Knob values: 0-255
+global array params[PARAM_COUNT]          // Knob values: 0-255
 global array displayLEDs[4]     // LED displays
 
 // Delay synchronization globals
@@ -267,7 +280,7 @@ global int delay_smooth_time = 0;    // Smoothed delay time
 // Delay synchronized to MIDI clock divisions
 function syncedDelay() {
     // Division settings: 1/4, 1/8, 1/16, 1/32
-    int division = (int)global params[0];  // Use first knob for division (0-255)
+    int division = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];  // Use first knob for division (0-255)
     
     // Map knob value to division index (0-3)
     int div_index = division / 64;  // 0-3 from knob value
@@ -288,7 +301,7 @@ function syncedDelay() {
     int delay_samples = global delay_smooth_time;
     if (delay_samples > 0) {
         int delayed_sample = read(delay_samples);
-        int feedback = (int)global params[1];  // Use second knob for feedback
+        int feedback = (int)global (int)global params[SWITCHES_PARAM_INDEX];  // Use second knob for feedback
         int feedback_amount = (delayed_sample * feedback) >> 8;  // Scale feedback
         
         // Mix delayed signal with input
@@ -398,7 +411,7 @@ function updateSyncedGate() {
         global signal[1] = global signal[1];
     } else {
         // Gate closed - reduce audio level
-        int gate_closed_level = (int)global params[2];  // Use third knob
+        int gate_closed_level = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];  // Use third knob
         global signal[0] = (global signal[0] * gate_closed_level) >> 8;  // Scale down
         global signal[1] = (global signal[1] * gate_closed_level) >> 8;
     }
@@ -567,7 +580,11 @@ void updateSyncDisplay() {
     // Clock source indicator
     switch (multiClock.activeSource) {
         case MIDI_CLOCK:
-            displayLEDs[SOURCE_LED] = tempoEst.tempoLocked ? 255 : 128;
+            if (tempoEst.tempoLocked) {
+                displayLEDs[SOURCE_LED] = 255;
+            } else {
+                displayLEDs[SOURCE_LED] = 128;
+            }
             break;
         case INTERNAL_CLOCK:
             displayLEDs[SOURCE_LED] = 64;

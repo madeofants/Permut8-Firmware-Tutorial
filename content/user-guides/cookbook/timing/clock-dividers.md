@@ -9,10 +9,10 @@ Generates multiple polyrhythmic outputs from a single master clock, enabling com
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[0]`: Division 1 ratio (0-255)
-- `params[1]`: Division 2 ratio (0-255)
-- `params[2]`: Division 3 ratio (0-255)
-- `params[3]`: Master clock rate (0-255)
+- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Division 1 ratio (0-255)
+- `(int)global params[SWITCHES_PARAM_INDEX]`: Division 2 ratio (0-255)
+- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Division 3 ratio (0-255)
+- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Master clock rate (0-255)
 
 **Core Techniques:**
 - **Clock division**: Generate slower clocks from faster master
@@ -27,12 +27,24 @@ Generates multiple polyrhythmic outputs from a single master clock, enabling com
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
 global array signal[2]          // Left/Right audio samples
-global array params[8]          // Parameter values (0-255)
+global array params[PARAM_COUNT]          // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
 
 // Clock divider system state
@@ -50,10 +62,10 @@ locals int division1, int division2, int division3, int clock_rate, int master_p
 {
     loop {
         // Read division and timing parameters
-        division1 = ((int)global params[0] >> 4) + 1;  // 1-16 division ratio
-        division2 = ((int)global params[1] >> 4) + 1;  // 1-16 division ratio
-        division3 = ((int)global params[2] >> 4) + 1;  // 1-16 division ratio
-        clock_rate = (int)global params[3];            // 0-255 clock speed
+        division1 = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 4) + 1;  // 1-16 division ratio
+        division2 = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 4) + 1;  // 1-16 division ratio
+        division3 = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;  // 1-16 division ratio
+        clock_rate = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];            // 0-255 clock speed
         
         // Calculate master clock rate from parameter
         global master_rate = 2756 + ((clock_rate * 19600) >> 8);  // ~16Hz to 480Hz
@@ -165,6 +177,7 @@ locals int division1, int division2, int division3, int clock_rate, int master_p
         yield();
     }
 }
+
 ```
 
 ## How It Works
@@ -191,28 +204,28 @@ locals int division1, int division2, int division3, int clock_rate, int master_p
 
 ```impala
 // Standard musical divisions
-params[0] = 16;   // Division 1 = 2
-params[1] = 32;   // Division 2 = 3
-params[2] = 64;   // Division 3 = 5
-params[3] = 128;  // Medium clock rate
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 16;   // Division 1 = 2
+(int)global params[SWITCHES_PARAM_INDEX] = 32;   // Division 2 = 3
+(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Division 3 = 5
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Medium clock rate
 
 // Fast polyrhythms
-params[0] = 16;   // Division 1 = 2
-params[1] = 48;   // Division 2 = 4
-params[2] = 80;   // Division 3 = 6
-params[3] = 200;  // Fast clock rate
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 16;   // Division 1 = 2
+(int)global params[SWITCHES_PARAM_INDEX] = 48;   // Division 2 = 4
+(int)global params[OPERATOR_1_PARAM_INDEX] = 80;   // Division 3 = 6
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Fast clock rate
 
 // Slow evolution
-params[0] = 112;  // Division 1 = 8
-params[1] = 160;  // Division 2 = 11
-params[2] = 208;  // Division 3 = 14
-params[3] = 64;   // Slow clock rate
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 112;  // Division 1 = 8
+(int)global params[SWITCHES_PARAM_INDEX] = 160;  // Division 2 = 11
+(int)global params[OPERATOR_1_PARAM_INDEX] = 208;  // Division 3 = 14
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Slow clock rate
 
 // Simple beat subdivision
-params[0] = 16;   // Division 1 = 2
-params[1] = 64;   // Division 2 = 5
-params[2] = 128;  // Division 3 = 9
-params[3] = 150;  // Medium-fast clock rate
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 16;   // Division 1 = 2
+(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Division 2 = 5
+(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Division 3 = 9
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Medium-fast clock rate
 ```
 
 ## Understanding Clock Dividers
