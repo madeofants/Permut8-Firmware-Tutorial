@@ -9,10 +9,10 @@ Creates distortion by applying mathematical curves to reshape the audio waveform
 ## Quick Reference
 
 **Essential Parameters:**
-- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Input drive (0-255, controls distortion intensity)
-- `(int)global params[SWITCHES_PARAM_INDEX]`: Distortion type (0-255, selects waveshaping curve)
-- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Output level (0-255, compensates for volume changes)
-- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Dry/wet mix (0-255, blend control)
+- `params[CLOCK_FREQ_PARAM_INDEX]`: Input drive (0-255, controls distortion intensity)
+- `params[SWITCHES_PARAM_INDEX]`: Distortion type (0-255, selects waveshaping curve)
+- `params[OPERATOR_1_PARAM_INDEX]`: Output level (0-255, compensates for volume changes)
+- `params[OPERAND_1_HIGH_PARAM_INDEX]`: Dry/wet mix (0-255, blend control)
 
 **Key Concepts:** Waveshaping curves, harmonic generation, clipping algorithms, drive control
 
@@ -37,19 +37,21 @@ const int PARAM_COUNT
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
+global int clock                 // Sample counter for timing
 global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
+global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
+global int clockFreqLimit        // Current clock frequency limit
 
 function process()
 locals int drive, int dist_type, int output_level, int mix, int input, int driven, int shaped, int output, int mask
 {
     loop {
         // Read parameters
-        drive = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 2) + 1;     // 1-64 drive amount
-        dist_type = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 6);     // 0-3 distortion types
-        output_level = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 1) + 64;  // 64-191 output gain
-        mix = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];                  // 0-255 dry/wet mix
+        drive = ((int)global params[CLOCK_FREQ_PARAM_INDEX] >> 2) + 1;     // 1-64 drive amount
+        dist_type = ((int)global params[SWITCHES_PARAM_INDEX] >> 6);     // 0-3 distortion types
+        output_level = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 1) + 64;  // 64-191 output gain
+        mix = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];                  // 0-255 dry/wet mix
         
         input = (int)global signal[0];
         
@@ -145,28 +147,28 @@ locals int drive, int dist_type, int output_level, int mix, int input, int drive
 
 ```impala
 // Subtle tube warmth
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Light drive
-(int)global params[SWITCHES_PARAM_INDEX] = 32;   // Soft clipping
-(int)global params[OPERATOR_1_PARAM_INDEX] = 180;  // Boost output
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Blend with dry
+global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Light drive
+global params[SWITCHES_PARAM_INDEX] = 32;   // Soft clipping
+global params[OPERATOR_1_PARAM_INDEX] = 180;  // Boost output
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Blend with dry
 
 // Heavy rock distortion
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High drive
-(int)global params[SWITCHES_PARAM_INDEX] = 100;  // Hard clipping
-(int)global params[OPERATOR_1_PARAM_INDEX] = 140;  // Lower output
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 220;  // Mostly distorted
+global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High drive
+global params[SWITCHES_PARAM_INDEX] = 100;  // Hard clipping
+global params[OPERATOR_1_PARAM_INDEX] = 140;  // Lower output
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 220;  // Mostly distorted
 
 // Digital glitch
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 150;  // Medium drive
-(int)global params[SWITCHES_PARAM_INDEX] = 160;  // Bit crushing
-(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Boost output
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Mostly wet
+global params[CLOCK_FREQ_PARAM_INDEX] = 150;  // Medium drive
+global params[SWITCHES_PARAM_INDEX] = 160;  // Bit crushing
+global params[OPERATOR_1_PARAM_INDEX] = 200;  // Boost output
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Mostly wet
 
 // Experimental texture
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // High drive
-(int)global params[SWITCHES_PARAM_INDEX] = 220;  // Fold-back
-(int)global params[OPERATOR_1_PARAM_INDEX] = 160;  // Medium output
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Mostly processed
+global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // High drive
+global params[SWITCHES_PARAM_INDEX] = 220;  // Fold-back
+global params[OPERATOR_1_PARAM_INDEX] = 160;  // Medium output
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Mostly processed
 ```
 
 ## Understanding Waveshaping

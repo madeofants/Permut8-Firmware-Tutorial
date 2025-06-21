@@ -56,12 +56,12 @@ global int harmonic_strength = 0   // Harmonic content measure
 global int update_counter = 0   // Analysis rate control
 
 function process()
-locals int i, int peak_threshold, int noise_floor, int total_energy, int weighted_sum, int max_bin, int max_magnitude, int harmonic_sum, int fundamental_bin, int led_pattern
+locals i, peak_threshold, noise_floor, total_energy, weighted_sum, max_bin, max_magnitude, harmonic_sum, fundamental_bin, led_pattern
 {
     loop {
         // Read control parameters
-        peak_threshold = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];    // Peak detection threshold
-        noise_floor = (int)global (int)global params[SWITCHES_PARAM_INDEX] >> 1;  // Noise floor level
+        peak_threshold = params[CLOCK_FREQ_PARAM_INDEX];    // Peak detection threshold
+        noise_floor = params[SWITCHES_PARAM_INDEX] >> 1;  // Noise floor level
         
         // Simple magnitude calculation from input signal
         global update_counter = global update_counter + 1;
@@ -70,7 +70,7 @@ locals int i, int peak_threshold, int noise_floor, int total_energy, int weighte
             
             // Simulate frequency analysis using input amplitude
             // In real implementation, this would use FFT data
-            i = (int)global signal[0];
+            i = signal[0];
             if (i < 0) i = -i;  // Absolute value
             
             // Distribute energy across frequency bins based on signal characteristics
@@ -84,45 +84,45 @@ locals int i, int peak_threshold, int noise_floor, int total_energy, int weighte
             global magnitude[7] = i >> 8;  // Harmonics
             
             // Add some variation based on parameters
-            global magnitude[1] = (int)global magnitude[1] + ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 3);
-            global magnitude[2] = (int)global magnitude[2] + ((int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 2);
+            global magnitude[1] = global magnitude[1] + (params[OPERATOR_1_PARAM_INDEX] >> 3);
+            global magnitude[2] = global magnitude[2] + (params[OPERAND_1_HIGH_PARAM_INDEX] >> 2);
             
             // Peak detection - find dominant frequency bin
             max_bin = 0;
-            max_magnitude = (int)global magnitude[0];
+            max_magnitude = global magnitude[0];
             i = 1;
-            if ((int)global magnitude[i] > max_magnitude) {
-                max_magnitude = (int)global magnitude[i];
+            if (global magnitude[i] > max_magnitude) {
+                max_magnitude = global magnitude[i];
                 max_bin = i;
             }
             i = 2;
-            if ((int)global magnitude[i] > max_magnitude) {
-                max_magnitude = (int)global magnitude[i];
+            if (global magnitude[i] > max_magnitude) {
+                max_magnitude = global magnitude[i];
                 max_bin = i;
             }
             i = 3;
-            if ((int)global magnitude[i] > max_magnitude) {
-                max_magnitude = (int)global magnitude[i];
+            if (global magnitude[i] > max_magnitude) {
+                max_magnitude = global magnitude[i];
                 max_bin = i;
             }
             i = 4;
-            if ((int)global magnitude[i] > max_magnitude) {
-                max_magnitude = (int)global magnitude[i];
+            if (global magnitude[i] > max_magnitude) {
+                max_magnitude = global magnitude[i];
                 max_bin = i;
             }
             i = 5;
-            if ((int)global magnitude[i] > max_magnitude) {
-                max_magnitude = (int)global magnitude[i];
+            if (global magnitude[i] > max_magnitude) {
+                max_magnitude = global magnitude[i];
                 max_bin = i;
             }
             i = 6;
-            if ((int)global magnitude[i] > max_magnitude) {
-                max_magnitude = (int)global magnitude[i];
+            if (global magnitude[i] > max_magnitude) {
+                max_magnitude = global magnitude[i];
                 max_bin = i;
             }
             i = 7;
-            if ((int)global magnitude[i] > max_magnitude) {
-                max_magnitude = (int)global magnitude[i];
+            if (global magnitude[i] > max_magnitude) {
+                max_magnitude = global magnitude[i];
                 max_bin = i;
             }
             
@@ -244,22 +244,22 @@ locals int i, int peak_threshold, int noise_floor, int total_energy, int weighte
 
 ```impala
 // Sensitive pitch detection
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Low threshold
-(int)global params[SWITCHES_PARAM_INDEX] = 32;   // Low noise floor
-(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Moderate mid boost
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Slight high boost
+params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Low threshold
+params[SWITCHES_PARAM_INDEX] = 32;   // Low noise floor
+params[OPERATOR_1_PARAM_INDEX] = 128;  // Moderate mid boost
+params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Slight high boost
 
 // Harmonic analysis
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium threshold
-(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Medium noise floor
-(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Strong mid emphasis
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Moderate high boost
+params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium threshold
+params[SWITCHES_PARAM_INDEX] = 64;   // Medium noise floor
+params[OPERATOR_1_PARAM_INDEX] = 200;  // Strong mid emphasis
+params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Moderate high boost
 
 // Timbral analysis
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Medium-low threshold
-(int)global params[SWITCHES_PARAM_INDEX] = 80;   // Higher noise floor
-(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Subtle mid boost
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Strong high emphasis
+params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Medium-low threshold
+params[SWITCHES_PARAM_INDEX] = 80;   // Higher noise floor
+params[OPERATOR_1_PARAM_INDEX] = 64;   // Subtle mid boost
+params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Strong high emphasis
 ```
 
 ## Musical Applications

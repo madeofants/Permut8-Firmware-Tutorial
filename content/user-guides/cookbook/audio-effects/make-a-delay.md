@@ -35,10 +35,10 @@ For most delay effects, use **Approach 1: Original Operators**:
 
 ## Quick Reference
 **Parameters**:
-- **Control 1 ((int)global params[CLOCK_FREQ_PARAM_INDEX])**: Delay time (1-1000 samples, timing varies with sample rate)
-- **Control 2 ((int)global params[SWITCHES_PARAM_INDEX])**: Feedback amount (0-90% to prevent runaway)
-- **Control 3 ((int)global params[OPERATOR_2_PARAM_INDEX])**: [Available for expansion]
-- **Control 4 ((int)global params[OPERAND_2_HIGH_PARAM_INDEX])**: [Available for expansion]
+- **Control 1 (params[CLOCK_FREQ_PARAM_INDEX])**: Delay time (1-1000 samples, timing varies with sample rate)
+- **Control 2 (params[SWITCHES_PARAM_INDEX])**: Feedback amount (0-90% to prevent runaway)
+- **Control 3 (params[OPERATOR_2_PARAM_INDEX])**: [Available for expansion]
+- **Control 4 (params[OPERAND_2_HIGH_PARAM_INDEX])**: [Available for expansion]
 
 **Key Concepts**: Memory read/write operations, feedback loops, circular buffering
 
@@ -64,9 +64,11 @@ extern native read              // Read from delay line memory
 extern native write             // Write to delay line memory
 
 // Standard global variables
+global int clock                 // Sample counter for timing
 global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
+global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
+global int clockFreqLimit        // Current clock frequency limit
 
 // Delay processing variables
 global array delayBuffer[2]     // Temporary buffer for memory operations
@@ -74,79 +76,87 @@ global int delayIndex = 0       // Current position in delay buffer
 global int maxDelayTime = 1000  // Maximum delay in samples (timing varies with sample rate)
 
 // Utility function for audio clipping
-function clipAudio(int sample) returns int clipped {
-    if (sample > 2047) clipped = 2047
-    else if (sample < -2047) clipped = -2047
-    else clipped = sample
+function clipAudio(sample) returns clipped
+locals
+{
+    if (sample > 2047) clipped = 2047;
+    else if (sample < -2047) clipped = -2047;
+    else clipped = sample;
 }
 
-function process() {
+function process()
+locals
+{
     loop {
-        operate1()  // Process left channel
-        operate2()  // Process right channel
+        operate1();  // Process left channel
+        operate2();  // Process right channel
     }
 }
 
-function operate1() {
+function operate1()
+locals int delayTime, int feedbackAmount, int readPos, int delayedSample, int input, int output, int ledPattern
+{
     // === PARAMETER READING ===
-    int delayTime = ((int)(int)global params[CLOCK_FREQ_PARAM_INDEX] * maxDelayTime / 255) + 1  // 1-1000 samples
-    int feedbackAmount = (int)(int)global params[SWITCHES_PARAM_INDEX] * 90 / 255             // 0-90% feedback
+    delayTime = ((int)global params[CLOCK_FREQ_PARAM_INDEX] * global maxDelayTime / 255) + 1;  // 1-1000 samples
+    feedbackAmount = (int)global params[SWITCHES_PARAM_INDEX] * 90 / 255;             // 0-90% feedback
     
     // === DELAY PROCESSING ===
     // Read delayed sample from memory (fixed offset from write position)
-    int readPos = (delayIndex - delayTime + maxDelayTime) % maxDelayTime
-    read(readPos, 1, delayBuffer)
-    int delayedSample = delayBuffer[0]
+    readPos = (global delayIndex - delayTime + global maxDelayTime) % global maxDelayTime;
+    read(readPos, 1, global delayBuffer);
+    delayedSample = global delayBuffer[0];
     
     // Mix input with delayed signal for output
-    int input = signal[0]
-    int output = input + (delayedSample * feedbackAmount / 100)
-    output = clipAudio(output)
+    input = global signal[0];
+    output = input + (delayedSample * feedbackAmount / 100);
+    output = clipAudio(output);
     
     // Store new sample (input + feedback) for next delay iteration
-    delayBuffer[0] = input + (delayedSample * feedbackAmount / 100)
-    delayBuffer[0] = clipAudio(delayBuffer[0])
+    global delayBuffer[0] = input + (delayedSample * feedbackAmount / 100);
+    global delayBuffer[0] = clipAudio(global delayBuffer[0]);
     
-    write(delayIndex, 1, delayBuffer)
+    write(global delayIndex, 1, global delayBuffer);
     
     // Update delay buffer position (fixed circular buffer)
-    delayIndex = (delayIndex + 1) % maxDelayTime
+    global delayIndex = (global delayIndex + 1) % global maxDelayTime;
     
     // === OUTPUT AND VISUALIZATION ===
     // Show delay activity on LEDs (lights when delayed signal is audible)
-    int ledPattern = 0
+    ledPattern = 0;
     if (delayedSample > 100 || delayedSample < -100) {
-        ledPattern = (1 << (delayIndex % 8))
+        ledPattern = (1 << (global delayIndex % 8));
     }
-    displayLEDs[0] = ledPattern
+    global displayLEDs[0] = ledPattern;
     
-    signal[0] = output
-    yield()
+    global signal[0] = output;
+    yield();
 }
 
-function operate2() {
+function operate2()
+locals int delayTime, int feedbackAmount, int readPos, int delayedSample, int input, int output
+{
     // === RIGHT CHANNEL PROCESSING ===
     // Identical delay processing for right channel using offset memory location
-    int delayTime = ((int)(int)global params[CLOCK_FREQ_PARAM_INDEX] * maxDelayTime / 255) + 1
-    int feedbackAmount = (int)(int)global params[SWITCHES_PARAM_INDEX] * 90 / 255
+    delayTime = ((int)global params[CLOCK_FREQ_PARAM_INDEX] * global maxDelayTime / 255) + 1;
+    feedbackAmount = (int)global params[SWITCHES_PARAM_INDEX] * 90 / 255;
     
     // Use offset memory location to avoid interference with left channel
-    int readPos = ((delayIndex - delayTime + maxDelayTime) % maxDelayTime) + maxDelayTime
-    read(readPos, 1, delayBuffer)
-    int delayedSample = delayBuffer[0]
+    readPos = ((global delayIndex - delayTime + global maxDelayTime) % global maxDelayTime) + global maxDelayTime;
+    read(readPos, 1, global delayBuffer);
+    delayedSample = global delayBuffer[0];
     
-    int input = signal[1]
-    int output = input + (delayedSample * feedbackAmount / 100)
-    output = clipAudio(output)
+    input = global signal[1];
+    output = input + (delayedSample * feedbackAmount / 100);
+    output = clipAudio(output);
     
     // Store sample with feedback
-    delayBuffer[0] = input + (delayedSample * feedbackAmount / 100)
-    delayBuffer[0] = clipAudio(delayBuffer[0])
+    global delayBuffer[0] = input + (delayedSample * feedbackAmount / 100);
+    global delayBuffer[0] = clipAudio(global delayBuffer[0]);
     
-    write(delayIndex + maxDelayTime, 1, delayBuffer)
+    write(global delayIndex + global maxDelayTime, 1, global delayBuffer);
     
-    signal[1] = output
-    yield()
+    global signal[1] = output;
+    yield();
 }
 
 ```

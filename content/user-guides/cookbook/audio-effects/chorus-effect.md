@@ -5,10 +5,10 @@ Creates a lush, thickening effect by adding multiple modulated delay lines that 
 
 ## Quick Reference
 **Parameters**:
-- **Control 1 ((int)global params[OPERAND_1_HIGH_PARAM_INDEX])**: LFO rate (0.1Hz to 5Hz, controls sweep speed)
-- **Control 2 ((int)global params[OPERAND_1_LOW_PARAM_INDEX])**: Modulation depth (0-255, controls pitch variation amount)
-- **Control 3 ((int)global params[OPERATOR_2_PARAM_INDEX])**: Dry/wet mix (0% = dry signal, 100% = full chorus)
-- **Control 4 ((int)global params[OPERAND_2_HIGH_PARAM_INDEX])**: Stereo spread (0 = mono, 255 = maximum width)
+- **Control 1 (params[OPERAND_1_HIGH_PARAM_INDEX])**: LFO rate (0.1Hz to 5Hz, controls sweep speed)
+- **Control 2 (params[OPERAND_1_LOW_PARAM_INDEX])**: Modulation depth (0-255, controls pitch variation amount)
+- **Control 3 (params[OPERATOR_2_PARAM_INDEX])**: Dry/wet mix (0% = dry signal, 100% = full chorus)
+- **Control 4 (params[OPERAND_2_HIGH_PARAM_INDEX])**: Stereo spread (0 = mono, 255 = maximum width)
 
 **Key Concepts**: Multiple delay lines, LFO modulation, stereo imaging, interpolation
 
@@ -34,9 +34,11 @@ extern native read              // Read from delay line memory
 extern native write             // Write to delay line memory
 
 // Standard global variables
+global int clock                 // Sample counter for timing
 global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
+global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
+global int clockFreqLimit        // Current clock frequency limit
 
 // Simple chorus state
 global array temp_buffer[2]     // Temporary buffer for memory operations
@@ -46,25 +48,14 @@ global int lfo_phase_r = 64     // Right channel LFO phase (offset for stereo)
 const int MAX_DELAY_BUFFER = 200 // Maximum delay buffer size
 
 function process()
-locals int rate
-locals int depth  
-locals int mix
-locals int spread
-locals int delay_time_l
-locals int delay_time_r
-locals int lfo_val_l
-locals int lfo_val_r
-locals int delayed_sample_l
-locals int delayed_sample_r
-locals int output_l
-locals int output_r
+locals int rate, int depth, int mix, int spread, int delay_time_l, int delay_time_r, int lfo_val_l, int lfo_val_r, int delayed_sample_l, int delayed_sample_r, int output_l, int output_r, int read_pos_l, int read_pos_r
 {
     loop {
         // Read parameters
-        rate = ((int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 4) + 1;     // Control 1: LFO rate (1-16)
-        depth = ((int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX] >> 3) + 1;    // Control 2: Modulation depth (1-32 samples)
-        mix = (int)global (int)global params[OPERATOR_2_PARAM_INDEX];                 // Control 3: Dry/wet mix (0-255)
-        spread = (int)global (int)global params[OPERAND_2_HIGH_PARAM_INDEX];              // Control 4: Stereo spread (0-255)
+        rate = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 4) + 1;     // Control 1: LFO rate (1-16)
+        depth = ((int)global params[OPERAND_1_LOW_PARAM_INDEX] >> 3) + 1;    // Control 2: Modulation depth (1-32 samples)
+        mix = (int)global params[OPERATOR_2_PARAM_INDEX];                 // Control 3: Dry/wet mix (0-255)
+        spread = (int)global params[OPERAND_2_HIGH_PARAM_INDEX];              // Control 4: Stereo spread (0-255)
         
         // Triangle LFO for left channel
         global lfo_phase = (global lfo_phase + rate) & 255;
@@ -98,8 +89,8 @@ locals int output_r
         write(global write_pos + MAX_DELAY_BUFFER, 1, global temp_buffer);
         
         // Read delayed samples with modulation (safe circular buffer access)
-        int read_pos_l = (global write_pos - delay_time_l + MAX_DELAY_BUFFER) % MAX_DELAY_BUFFER;
-        int read_pos_r = (global write_pos - delay_time_r + MAX_DELAY_BUFFER) % MAX_DELAY_BUFFER;
+        read_pos_l = (global write_pos - delay_time_l + MAX_DELAY_BUFFER) % MAX_DELAY_BUFFER;
+        read_pos_r = (global write_pos - delay_time_r + MAX_DELAY_BUFFER) % MAX_DELAY_BUFFER;
         
         read(read_pos_l, 1, global temp_buffer);
         delayed_sample_l = (int)global temp_buffer[0];

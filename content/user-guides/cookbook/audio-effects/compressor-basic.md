@@ -9,10 +9,10 @@ Automatically reduces the volume of loud signals while leaving quieter signals u
 ## Quick Reference
 
 **Essential Parameters:**
-- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Threshold (0-255, level where compression starts)
-- `(int)global params[SWITCHES_PARAM_INDEX]`: Ratio (0-255, amount of compression)
-- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Attack (0-255, how fast compression engages)
-- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Release (0-255, how fast compression disengages)
+- `params[CLOCK_FREQ_PARAM_INDEX]`: Threshold (0-255, level where compression starts)
+- `params[SWITCHES_PARAM_INDEX]`: Ratio (0-255, amount of compression)
+- `params[OPERATOR_1_PARAM_INDEX]`: Attack (0-255, how fast compression engages)
+- `params[OPERAND_1_HIGH_PARAM_INDEX]`: Release (0-255, how fast compression disengages)
 
 **Key Concepts:** Envelope following, threshold detection, gain reduction, attack/release timing
 
@@ -37,33 +37,25 @@ const int PARAM_COUNT
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
+global int clock                 // Sample counter for timing
 global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
+global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
+global int clockFreqLimit        // Current clock frequency limit
 
 // Simple compressor state
 global int envelope = 0         // Current envelope level
 global int gain_reduction = 255 // Current gain reduction (255=no reduction, 0=max reduction)
 
 function process()
-locals int threshold
-locals int ratio
-locals int attack
-locals int release
-locals int input_level
-locals int target_gain
-locals int output
-locals int overage
-locals int gain_reduction_amount
-locals int attack_factor
-locals int release_factor
+locals int threshold, int ratio, int attack, int release, int input_level, int target_gain, int output, int overage, int gain_reduction_amount, int attack_factor, int release_factor, int output_left, int output_right
 {
     loop {
         // Read parameters
-        threshold = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] << 2) + 256;   // 256-1276 range (within audio range)
-        ratio = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 4) + 2;         // 2-17 ratio (reasonable compression range)
-        attack = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 5) + 1;        // 1-8 attack speed
-        release = ((int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 5) + 1;       // 1-8 release speed
+        threshold = ((int)global params[CLOCK_FREQ_PARAM_INDEX] << 2) + 256;   // 256-1276 range (within audio range)
+        ratio = ((int)global params[SWITCHES_PARAM_INDEX] >> 4) + 2;         // 2-17 ratio (reasonable compression range)
+        attack = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 5) + 1;        // 1-8 attack speed
+        release = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 5) + 1;       // 1-8 release speed
         
         // Convert to proper envelope factors
         attack_factor = attack & 7;                       // Limit to 0-7 for reasonable response
@@ -109,8 +101,8 @@ locals int release_factor
         }
         
         // Apply compression to both channels
-        int output_left = ((int)global signal[0] * global gain_reduction) >> 8;
-        int output_right = ((int)global signal[1] * global gain_reduction) >> 8;
+        output_left = ((int)global signal[0] * global gain_reduction) >> 8;
+        output_right = ((int)global signal[1] * global gain_reduction) >> 8;
         
         // Prevent clipping
         if (output_left > 2047) output_left = 2047;
@@ -154,16 +146,16 @@ locals int release_factor
 
 ```impala
 // Gentle vocal compression
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // High threshold
-(int)global params[SWITCHES_PARAM_INDEX] = 64;   // 8:1 ratio
-(int)global params[OPERATOR_1_PARAM_INDEX] = 32;   // Medium attack
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Slow release
+global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // High threshold
+global params[SWITCHES_PARAM_INDEX] = 64;   // 8:1 ratio
+global params[OPERATOR_1_PARAM_INDEX] = 32;   // Medium attack
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Slow release
 
 // Drum compression
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 120;  // Lower threshold
-(int)global params[SWITCHES_PARAM_INDEX] = 96;   // 12:1 ratio  
-(int)global params[OPERATOR_1_PARAM_INDEX] = 8;    // Fast attack
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Medium release
+global params[CLOCK_FREQ_PARAM_INDEX] = 120;  // Lower threshold
+global params[SWITCHES_PARAM_INDEX] = 96;   // 12:1 ratio  
+global params[OPERATOR_1_PARAM_INDEX] = 8;    // Fast attack
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Medium release
 ```
 
 ## Try These Changes

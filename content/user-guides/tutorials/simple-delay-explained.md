@@ -63,42 +63,111 @@ delayBuffer[writePosition] = input  // Always stays 0-999
 Create `simple_delay.impala`:
 
 ```impala
+// ===== STANDARD PERMUT8 CONSTANTS =====
+
+// Parameter System Constants
+const int PARAM_MAX = 255                    // Maximum knob/parameter value (8-bit)
+const int PARAM_MIN = 0                      // Minimum knob/parameter value
+const int PARAM_MID = 128                    // Parameter midpoint for bipolar controls
+const int PARAM_SWITCH_THRESHOLD = 127       // Boolean parameter on/off threshold
+
+// Audio Sample Range Constants (12-bit signed audio)
+const int AUDIO_MAX = 2047                   // Maximum audio sample value (+12-bit)
+const int AUDIO_MIN = -2047                  // Minimum audio sample value (-12-bit)
+const int AUDIO_ZERO = 0                     // Audio silence/center value
+
+// Sample Rate Constants
+const int SAMPLE_RATE_44K1 = 44100          // Standard audio sample rate (Hz)
+const int SAMPLE_RATE_HALF = 22050          // Half sample rate (0.5 second buffer at 44.1kHz)
+const int SAMPLE_RATE_QUARTER = 11025       // Quarter sample rate (0.25 second buffer)
+
+// Audio Scaling Constants (16-bit ranges for phase accumulators)
+const int AUDIO_FULL_RANGE = 65536          // 16-bit full scale range (0-65535)
+const int AUDIO_HALF_RANGE = 32768          // 16-bit half scale (bipolar center)
+const int AUDIO_QUARTER_RANGE = 16384       // 16-bit quarter scale (triangle wave peaks)
+
+// Mathematical Constants
+const float PI = 3.14159265                 // Mathematical pi constant
+const float TWO_PI = 6.28318531             // 2 * pi (full circle radians)
+const float PI_OVER_2 = 1.57079633          // pi/2 (quarter circle radians)
+
+// Buffer Size Constants (powers of 2 for efficiency)
+const int SMALL_BUFFER = 128                // Small buffer size
+const int MEDIUM_BUFFER = 512               // Medium buffer size  
+const int LARGE_BUFFER = 1024               // Large buffer size
+const int MAX_BUFFER = 2048                 // Maximum buffer size
+
+// Bit Manipulation Constants
+const int BITS_PER_BYTE = 8                 // Standard byte size
+const int SHIFT_DIVIDE_BY_2 = 1             // Bit shift for divide by 2
+const int SHIFT_DIVIDE_BY_4 = 2             // Bit shift for divide by 4
+const int SHIFT_DIVIDE_BY_8 = 3             // Bit shift for divide by 8
+
+// LED Display Constants
+const int LED_OFF = 0x00                    // All LEDs off
+const int LED_ALL_ON = 0xFF                 // All 8 LEDs on
+const int LED_SINGLE = 0x01                 // Single LED pattern
+const int LED_DOUBLE = 0x03                 // Two LED pattern
+const int LED_QUAD = 0x0F                   // Four LED pattern
+const int LED_BRIGHTNESS_FULL = 255         // Full LED brightness
+const int LED_BRIGHTNESS_HALF = 127         // Half LED brightness
+
+// Musical/Timing Constants
+const int STANDARD_BPM = 120                // Standard tempo reference
+const int QUARTER_NOTE_DIVISIONS = 4        // Divisions per quarter note
+const int SEMITONES_PER_OCTAVE = 12         // Musical semitones in octave
+const float A4_FREQUENCY = 440.0            // A4 reference frequency (Hz)
+
 // Simple Delay - Step by Step
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+global int clock = 0
 global array signal[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
+global int clockFreqLimit = 132300
 
-// Delay buffer - 22050 samples (timing varies with sample rate)
-global array delayBuffer[22050]
+// Delay buffer - SAMPLE_RATE_HALF samples (timing varies with sample rate)
+global array delayBuffer[SAMPLE_RATE_HALF]
 global int bufferPosition = 0
 
 function process()
+locals int input, int readPosition, int delayed, int mixed
 {
     loop {
         // Step 1: Get input audio
-        int input = signal[0]
+        input = signal[0]
         
         // Step 2: Store input in delay buffer
         delayBuffer[bufferPosition] = input
         
         // Step 3: Calculate where to read delayed audio from
-        // Read from 11025 samples ago (0.25 seconds ago)
-        int readPosition = (bufferPosition - 11025 + 22050) % 22050
+        // Read from SAMPLE_RATE_QUARTER samples ago (0.25 seconds ago)
+        readPosition = (bufferPosition - SAMPLE_RATE_QUARTER + SAMPLE_RATE_HALF) % SAMPLE_RATE_HALF
         
         // Step 4: Get delayed audio
-        int delayed = delayBuffer[readPosition]
+        delayed = delayBuffer[readPosition]
         
         // Step 5: Mix input and delayed audio (50/50 mix)
-        int mixed = (input + delayed) / 2
+        mixed = (input + delayed) / 2
         
         // Step 6: Output mixed audio
         signal[0] = mixed
         signal[1] = mixed  // Same for both channels
         
         // Step 7: Move to next buffer position (circular)
-        bufferPosition = (bufferPosition + 1) % 22050
+        bufferPosition = (bufferPosition + 1) % SAMPLE_RATE_HALF
         
         yield()
     }
@@ -111,21 +180,21 @@ function process()
 3. **You should hear a 0.25-second delay echo!**
 
 ### 2.3 Understanding the Math
-**Why `(bufferPosition - 11025 + 22050) % 22050`?**
+**Why `(bufferPosition - SAMPLE_RATE_QUARTER + SAMPLE_RATE_HALF) % SAMPLE_RATE_HALF`?**
 
 ```impala
 // Problem: Simple subtraction can go negative
-int readPos = bufferPosition - 11025  // NEGATIVE when bufferPosition < 11025!
+int readPos = bufferPosition - SAMPLE_RATE_QUARTER  // NEGATIVE when bufferPosition < SAMPLE_RATE_QUARTER!
 
 // Solution: Add buffer size before modulo
-int readPos = (bufferPosition - 11025 + 22050) % 22050
+int readPos = (bufferPosition - SAMPLE_RATE_QUARTER + SAMPLE_RATE_HALF) % SAMPLE_RATE_HALF
 
 // Examples:
-// bufferPosition = 5000, want to read 11025 behind:
-// (5000 - 11025 + 22050) % 22050 = 16025 % 22050 = 16025 ✓
+// bufferPosition = 5000, want to read SAMPLE_RATE_QUARTER behind:
+// (5000 - SAMPLE_RATE_QUARTER + SAMPLE_RATE_HALF) % SAMPLE_RATE_HALF = 16025 % SAMPLE_RATE_HALF = 16025 ✓
 
-// bufferPosition = 15000, want to read 11025 behind:  
-// (15000 - 11025 + 22050) % 22050 = 25975 % 22050 = 3925 ✓
+// bufferPosition = 15000, want to read SAMPLE_RATE_QUARTER behind:  
+// (15000 - SAMPLE_RATE_QUARTER + SAMPLE_RATE_HALF) % SAMPLE_RATE_HALF = 25975 % SAMPLE_RATE_HALF = 3925 ✓
 ```
 
 ---
@@ -136,37 +205,93 @@ int readPos = (bufferPosition - 11025 + 22050) % 22050
 Replace the process function with this enhanced version:
 
 ```impala
+// ===== STANDARD PERMUT8 CONSTANTS =====
+
+// Parameter System Constants
+const int PARAM_MAX = 255                    // Maximum knob/parameter value (8-bit)
+const int PARAM_MIN = 0                      // Minimum knob/parameter value
+const int PARAM_MID = 128                    // Parameter midpoint for bipolar controls
+const int PARAM_SWITCH_THRESHOLD = 127       // Boolean parameter on/off threshold
+
+// Audio Sample Range Constants (12-bit signed audio)
+const int AUDIO_MAX = 2047                   // Maximum audio sample value (+12-bit)
+const int AUDIO_MIN = -2047                  // Minimum audio sample value (-12-bit)
+const int AUDIO_ZERO = 0                     // Audio silence/center value
+
+// Sample Rate Constants
+const int SAMPLE_RATE_44K1 = 44100          // Standard audio sample rate (Hz)
+const int SAMPLE_RATE_HALF = 22050          // Half sample rate (0.5 second buffer at 44.1kHz)
+const int SAMPLE_RATE_QUARTER = 11025       // Quarter sample rate (0.25 second buffer)
+
+// Audio Scaling Constants (16-bit ranges for phase accumulators)
+const int AUDIO_FULL_RANGE = 65536          // 16-bit full scale range (0-65535)
+const int AUDIO_HALF_RANGE = 32768          // 16-bit half scale (bipolar center)
+const int AUDIO_QUARTER_RANGE = 16384       // 16-bit quarter scale (triangle wave peaks)
+
+// Mathematical Constants
+const float PI = 3.14159265                 // Mathematical pi constant
+const float TWO_PI = 6.28318531             // 2 * pi (full circle radians)
+const float PI_OVER_2 = 1.57079633          // pi/2 (quarter circle radians)
+
+// Buffer Size Constants (powers of 2 for efficiency)
+const int SMALL_BUFFER = 128                // Small buffer size
+const int MEDIUM_BUFFER = 512               // Medium buffer size  
+const int LARGE_BUFFER = 1024               // Large buffer size
+const int MAX_BUFFER = 2048                 // Maximum buffer size
+
+// Bit Manipulation Constants
+const int BITS_PER_BYTE = 8                 // Standard byte size
+const int SHIFT_DIVIDE_BY_2 = 1             // Bit shift for divide by 2
+const int SHIFT_DIVIDE_BY_4 = 2             // Bit shift for divide by 4
+const int SHIFT_DIVIDE_BY_8 = 3             // Bit shift for divide by 8
+
+// LED Display Constants
+const int LED_OFF = 0x00                    // All LEDs off
+const int LED_ALL_ON = 0xFF                 // All 8 LEDs on
+const int LED_SINGLE = 0x01                 // Single LED pattern
+const int LED_DOUBLE = 0x03                 // Two LED pattern
+const int LED_QUAD = 0x0F                   // Four LED pattern
+const int LED_BRIGHTNESS_FULL = 255         // Full LED brightness
+const int LED_BRIGHTNESS_HALF = 127         // Half LED brightness
+
+// Musical/Timing Constants
+const int STANDARD_BPM = 120                // Standard tempo reference
+const int QUARTER_NOTE_DIVISIONS = 4        // Divisions per quarter note
+const int SEMITONES_PER_OCTAVE = 12         // Musical semitones in octave
+const float A4_FREQUENCY = 440.0            // A4 reference frequency (Hz)
+
 function process()
+locals int input, int delayTimeParam, int delaySamples, int readPosition, int delayed, int mixed
 {
     loop {
         // Step 1: Get input
-        int input = signal[0]
+        input = signal[0]
         
         // Step 2: Get delay time from knob 1
-        int delayTimeParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // 0-255 from knob
+        delayTimeParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // 0-255 from knob
         
         // Step 3: Convert to delay samples
         // Map 0-255 to 1000-20000 samples (about 0.02-0.45 seconds)
-        int delaySamples = 1000 + ((delayTimeParam * 19000) / 255)
+        delaySamples = 1000 + ((delayTimeParam * 19000) / 255)
         
         // Step 4: Store input in buffer
         delayBuffer[bufferPosition] = input
         
         // Step 5: Calculate read position with variable delay
-        int readPosition = (bufferPosition - delaySamples + 22050) % 22050
+        readPosition = (bufferPosition - delaySamples + SAMPLE_RATE_HALF) % SAMPLE_RATE_HALF
         
         // Step 6: Get delayed audio
-        int delayed = delayBuffer[readPosition]
+        delayed = delayBuffer[readPosition]
         
         // Step 7: Mix (still 50/50 for now)
-        int mixed = (input + delayed) / 2
+        mixed = (input + delayed) / 2
         
         // Step 8: Output
         signal[0] = mixed
         signal[1] = mixed
         
         // Step 9: Advance buffer position
-        bufferPosition = (bufferPosition + 1) % 22050
+        bufferPosition = (bufferPosition + 1) % SAMPLE_RATE_HALF
         
         yield()
     }
@@ -211,7 +336,7 @@ function process()
         int input = signal[0]
         
         // Get delayed audio
-        int readPosition = (bufferPosition - delaySamples + 22050) % 22050
+        int readPosition = (bufferPosition - delaySamples + SAMPLE_RATE_HALF) % SAMPLE_RATE_HALF
         int delayed = delayBuffer[readPosition]
         
         // Create feedback: delayed audio affects what goes into buffer
@@ -219,8 +344,8 @@ function process()
         int bufferInput = input + feedbackAmount
         
         // Prevent feedback from getting too loud
-        if (bufferInput > 2047) bufferInput = 2047
-        else if (bufferInput < -2047) bufferInput = -2047
+        if (bufferInput > AUDIO_MAX) bufferInput = AUDIO_MAX
+        else if (bufferInput < -AUDIO_MAX) bufferInput = -AUDIO_MAX
         
         // Store in buffer (input + feedback)
         delayBuffer[bufferPosition] = bufferInput
@@ -231,7 +356,7 @@ function process()
         signal[0] = mixed
         signal[1] = mixed
         
-        bufferPosition = (bufferPosition + 1) % 22050
+        bufferPosition = (bufferPosition + 1) % SAMPLE_RATE_HALF
         
         yield()
     }
@@ -268,47 +393,48 @@ Final process function with all controls:
 
 ```impala
 function process()
+locals int delayTimeParam, int feedbackParam, int mixParam, int delaySamples, int feedbackLevel, int wetLevel, int dryLevel, int input, int readPosition, int delayed, int feedbackAmount, int bufferInput, int drySignal, int wetSignal, int finalOutput
 {
     loop {
         // Get all three parameters
-        int delayTimeParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // Knob 1: Delay time
-        int feedbackParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]   // Knob 2: Feedback
-        int mixParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]        // Knob 3: Dry/wet mix
+        delayTimeParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // Knob 1: Delay time
+        feedbackParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]   // Knob 2: Feedback
+        mixParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]        // Knob 3: Dry/wet mix
         
         // Convert to useful ranges
-        int delaySamples = 1000 + ((delayTimeParam * 19000) / 255)
-        int feedbackLevel = (feedbackParam * 200) / 255
-        int wetLevel = mixParam              // 0-255 wet amount
-        int dryLevel = 255 - mixParam        // 255-0 dry amount
+        delaySamples = 1000 + ((delayTimeParam * 19000) / 255)
+        feedbackLevel = (feedbackParam * 200) / 255
+        wetLevel = mixParam              // 0-255 wet amount
+        dryLevel = 255 - mixParam        // 255-0 dry amount
         
         // Get audio
-        int input = signal[0]
+        input = signal[0]
         
         // Calculate delay
-        int readPosition = (bufferPosition - delaySamples + 22050) % 22050
-        int delayed = delayBuffer[readPosition]
+        readPosition = (bufferPosition - delaySamples + SAMPLE_RATE_HALF) % SAMPLE_RATE_HALF
+        delayed = delayBuffer[readPosition]
         
         // Apply feedback
-        int feedbackAmount = (delayed * feedbackLevel) / 255
-        int bufferInput = input + feedbackAmount
+        feedbackAmount = (delayed * feedbackLevel) / 255
+        bufferInput = input + feedbackAmount
         
         // Clip feedback
-        if (bufferInput > 2047) bufferInput = 2047
-        else if (bufferInput < -2047) bufferInput = -2047
+        if (bufferInput > AUDIO_MAX) bufferInput = AUDIO_MAX
+        else if (bufferInput < -AUDIO_MAX) bufferInput = -AUDIO_MAX
         
         // Store in buffer
         delayBuffer[bufferPosition] = bufferInput
         
         // Mix dry and wet signals
-        int drySignal = (input * dryLevel) / 255
-        int wetSignal = (delayed * wetLevel) / 255
-        int finalOutput = drySignal + wetSignal
+        drySignal = (input * dryLevel) / 255
+        wetSignal = (delayed * wetLevel) / 255
+        finalOutput = drySignal + wetSignal
         
         // Output
         signal[0] = finalOutput
         signal[1] = finalOutput
         
-        bufferPosition = (bufferPosition + 1) % 22050
+        bufferPosition = (bufferPosition + 1) % SAMPLE_RATE_HALF
         
         yield()
     }
@@ -360,7 +486,7 @@ global array signal[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
-global array delayBuffer[22050]  // 0.5 second maximum delay
+global array delayBuffer[SAMPLE_RATE_HALF]  // 0.5 second maximum delay
 global int bufferPosition = 0
 
 function process()
@@ -381,7 +507,7 @@ function process()
         int input = signal[0]
         
         // Calculate where to read delayed audio from
-        int readPosition = (bufferPosition - delaySamples + 22050) % 22050
+        int readPosition = (bufferPosition - delaySamples + SAMPLE_RATE_HALF) % SAMPLE_RATE_HALF
         
         // Get delayed audio sample
         int delayed = delayBuffer[readPosition]
@@ -391,8 +517,8 @@ function process()
         int bufferInput = input + feedbackAmount
         
         // Prevent feedback overflow
-        if (bufferInput > 2047) bufferInput = 2047
-        else if (bufferInput < -2047) bufferInput = -2047
+        if (bufferInput > AUDIO_MAX) bufferInput = AUDIO_MAX
+        else if (bufferInput < -AUDIO_MAX) bufferInput = -AUDIO_MAX
         
         // Store new audio in delay buffer
         delayBuffer[bufferPosition] = bufferInput
@@ -416,7 +542,7 @@ function process()
         displayLEDs[3] = activity
         
         // Move to next buffer position (circular)
-        bufferPosition = (bufferPosition + 1) % 22050
+        bufferPosition = (bufferPosition + 1) % SAMPLE_RATE_HALF
         
         yield()
     }
@@ -498,7 +624,7 @@ int feedbackLevel = (feedbackParam * 180) / 255  // Never exceeds 70%
 ```impala
 // Process left and right independently
 signal[0] = processChannel(signal[0], bufferPosition)
-signal[1] = processChannel(signal[1], (bufferPosition + 100) % 22050)  // Slight offset
+signal[1] = processChannel(signal[1], (bufferPosition + 100) % SAMPLE_RATE_HALF)  // Slight offset
 ```
 
 ### 8.2 Build From Here

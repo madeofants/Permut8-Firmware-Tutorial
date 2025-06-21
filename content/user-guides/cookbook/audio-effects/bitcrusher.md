@@ -44,11 +44,11 @@ readonly array panelTextRows[8] = {
     "",
     "",
     "",
-    "CRUSH |-- BIT DEPTH --| |--- DRY/WET ---|",  // (int)global params[OPERAND_1_HIGH_PARAM_INDEX] & (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
+    "CRUSH |-- BIT DEPTH --| |--- DRY/WET ---|",  // params[OPERAND_1_HIGH_PARAM_INDEX] & params[OPERAND_2_HIGH_PARAM_INDEX]
     "",
     "",
     "",
-    "CRUSH |-- RATE DIV ---| |--- GAIN -----|"   // (int)global params[OPERAND_1_LOW_PARAM_INDEX] & (int)global params[OPERAND_2_LOW_PARAM_INDEX]
+    "CRUSH |-- RATE DIV ---| |--- GAIN -----|")   // params[OPERAND_1_LOW_PARAM_INDEX] & params[OPERAND_2_LOW_PARAM_INDEX]
 };
 
 ```
@@ -56,23 +56,23 @@ readonly array panelTextRows[8] = {
 ## Quick Reference
 
 **Essential Parameters:**
-- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Bit depth (Instruction 1 High Operand, 0-255, controls quantization amount)
-- `(int)global params[OPERAND_1_LOW_PARAM_INDEX]`: Sample rate reduction (Instruction 1 Low Operand, 0-255, hold factor) 
-- `(int)global params[OPERAND_2_HIGH_PARAM_INDEX]`: Dry/wet mix (Instruction 2 High Operand, 0-255, blend control)
-- `(int)global params[OPERAND_2_LOW_PARAM_INDEX]`: Output gain (Instruction 2 Low Operand, 0-255, level compensation)
+- `params[OPERAND_1_HIGH_PARAM_INDEX]`: Bit depth (Instruction 1 High Operand, 0-255, controls quantization amount)
+- `params[OPERAND_1_LOW_PARAM_INDEX]`: Sample rate reduction (Instruction 1 Low Operand, 0-255, hold factor) 
+- `params[OPERAND_2_HIGH_PARAM_INDEX]`: Dry/wet mix (Instruction 2 High Operand, 0-255, blend control)
+- `params[OPERAND_2_LOW_PARAM_INDEX]`: Output gain (Instruction 2 Low Operand, 0-255, level compensation)
 
 **Key Concepts:** Quantization distortion, sample-and-hold, digital artifacts, aliasing effects
 
 **Common Settings:**
 ```impala
 // Vintage sampler: moderate crushing with character
-int vintage_bits = 180, vintage_rate = 60, vintage_mix = 200, vintage_gain = 220
+vintage_bits = 180; vintage_rate = 60; vintage_mix = 200; vintage_gain = 220;
 
 // Lo-fi texture: heavy digital artifacts
-int lofi_bits = 100, lofi_rate = 120, lofi_mix = 180, lofi_gain = 240
+lofi_bits = 100; lofi_rate = 120; lofi_mix = 180; lofi_gain = 240;
 
 // Extreme digital: maximum destruction
-int extreme_bits = 30, extreme_rate = 200, extreme_mix = 255, extreme_gain = 200
+extreme_bits = 30; extreme_rate = 200; extreme_mix = 255; extreme_gain = 200;
 ```
 
 ## Complete Code
@@ -80,13 +80,26 @@ int extreme_bits = 30, extreme_rate = 200, extreme_mix = 255, extreme_gain = 200
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
+global int clock                 // Sample counter for timing
 global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
+global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
+global int clockFreqLimit        // Current clock frequency limit
 
 // Simple bitcrusher state
 global int hold_left = 0         // Held sample for left channel
@@ -94,26 +107,14 @@ global int hold_right = 0        // Held sample for right channel
 global int hold_counter = 0      // Counter for sample rate reduction
 
 function process()
-locals int bits
-locals int rate_div
-locals int mix
-locals int gain
-locals int crushed_left
-locals int crushed_right
-locals int shift_amount
-locals int dry_left
-locals int dry_right
-locals int wet_left
-locals int wet_right
-locals int output_left
-locals int output_right
+locals int bits, int rate_div, int mix, int gain, int crushed_left, int crushed_right, int shift_amount, int dry_left, int dry_right, int wet_left, int wet_right, int output_left, int output_right
 {
     loop {
         // Read parameters (Instruction operands)
-        bits = ((int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 4) + 1;        // 1-16 effective bit depth (Instruction 1 High)
-        rate_div = ((int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX] >> 3) + 1;    // 1-32 rate division (Instruction 1 Low)
-        mix = (int)global (int)global params[OPERAND_2_HIGH_PARAM_INDEX];                    // 0-255 dry/wet mix (Instruction 2 High)
-        gain = ((int)global (int)global params[OPERAND_2_LOW_PARAM_INDEX] >> 1) + 64;       // 64-191 output gain (Instruction 2 Low)
+        bits = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 4) + 1;        // 1-16 effective bit depth (Instruction 1 High)
+        rate_div = ((int)global params[OPERAND_1_LOW_PARAM_INDEX] >> 3) + 1;    // 1-32 rate division (Instruction 1 Low)
+        mix = (int)global params[OPERAND_2_HIGH_PARAM_INDEX];                    // 0-255 dry/wet mix (Instruction 2 High)
+        gain = ((int)global params[OPERAND_2_LOW_PARAM_INDEX] >> 1) + 64;       // 64-191 output gain (Instruction 2 Low)
         
         // Sample rate reduction (hold samples)
         global hold_counter = global hold_counter + 1;
@@ -187,14 +188,14 @@ locals int output_right
 
 ```impala
 // Vintage lo-fi (moderate crushing)
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // 8-bit depth
-(int)global params[SWITCHES_PARAM_INDEX] = 64;   // 8x rate reduction  
-(int)global params[OPERATOR_1_PARAM_INDEX] = 180;  // 70% wet mix
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // +6dB gain compensation
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // 8-bit depth
+global params[OPERAND_1_LOW_PARAM_INDEX] = 64;   // 8x rate reduction  
+global params[OPERAND_2_HIGH_PARAM_INDEX] = 180;  // 70% wet mix
+global params[OPERAND_2_LOW_PARAM_INDEX] = 200;  // +6dB gain compensation
 
 // Extreme digital destruction  
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 32;   // 2-bit depth
-(int)global params[SWITCHES_PARAM_INDEX] = 200;  // 25x rate reduction
-(int)global params[OPERATOR_1_PARAM_INDEX] = 255;  // 100% wet
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 255;  // Maximum gain
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 32;   // 2-bit depth
+global params[OPERAND_1_LOW_PARAM_INDEX] = 200;  // 25x rate reduction
+global params[OPERAND_2_HIGH_PARAM_INDEX] = 255;  // 100% wet
+global params[OPERAND_2_LOW_PARAM_INDEX] = 255;  // Maximum gain
 ```

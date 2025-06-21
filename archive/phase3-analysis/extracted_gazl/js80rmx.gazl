@@ -1,0 +1,1291 @@
+PRAWN_FIRMWARE_PATCH_FORMAT: ! DEFi #3
+FALSE: ! DEFi #0
+TRUE: ! DEFi #1
+panelTextRows: CNST *8
+DATA &.s_lengthfebb001f &.s_repeatfebb0020
+DATA &.s_patterfebb0021 &.s_randomfebb0022
+DATA &.s_STEPGAfebb0023 &.s_INSTRUfebb0024
+DATA &.s_xorWAVfebb0025 &.s_xorMODfebb0026
+GLOB *1
+clock: DATi #0
+GLOB *1
+hostPosition: DATi #0
+params: GLOB *PARAM_COUNT
+displayLEDs: GLOB *4
+CNST *1
+clockFreqLimit: DATi #176400
+config: GLOB *1024
+GLOB *1
+configText: DATp &.s_PasteUfebb0027
+signal: GLOB *2
+err: FUNC
+PARA *1
+$s: INPp
+MOVp %1 $s
+CALL ^trace %0 *2
+CALL ^abort %0 *1
+RETU
+strl: FUNC
+$l: OUTi
+$s: INPp
+$a: LOCp
+MOVp $a $s
+.l0: PEEK %0 $a
+EQUi %0 #0 @.e1
+ADDp $a $a #1
+GOTO @.l0
+.e1: DIFp $l $a $s
+RETU
+LOG2: ! DEFf #0.69314718055994530942
+LG2R: ! DEFf #1.44269504088896340736
+GLOB *1
+xsrsx: DATi #495493531
+GLOB *1
+xsrsy: DATi #145834296
+xsr: FUNC
+$y: OUTi
+$x: LOCi
+$t: LOCi
+PEEK $x &xsrsx
+PEEK $y &xsrsy
+SHLi %0 $x #10
+XORi $t $x %0
+MOVi $x $y
+SHRu %0 $y #13
+XORi %0 $y %0
+XORi %0 %0 $t
+SHRu %1 $t #10
+XORi $y %0 %1
+POKE &xsrsx $x
+POKE &xsrsy $y
+RETU
+log: FUNC
+$y: OUTf
+$x: INPf
+$a: LOCf
+$b: LOCf
+$m: LOCf
+$n: LOCf
+$t: LOCf
+LEQf $x #0.0 @.t0
+LSSf $x #1.0e38 @.f1
+.t0: MOVp %1 &.s_Domainfebb0028
+CALL &err %0 *2
+GOTO @.e2
+.f1: MOVf $b #0.0
+MOVf $m $x
+.l3: GEQf $m #0.5 @.e4
+MULf $m $m #2.0
+SUBf $b $b #LOG2
+GOTO @.l3
+.e4: NOOP
+.l5: LEQf $m #1.5 @.e6
+MULf $m $m #0.5
+ADDf $b $b #LOG2
+GOTO @.l5
+.e6: SUBf $m #1.0 $m
+MOVf $a #-1.0
+MOVf $n #1.0
+MOVf $y #0.0
+.l7: MOVf $t $y
+MULf $a $a $m
+DIVf %0 $a $n
+ADDf $y $y %0
+ADDf $n $n #1.0
+NEQf $y $t @.l7
+ADDf $y $y $b
+.e2: RETU
+log2: FUNC
+$y: OUTf
+$x: INPf
+MOVf %1 $x
+CALL &log %0 *2
+MULf $y %0 #LG2R
+RETU
+rund: FUNC
+$y: OUTf
+$x: INPf
+ADDf %0 $x #0.5
+FLOf $y %0
+RETU
+exp: FUNC
+$y: OUTf
+$x: INPf
+$a: LOCf
+$n: LOCf
+$m: LOCf
+$t: LOCf
+ABSf $m $x
+MOVf $a #1.0
+MOVf $n #1.0
+MOVf $y #1.0
+.l0: MOVf $t $y
+MULf %0 $a $m
+DIVf $a %0 $n
+ADDf $y $y $a
+ADDf $n $n #1.0
+NEQf $y $t @.l0
+GEQf $x #0.0 @.f1
+DIVf $y #1.0 $y
+.f1: RETU
+pow: FUNC
+$z: OUTf
+$x: INPf
+$y: INPf
+$a: LOCf
+MOVf $z #0.0
+MOVf $a $x
+GEQf $a #0.0 @.f1
+FLOf %0 $y
+NEQf $y %0 @.f1
+SUBf $a #0.0 $a
+.f1: LEQf $a #0.0 @.f2
+MOVf %2 $a
+CALL &log %1 *2
+MULf %1 %1 $y
+CALL &exp %0 *2
+MOVf $z %0
+GOTO @.e3
+.f2: LSSf $a #0.0 @.t4
+GRTf $y #0.0 @.f5
+.t4: MOVp %1 &.s_Domainfebb0028
+CALL &err %0 *2
+.f5: NOOP
+.e3: EQUf $a $x @.f7
+MULf %0 $y #0.5
+MULf %1 $y #0.5
+FLOf %0 %0
+EQUf %1 %0 @.f7
+SUBf $z #0.0 $z
+.f7: RETU
+HSR: ! DEFi #44100
+HVC: ! DEFi #3
+MSR: ! DEFi #4096
+HWAV: ! DEFi #24
+HVOL: ! DEFi #16
+HCP: ! DEFi #8
+HFP: ! DEFi #0
+HTR: ! DEFi #1
+HSW: ! DEFi #2
+HSQ: ! DEFi #4
+HNO: ! DEFi #8
+HRS: ! DEFi #128
+VMB: ! DEFi #4
+VEB: ! DEFi #4
+PFB: ! DEFi #8
+PIB: ! DEFi #8
+PFI: ! DEFi #6
+C3F: ! DEFf #261.62558
+HBS: ! DEFi #32
+IMTR: ! DEFi #1
+IMSW: ! DEFi #2
+IMSQ: ! DEFi #4
+IMDC: ! DEFi #8
+IWAV: ! DEFi #28
+IPTC: ! DEFi #27
+IOCT: ! DEFi #24
+IATK: ! DEFi #20
+IDCY: ! DEFi #16
+IMTY: ! DEFi #12
+! SHLi <A> #1 #11
+INMM: ! DEFi <A>
+IMAM: ! DEFi #8
+IMRT: ! DEFi #4
+IVOL: ! DEFi #0
+HINC: ! DEFi #8
+HPCT: ! DEFi #15
+HPST: ! DEFi #16
+HTIE: ! DEFi #7
+HMAM: CNST *8
+DATA #0x0040 #0x0080 #0x0180 #0x0200 #0x0380 #0x0600
+DATA #0x0C00 #0x1200
+HPFB: ! DEFi #8
+HPIB: ! DEFi #8
+HVMB: ! DEFi #4
+HVEB: ! DEFi #4
+MSSC: ! DEFi #8
+O1OFF: ! DEFi #0
+O1SNG: ! DEFi #1
+O1MSK: ! DEFi #2
+O1PTN: ! DEFi #3
+O1RND: ! DEFi #4
+O2OFF: ! DEFi #0
+O2SMU: ! DEFi #1
+O2IMU: ! DEFi #2
+O2XIH: ! DEFi #3
+O2XIL: ! DEFi #4
+VSCI: ! DEFi #0
+VSID: ! DEFi #1
+VSCP: ! DEFi #2
+VSSU: ! DEFi #3
+VSEN: ! DEFi #4
+VSMP: ! DEFi #5
+VSSZ: ! DEFi #6
+SST: ! DEFi #0
+SSV: ! DEFi #1
+! ADDi <A> #SSV #HVC
+SSS: ! DEFi <A>
+! SHLi <A> #12 #PFI
+PTS: ! DEFi <A>
+! MULi <A> #SSS #MSSC
+SDS: ! DEFi <A>
+! MULi <A> #HPCT #HPST
+PDS: ! DEFi <A>
+ptbl: GLOB *PTS
+hmra: GLOB *16
+hatr: GLOB *16
+hdcr: GLOB *16
+GLOB *1
+rst: DATi #TRUE
+GLOB *1
+sln: DATi #1
+GLOB *1
+sbp: DATi #0
+sdat: GLOB *SDS
+pdat: GLOB *PDS
+inst: GLOB *HINC
+rndt: GLOB *256
+CNST *1
+B64CH: DATp &.s_ABCDEFfebb0029
+b64dt: GLOB *128
+ib64: FUNC
+PARA *1
+$i: LOCi
+MOVi $i #0
+GEQi #0 #64 @.e0
+.l1: PEEK %1 &B64CH
+PEEK %1 %1 $i
+POKE &b64dt %1 $i
+FORi $i #64 @.l1
+.e0: PEEK %1 &b64dt:'+'
+POKE &b64dt:'-' %1
+PEEK %1 &b64dt:'/'
+POKE &b64dt:'_' %1
+RETU
+db64: FUNC
+$osz: OUTi
+$isz: INPi
+$inp: INPp
+$oms: INPi
+$out: INPp
+$ii: LOCi
+$oi: LOCi
+$ich: LOCi
+$dch: LOCi
+$i: LOCi
+$bts: LOCi
+$uos: LOCi
+ADDi %1 $isz #3
+DIVi %1 %1 #4
+MULi $osz %1 #3
+SUBi %1 $isz #1
+PEEK $ich $inp %1
+EQUi $ich #'=' @.t0
+NEQi $ich #',' @.f1
+.t0: SUBi $osz $osz #1
+SUBi %1 $isz #2
+PEEK $ich $inp %1
+EQUi $ich #'=' @.t2
+NEQi $ich #',' @.f1
+.t2: SUBi $osz $osz #1
+.f1: MOVi $uos $oms
+GEQi $osz $uos @.f4
+MOVi $uos $osz
+.f4: MOVi $ii #0
+MOVi $oi #0
+.l5: GEQi $oi $uos @.e6
+MOVi $bts #0
+MOVi $i #0
+GEQi #0 #4 @.e7
+.l8: MOVi $dch #0
+GEQi $ii $isz @.f10
+PEEK $ich $inp $ii
+LSSi $ich #0 @.f10
+GEQi $ich #128 @.f10
+PEEK $dch &b64dt $ich
+.f10: SHLi %1 $bts #6
+IORi $bts %1 $dch
+ADDi $ii $ii #1
+FORi $i #4 @.l8
+.e7: MOVi $i #0
+GEQi #0 #3 @.l5
+.l12: GEQi $oi $oms @.f13
+SHRu %1 $bts #16
+ANDi %1 %1 #0xFF
+POKE $out $oi %1
+ADDi $oi $oi #1
+.f13: SHLi $bts $bts #8
+FORi $i #3 @.l12
+GOTO @.l5
+.e6: RETU
+unss: FUNC
+PARA *1
+$isz: INPi
+$idat: INPp
+$ino: LOCi
+$ver: LOCi
+$inc: LOCi
+$ptc: LOCi
+$i: LOCi
+$b: LOCi
+$ins: LOCi
+$si: LOCi
+$pp: LOCp
+$stp: LOCi
+$sst: LOCi
+$xps: LOCi
+$sp: LOCp
+$sln: LOCi
+$sbp: LOCi
+PEEK $ver $idat #0
+EQUi $ver #1 @.f1
+EQUi $ver #2 @.f1
+EQUi $ver #3 @.f1
+MOVp %1 &.s_Invalifebb002a
+CALL ^trace %0 *2
+GOTO @.e2
+.f1: MOVi $inc #8
+MOVi $ptc #HPCT
+NEQi $ver #1 @.f3
+PEEK $sbp $idat #1
+MOVi $ino #2
+GOTO @.e4
+.f3: NEQi $ver #2 @.f5
+PEEK $sbp $idat #1
+MOVi $ino #3
+GOTO @.e6
+.f5: LSSi $ver #3 @.f7
+PEEK %0 $idat #1
+SHLi %0 %0 #8
+PEEK %1 $idat #2
+IORi %0 %0 %1
+SHRi $sbp %0 #4
+PEEK $b $idat #3
+SHRu %0 $b #4
+ANDi %0 %0 #7
+ADDi $inc %0 #1
+ANDi %0 $b #0x0F
+ADDi $ptc %0 #1
+MOVi $ino #4
+.f7: NOOP
+.e6: NOOP
+.e4: LEQi $sbp #999 @.f8
+MOVi $sbp #999
+GOTO @.e9
+.f8: GEQi $sbp #1 @.f10
+MOVi $sbp #1
+.f10: NOOP
+.e9: POKE &sbp $sbp
+MOVi $i #0
+GEQi #0 $inc @.e11
+.l12: PEEK %0 $idat $ino
+ADDi %1 $ino #1
+PEEK %1 $idat %1
+SHLi %0 %0 #24
+SHLi %1 %1 #16
+ADDi %2 $ino #2
+PEEK %2 $idat %2
+IORi %0 %0 %1
+SHLi %2 %2 #8
+ADDi %1 $ino #3
+IORi %0 %0 %2
+PEEK %1 $idat %1
+IORi %0 %0 %1
+POKE &inst $i %0
+ADDi $ino $ino #4
+FORi $i $inc @.l12
+.e11: NEQi $ver #1 @.f13
+MOVi $i #0
+GEQi #0 $inc @.f13
+.l15: PEEK $ins &inst $i
+XORi $ins $ins #INMM
+ANDi %0 $ins #INMM
+EQUi %0 #0 @.f16
+! SHLi <A> #0x7 #IMAM
+MOVi $ins <A>
+.f16: POKE &inst $i $ins
+FORi $i $inc @.l15
+.f13: MOVi $i $inc
+GEQi $inc #HINC @.e17
+.l18: POKE &inst $i #0
+FORi $i #HINC @.l18
+.e17: MOVi $i #0
+GEQi #0 #PDS @.e19
+.l20: POKE &pdat $i #0
+FORi $i #PDS @.l20
+.e19: MOVp $pp &pdat
+MOVi $i #0
+GEQi #0 #HPCT @.e21
+.l22: GEQi $i $ptc @.f23
+MOVi $si #0
+GEQi #0 #HPST @.e24
+.l25: PEEK $stp $idat $ino
+ADDi $ino $ino #1
+NEQi $stp #0x80 @.f26
+GOTO @endOfPattern
+.f26: POKE $pp $si $stp
+FORi $si #HPST @.l25
+.e24: NOOP
+endOfPattern: ADDp $pp $pp #HPST
+.f23: FORi $i #HPCT @.l22
+.e21: MOVi $i #0
+GEQi #0 #SDS @.e27
+.l28: POKE &sdat $i #0
+FORi $i #SDS @.l28
+.e27: MOVi $sln #0
+MOVp $sp &sdat:0
+MOVi $sst #0
+GEQi #0 #MSSC @.e29
+.l30: LSSi $ino $isz @.f31
+GOTO @endOfSong
+.f31: PEEK $b $idat $ino
+ADDi $ino $ino #1
+NEQi $b #0x80 @.f32
+GOTO @endOfSong
+.f32: SHRi $xps $b #4
+LSSi $xps #8 @.f33
+SUBi $xps $xps #16
+.f33: POKE $sp #SST $xps
+! ADDi <A> #SSV #0
+ANDi %0 $b #0xF
+POKE $sp <A> %0
+PEEK $b $idat $ino
+ADDi $ino $ino #1
+! ADDi <A> #SSV #1
+SHRi %0 $b #4
+POKE $sp <A> %0
+! ADDi <A> #SSV #2
+ANDi %0 $b #0xF
+POKE $sp <A> %0
+ADDp $sp $sp #4
+ADDi $sln $sln #1
+FORi $sst #MSSC @.l30
+.e29: NOOP
+endOfSong: POKE &sln $sln
+.e2: RETU
+logScale: FUNC
+$y: OUTf
+$x: INPf
+$ifr: INPf
+$ito: INPf
+$ofr: INPf
+$oto: INPf
+DIVf %1 $oto $ofr
+SUBf %2 $x $ifr
+SUBf %3 $ito $ifr
+DIVf %2 %2 %3
+CALL &pow %0 *3
+MULf $y $ofr %0
+RETU
+reset: FUNC
+PARA *1
+MOVp %1 &.s_resetfebb002b
+CALL ^trace %0 *2
+POKE &rst #TRUE
+RETU
+init: FUNC
+PARA *1
+$i: LOCi
+$x: LOCf
+$m: LOCf
+$e: LOCf
+$tsc: LOCf
+$s: LOCp
+$buf: LOCA *1024
+MOVp %1 &.s_initfebb002c
+CALL ^trace %0 *2
+CALL &ib64 %0 *1
+MOVi $i #0
+GEQi #0 #PTS @.e0
+.l1: NOOP
+! ADDi <A> #8 #PIB
+! ADDi <A> <A> #PFB
+! SHLi <A> #1 <A>
+! iTOf <A> <A> #1.0
+MOVf $m <A>
+MOVf %1 #2.0
+iTOf %2 $i #1.0
+SUBf %2 %2 #1.0
+! iTOf <A> #PTS #1.0
+DIVf %2 %2 <A>
+CALL &pow %0 *3
+MOVf $e %0
+MULf %1 $m $e
+CALL &rund %0 *2
+fTOi %0 %0 #1.0
+POKE &ptbl $i %0
+FORi $i #PTS @.l1
+.e0: NOOP
+! iTOf <A> #HBS #22050.0
+! iTOf <B> #HSR #32.0
+! DIVf <A> <A> <B>
+MOVf $tsc <A>
+POKE &hmra:0 #0
+MOVi $i #1
+GEQi #1 #16 @.e2
+.l3: iTOf $x $i #1.0
+MOVf %2 $x
+MOVf %3 #1.0
+MOVf %4 #15.0
+MOVf %5 #16.0
+MOVf %6 #16384.0
+CALL &logScale %1 *6
+MULf %1 $tsc %1
+CALL &rund %0 *2
+fTOi %0 %0 #1.0
+POKE &hmra $i %0
+FORi $i #16 @.l3
+.e2: MOVi $i #0
+GEQi #0 #16 @.e4
+.l5: iTOf $x $i #1.0
+MOVf %2 $x
+MOVf %3 #0.0
+MOVf %4 #15.0
+MOVf %5 #600.0
+MOVf %6 #8.0
+CALL &logScale %1 *6
+MULf %1 $tsc %1
+CALL &rund %0 *2
+fTOi %0 %0 #1.0
+POKE &hatr $i %0
+MOVf %2 $x
+MOVf %3 #0.0
+MOVf %4 #15.0
+MOVf %5 #2000.0
+MOVf %6 #8.0
+CALL &logScale %1 *6
+MULf %1 $tsc %1
+CALL &rund %0 *2
+fTOi %0 %0 #1.0
+POKE &hdcr $i %0
+FORi $i #16 @.l5
+.e4: POKE &hatr:0 #0xFFFF
+MOVi $i #0
+GEQi #0 #32 @.e6
+.l7: CALL &xsr %0 *1
+FORi $i #32 @.l7
+.e6: MOVi $i #0
+GEQi #0 #256 @.e8
+.l9: CALL &xsr %0 *1
+POKE &rndt $i %0
+FORi $i #256 @.l9
+.e8: MOVi $i #0
+.l10: PEEK %0 &rndt $i
+ANDi %0 %0 #0xF0F0F0F0
+POKE &rndt $i %0
+ADDi $i $i #16
+LSSi $i #256 @.l10
+MOVp $s &config
+.l11: PEEK %0 $s
+EQUi %0 #0 @.e13
+PEEK %0 $s
+EQUi %0 #'=' @.e13
+ADDp $s $s #1
+GOTO @.l11
+.e13: PEEK %0 $s
+NEQi %0 #0 @.f14
+MOVp $s &config
+GOTO @.e15
+.f14: ADDp $s $s #1
+.e15: MOVp %2 $s
+CALL &strl %1 *2
+MOVp %2 $s
+MOVi %3 #1024
+ADRL %4 $buf *0
+CALL &db64 %0 *5
+MOVi $i %0
+MOVi %1 $i
+ADRL %2 $buf *0
+CALL &unss %0 *3
+RETU
+process: FUNC
+PARA *1
+! MULi <A> #HVC #VSSZ
+$vi: LOCi
+$reg: LOCi
+$wav: LOCi
+$vol: LOCi
+$sem: LOCi
+$fin: LOCi
+$phs: LOCi
+$rnd: LOCi
+$ptc: LOCi
+$oct: LOCi
+$i: LOCi
+$ort: LOCi
+$vsh: LOCi
+$vmu: LOCi
+$p: LOCi
+$s: LOCi
+$mix: LOCi
+$tun: LOCi
+$bi: LOCi
+$vp: LOCp
+$env: LOCi
+$ins: LOCi
+$mrt: LOCi
+$mtp: LOCi
+$mph: LOCi
+$mva: LOCi
+$x: LOCi
+$y: LOCi
+$mod: LOCi
+$mpt: LOCi
+$atr: LOCi
+$dcr: LOCi
+$cpt: LOCi
+$sus: LOCi
+$xps: LOCi
+$oxp: LOCi
+$sp: LOCp
+$pti: LOCi
+$note: LOCi
+$sdt: LOCi
+$nin: LOCi
+$spo: LOCi
+$nps: LOCi
+$pst: LOCi
+$tsc: LOCi
+$mst: LOCi
+$swi: LOCi
+$o1m: LOCi
+$o1b: LOCi
+$o2m: LOCi
+$o2b: LOCi
+$o2l: LOCi
+$sr: LOCi
+$dly: LOCi
+$ups: LOCi
+$chp: LOCi
+$rsd: LOCi
+$clk: LOCi
+$rma: LOCA *HVC
+$vre: LOCA *HVC
+$vph: LOCA *HVC
+$vrn: LOCA *HVC
+$vst: LOCA *<A>
+$lid: LOCi
+.l0: PEEK $sr &params:CLOCK_FREQ_PARAM_INDEX
+GEQi $sr #MSR @.f1
+MOVi $sr #MSR
+.f1: NOOP
+! SHLi <A> #12 #PFI
+! SHLi <B> #1 #15
+! iTOf <B> <B> #C3F
+iTOf %2 $sr #1.0
+DIVf %2 <B> %2
+CALL &log2 %1 *2
+! iTOf <A> <A> #1.0
+MULf %1 <A> %1
+CALL &rund %0 *2
+fTOi $tun %0 #1.0
+! SHLi <A> #HSR #9
+DIVi $tsc <A> $sr
+! EQUi #DEBUG #0 @.a2
+LSSi $tsc #0 @.f3
+LSSi $tsc #32768 @.a2
+.f3: MOVp %1 &.a_tsc0tsfebb001f
+CALL ^assertFail %0 *1
+.a2: PEEK $swi &params:SWITCHES_PARAM_INDEX
+PEEK $o1m &params:OPERATOR_1_PARAM_INDEX
+ANDi %0 $swi #SWITCHES_SYNC_MASK
+EQUi %0 #0 @.f5
+PEEK %0 &hostPosition
+GEQi %0 #0 @.f5
+MOVi $o1m #O1OFF
+.f5: PEEK %0 &params:OPERAND_1_HIGH_PARAM_INDEX
+SHLi %0 %0 #8
+PEEK %1 &params:OPERAND_1_LOW_PARAM_INDEX
+IORi $o1b %0 %1
+PEEK $o2m &params:OPERATOR_2_PARAM_INDEX
+PEEK %0 &params:OPERAND_2_HIGH_PARAM_INDEX
+SHLi %0 %0 #8
+PEEK %1 &params:OPERAND_2_LOW_PARAM_INDEX
+IORi $o2b %0 %1
+PEEK %0 &rst
+EQUi %0 #FALSE @.f6
+POKE &rst #FALSE
+MOVi $pst #-1
+MOVi $spo #0
+MOVi $i #0
+! MULi <A> #HVC #VSSZ
+GEQi #0 <A> @.e7
+.l8: SETL $vst $i #0
+FORi $i <A> @.l8
+.e7: MOVi $i #0
+GEQi #0 #HVC @.e9
+.l10: MULi %0 $i #VSSZ
+ADDi %0 %0 #VSCI
+SETL $vst %0 #-1
+SETL $vph $i #0
+SETL $vrn $i #0
+FORi $i #HVC @.l10
+.e9: MOVi $lid #0
+MOVi $mst #TRUE
+.f6: MOVi $vi #0
+GEQi #0 #HVC @.e11
+.l12: SETL $rma $vi #0
+FORi $vi #HVC @.l12
+.e11: PEEK $clk &clock
+SHRi $nps $clk #12
+SUBi %0 $clk #HBS
+SHRi %0 %0 #12
+EQUi $nps %0 @.f13
+ANDi %0 $swi #SWITCHES_SYNC_MASK
+EQUi %0 #0 @.f14
+PEEK %0 &hostPosition
+! DIVi <A> #HOST_POSITION_PPQ #8
+ADDi %0 %0 <A>
+! MULi <A> #HOST_POSITION_PPQ #4
+DIVi %0 %0 <A>
+PEEK %1 &sln
+MODi $spo %0 %1
+GOTO @.e15
+.f14: NEQi $pst #15 @.f16
+MOVi $pst #0
+ADDi $spo $spo #1
+PEEK %0 &sln
+LSSi $spo %0 @.f16
+MOVi $spo #0
+.f16: NOOP
+.e15: MOVi $pst $nps
+MOVi $mst #FALSE
+NEQi $o2m #O2SMU @.f19
+SHLi %0 $o2b $pst
+ANDi %0 %0 #0x8000
+EQUi %0 #0 @.f19
+MOVi $mst #TRUE
+.f19: MULi %0 $spo #SSS
+ADDp $sp &sdat %0
+SWCH $o1m *OPERATOR_1_COUNT @.s20
+.s20#O1OFF: NOOP
+.s20#O1SNG: SHLi %0 $o1b #28
+SHRi $oxp %0 #28
+PEEK $xps $sp #SST
+GOTO @.e21
+.s20#O1PTN: NOOP
+.s20#O1RND: MOVi $oxp #0
+SHLi %0 $o1b #28
+SHRi $xps %0 #28
+GOTO @.e21
+.s20#O1MSK: MOVi $oxp #0
+ANDi %0 $o1b #15
+PEEK %1 $sp #SST
+XORi %0 %0 #-1
+ANDi $xps %1 %0
+SHLi %1 $xps #28
+SHRi $xps %1 #28
+.s20: NOOP
+.e21: MOVi $vi #0
+GEQi #0 #HVC @.f13
+.l23: SHRu %1 $o1b #12
+ANDi $chp %1 #15
+SHLi $o1b $o1b #4
+MOVi $ups $pst
+SWCH $o1m *OPERATOR_1_COUNT @.s24
+.s24#O1OFF: MOVi $pti #0
+GOTO @.e25
+.s24#O1SNG: ADDi %1 #SSV $vi
+PEEK $pti $sp %1
+SUBi %1 #16 $chp
+MODi $ups $ups %1
+GOTO @.e25
+.s24#O1PTN: MOVi $pti $chp
+GOTO @.e25
+.s24#O1MSK: ADDi %1 #SSV $vi
+PEEK $pti $sp %1
+XORi %1 $chp #-1
+ANDi $ups $ups %1
+GOTO @.e25
+.s24#O1RND: NEQi $chp #0 @.f26
+MOVi $pti #0
+GOTO @.e27
+.f26: MULi %1 $chp #16
+ADDi %1 %1 $pst
+PEEK %1 &rndt %1
+MULi %0 #8 $vi
+SHRu %1 %1 %0
+ANDi $rsd %1 #0x3F
+SUBi %1 $chp #1
+SHRu %0 $rsd #4
+ADDi %1 %1 %0
+PEEK %0 &sln
+MODi %1 %1 %0
+MULi %1 %1 #SSS
+ADDp $sp &sdat %1
+ADDi %1 #SSV $vi
+PEEK $pti $sp %1
+ANDi $ups $rsd #15
+.e27: NOOP
+.s24: NOOP
+.e25: MULi %1 $vi #VSSZ
+ADRL %0 $vst *0
+ADDp $vp %0 %1
+SUBi $pti $pti #1
+MOVi $sus #FALSE
+LSSi $pti #0 @.f29
+NEQi $mst #FALSE @.f29
+MULi %0 $pti #HPST
+ADDi %0 %0 $ups
+PEEK $sdt &pdat %0
+ANDi %0 $sdt #0x0F
+SUBi $note %0 #1
+LSSi $note #0 @.f29
+SHRi %0 $sdt #4
+ANDi $nin %0 #7
+NEQi $o2m #O2IMU @.t31
+SHLi %0 $o2b $nin
+ANDi %0 %0 #0x8000
+NEQi %0 #0 @.f29
+.t31: PEEK $env $vp #VSEN
+PEEK $sus $vp #VSSU
+PEEK $ins &inst $nin
+NEQi $o2m #O2XIL @.f33
+XORi $ins $ins $o2b
+GOTO @.e34
+.f33: NEQi $o2m #O2XIH @.f35
+SHLi %0 $o2b #16
+XORi $ins $ins %0
+.f35: NOOP
+.e34: POKE $vp #VSID $ins
+PEEK %0 $vp #VSCI
+EQUi %0 $nin @.f36
+MOVi $lid $ins
+POKE $vp #VSCI $nin
+MOVi $env #0
+MOVi $sus #FALSE
+SETL $rma $vi #HRS
+GOTO @.e37
+.f36: NEQi $env #0 @.f38
+SETL $rma $vi #HRS
+.f38: NOOP
+.e37: NEQi $sus #FALSE @.f39
+POKE $vp #VSMP #0
+SHRu %0 $ins #IATK
+ANDi %0 %0 #0x0F
+NEQi %0 #0 @.f40
+SETL $rma $vi #HRS
+.f40: IORi $env $env #0x10000
+.f39: SHRi %0 $sdt #HTIE
+ANDi $sus %0 #1
+SHRi %0 $ins #IPTC
+ANDi %0 %0 #1
+MULi %0 $xps %0
+ADDi $cpt %0 $oxp
+ADDi %0 $cpt $note
+SUBi %0 %0 #2
+SHLi $cpt %0 #8
+POKE $vp #VSCP $cpt
+POKE $vp #VSEN $env
+.f29: POKE $vp #VSSU $sus
+FORi $vi #HVC @.l23
+.f13: MOVi $vi #0
+GEQi #0 #HVC @.e41
+.l42: MULi %0 $vi #VSSZ
+ADRL %1 $vst *0
+ADDp $vp %1 %0
+PEEK $env $vp #VSEN
+! EQUi #DEBUG #0 @.a43
+GRTi #0 $env @.f44
+LEQi $env #0x20000 @.a43
+.f44: MOVp %1 &.a_0envenfebb0020
+CALL ^assertFail %0 *1
+.a43: LEQi $env #0 @.f45
+PEEK $ins $vp #VSID
+SHRu %0 $ins #IMRT
+ANDi %0 %0 #0x0F
+PEEK %0 &hmra %0
+MULi %0 $tsc %0
+SHRi $mrt %0 #9
+SHRu %0 $ins #IMTY
+ANDi $mtp %0 #0x0F
+PEEK %0 $vp #VSMP
+ADDi $mph %0 $mrt
+POKE $vp #VSMP $mph
+! SHLi <A> #1 #HPIB
+SHRi %0 $mph #HPFB
+! SUBi <A> <A> #1
+ANDi $x %0 <A>
+MOVi $mva #0
+ANDi %0 $mtp #IMTR
+EQUi %0 #0 @.f46
+SUBi $y #64 $x
+SHLi %0 $y #24
+SHLi %1 $y #1
+SHRi %0 %0 #31
+XORi $y %1 %0
+ANDi %1 $y #0xFF
+SUBi %1 %1 #0x80
+ADDi $mva $mva %1
+.f46: ANDi %1 $mtp #IMSW
+EQUi %1 #0 @.f47
+ANDi %1 $x #0xFF
+SUBi %1 %1 #0x80
+ADDi $mva $mva %1
+.f47: ANDi %1 $mtp #IMSQ
+EQUi %1 #0 @.f48
+XORi %1 $x #0x80
+ANDi %1 %1 #0x80
+SHLi %1 %1 #1
+ADDi $mva $mva %1
+.f48: ANDi %1 $mtp #IMDC
+EQUi %1 #0 @.f49
+! ADDi <A> #HPFB #1
+! SHLi <A> #0x100 <A>
+SUBi $y <A> $mph
+GEQi $y #0 @.f50
+MOVi $y #0
+.f50: SHRu %1 $y #HPFB
+ADDi $mva $mva %1
+.f49: SHRu %1 $ins #IMAM
+ANDi %1 %1 #7
+PEEK %1 &HMAM %1
+MULi %1 $mva %1
+SHRi $mod %1 #7
+PEEK $cpt $vp #VSCP
+SHRu %1 $ins #IOCT
+ANDi %1 %1 #7
+ADDi %1 %1 #5
+! SHLi <A> #12 #8
+MULi %1 %1 <A>
+ADDi $mpt $cpt %1
+ANDi %1 $ins #INMM
+NEQi %1 #0 @.f51
+ADDi $mpt $mpt $mod
+GOTO @.e52
+.f51: SUBi $mpt $mpt $mod
+.e52: GEQi $mpt #0 @.f53
+MOVi $mpt #0
+GOTO @.e54
+.f53: LEQi $mpt #0xFFFF @.f55
+MOVi $mpt #0xFFFF
+.f55: NOOP
+.e54: LSSi $env #0x10000 @.f56
+SHRu %1 $ins #IATK
+ANDi %1 %1 #0x0F
+PEEK %1 &hatr %1
+MULi %1 $tsc %1
+SHRi $atr %1 #9
+! EQUi #DEBUG #0 @.a57
+GEQi $atr #0 @.a57
+MOVp %1 &.a_atr0febb0021
+CALL ^assertFail %0 *1
+.a57: NOOP
+! SHLi <A> #1 #HVEB
+ANDi %0 $env #0xFFFF
+! ADDi <B> #9 #HVMB
+! SUBi <A> <A> #1
+SHRu %0 %0 <B>
+SUBi %0 <A> %0
+SUBi $y %0 #8
+GEQi $y #0 @.f58
+MOVi $y #0
+.f58: SHLi %0 $atr $y
+ADDi $env $env %0
+LSSi $env #0x20000 @.e61
+MOVi $env #0xFFFF
+PEEK %0 $vp #VSSU
+EQUi %0 #FALSE @.e61
+MOVi $env #0x1FFFF
+GOTO @.e61
+.f56: SHRu %0 $ins #IDCY
+ANDi %0 %0 #0x0F
+PEEK %0 &hdcr %0
+MULi %0 $tsc %0
+SHRi $dcr %0 #9
+SUBi $env $env $dcr
+GEQi $env #0 @.f62
+MOVi $env #0
+.f62: NOOP
+.e61: POKE $vp #VSEN $env
+SHRu %0 $ins #IVOL
+ANDi %0 %0 #0x0F
+ANDi %1 $env #0xFFFF
+SHLi %0 %0 #3
+SHRi %1 %1 #9
+ADDi $vol %0 %1
+GEQi $vol #0 @.f63
+MOVi $vol #0
+GOTO @.e64
+.f63: LEQi $vol #255 @.f65
+MOVi $vol #255
+.f65: NOOP
+.e64: SHRu %0 $ins #IWAV
+ANDi %0 %0 #0x0F
+GETL %1 $rma $vi
+IORi %0 %0 %1
+SHLi %0 %0 #HWAV
+SHLi %1 $vol #HVOL
+IORi %0 %0 %1
+SHLi %1 $mpt #HFP
+IORi %0 %0 %1
+SETL $vre $vi %0
+GOTO @.e66
+.f45: SETL $vre $vi #0
+.e66: FORi $vi #HVC @.l42
+.e41: NOOP
+! MULi <A> #0 #VSSZ
+! ADDi <A> <A> #VSEN
+ANDi %0 $vst:<A> #0xFFFF
+ADDi %0 %0 #8192
+SHRi %0 %0 #14
+SHRi %0 #0xF00 %0
+! MULi <A> #1 #VSSZ
+! ADDi <A> <A> #VSEN
+ANDi %1 $vst:<A> #0xFFFF
+ADDi %1 %1 #8192
+SHRi %1 %1 #14
+SHRi %1 #0x0F0 %1
+ANDi %0 %0 #0xF0
+ANDi %1 %1 #0x0F
+IORi %0 %0 %1
+POKE &displayLEDs:0 %0
+! MULi <A> #2 #VSSZ
+! ADDi <A> <A> #VSEN
+ANDi %0 $vst:<A> #0xFFFF
+ADDi %0 %0 #8192
+SHRi %0 %0 #14
+SHRi %0 #0xF00 %0
+ANDi %0 %0 #0xF0
+ANDi %1 $xps #15
+IORi %0 %0 %1
+POKE &displayLEDs:1 %0
+SWCH $o2m *OPERATOR_2_COUNT @.s67
+.s67#O2SMU: SHRi $o2l #0x8000 $pst
+MOVi $dly #0
+GOTO @.e68
+.s67#O2IMU: MOVi $o2l #0
+MOVi $i #0
+GEQi #0 #HVC @.e69
+.l70: MULi %0 $i #VSSZ
+ADDi %0 %0 #VSEN
+GETL %0 $vst %0
+LEQi %0 #0 @.f71
+MULi %0 $i #VSSZ
+ADDi %0 %0 #VSCI
+GETL %0 $vst %0
+SHRi %0 #0x8000 %0
+IORi $o2l $o2l %0
+.f71: FORi $i #HVC @.l70
+.e69: PEEK %0 &params:OPERAND_2_LOW_PARAM_INDEX
+SHLi $dly %0 #8
+GOTO @.e68
+.s67#O2XIH: SHRu $o2l $lid #16
+MOVi $dly #0x3000
+GOTO @.e68
+.s67#O2XIL: MOVi $o2l $lid
+MOVi $dly #0x3000
+GOTO @.e68
+.s67#O2OFF: MOVi $o2l #0
+MOVi $dly #0x3000
+.s67: NOOP
+.e68: SHRu %0 $o2l #8
+POKE &displayLEDs:2 %0
+ANDi %0 $o2l #0xFF
+POKE &displayLEDs:3 %0
+MOVi $bi #0
+GEQi #0 #HBS @.l0
+.l73: MOVi $mix #0
+MOVi $vi #0
+GEQi #0 #HVC @.e74
+.l75: GETL $reg $vre $vi
+SHRu %0 $reg #HWAV
+ANDi $wav %0 #255
+EQUi $wav #0 @.f76
+SHRu %0 $reg #HVOL
+ANDi $vol %0 #255
+SHRu %0 $reg #HCP
+ANDi $sem %0 #255
+SHRu %0 $reg #HFP
+ANDi $fin %0 #255
+GETL $phs $vph $vi
+GETL $rnd $vrn $vi
+ANDi %0 $wav #HRS
+EQUi %0 #0 @.f77
+MOVi $phs #0
+MOVi $rnd #0
+.f77: NOOP
+! SUBi <A> #8 #PFI
+SHLi %0 $sem #PFI
+SHRi %1 $fin <A>
+IORi %0 %0 %1
+ADDi $ptc $tun %0
+! SHLi <A> #12 #PFI
+DIVi %0 $ptc <A>
+XORi %0 %0 #-1
+XORi $oct %0 #-1
+! SHLi <A> #12 #PFI
+MULi %0 $oct <A>
+SUBi $i $ptc %0
+PEEK %0 &ptbl $i
+SUBi %1 #32 $oct
+SHRi $ort %0 %1
+! SUBi <A> #VMB #4
+! SHLi <B> #1 #VEB
+! ADDi <A> <A> <B>
+SHRi %0 $vol #VMB
+SUBi $vsh <A> %0
+! SHLi <A> #1 #VMB
+! SUBi <A> <A> #1
+! SHLi <B> #1 #VMB
+ANDi %0 $vol <A>
+ADDi $vmu <B> %0
+ADDi $phs $phs $ort
+! SHLi <B> #1 #PIB
+SHRi %0 $phs #PFB
+! SUBi <B> <B> #1
+ANDi $p %0 <B>
+MOVi $s #0
+ANDi %0 $wav #HTR
+EQUi %0 #0 @.f78
+SHLi %0 $p #24
+SHLi %1 $p #1
+SHRi %0 %0 #31
+XORi %1 %1 %0
+ANDi %1 %1 #255
+SUBi %1 %1 #128
+IORi $s $s %1
+.f78: ANDi %1 $wav #HSW
+EQUi %1 #0 @.f79
+SUBi %1 $p #128
+IORi $s $s %1
+.f79: ANDi %1 $wav #HSQ
+EQUi %1 #0 @.f80
+SHRi %1 $phs #PFB
+ANDi %1 %1 #128
+SHLi %1 %1 #1
+SUBi %1 %1 #128
+IORi $s $s %1
+.f80: ANDi %1 $wav #HNO
+EQUi %1 #0 @.f81
+SUBi %1 $phs $ort
+XORi %1 $phs %1
+! ADDi <B> #2 #PFB
+SHRu %1 %1 <B>
+EQUi %1 #0 @.f82
+SHRi %1 $rnd #23
+SHRi %0 $rnd #7
+XORi %1 %1 %0
+XORi %1 %1 #-1
+SHRu %0 $rnd #8
+SHLi %1 %1 #24
+IORi $rnd %0 %1
+.f82: SHRi %0 $rnd #24
+IORi $s $s %0
+.f81: MULi %0 $s $vmu
+SHRi $s %0 $vsh
+GEQi $s #-128 @.f83
+MOVi $s #-128
+GOTO @.e84
+.f83: LEQi $s #127 @.f85
+MOVi $s #127
+.f85: NOOP
+.e84: ADDi $mix $mix $s
+SETL $vph $vi $phs
+SETL $vrn $vi $rnd
+.f76: FORi $vi #HVC @.l75
+.e74: ADDi %1 $clk $dly
+MOVi %2 #1
+MOVp %3 &signal
+CALL ^write %0 *4
+MOVi %1 $clk
+MOVi %2 #1
+MOVp %3 &signal
+CALL ^read %0 *4
+NEQi $o2m #O2SMU @.f87
+NEQi $mst #FALSE @.f87
+SHLi %0 $mix #2
+POKE &signal:0 %0
+SHLi %0 $mix #2
+POKE &signal:1 %0
+GOTO @.e88
+.f87: PEEK %0 &signal:0
+SHLi %1 $mix #2
+ADDi %0 %0 %1
+POKE &signal:0 %0
+PEEK %0 &signal:1
+SHLi %1 $mix #2
+ADDi %0 %0 %1
+POKE &signal:1 %0
+.e88: CALL ^yield %0 *1
+PEEK $clk &clock
+FORi $bi #HBS @.l73
+GOTO @.l0
+RETU
+.s_lengthfebb001f: CNST *52
+DATs lengths  ===== CLICK HERE TO LOAD JS80TRX URL =====
+DATi #0
+.s_repeatfebb0020: CNST *8
+DATs repeats
+DATi #0
+.s_patterfebb0021: CNST *42
+DATs pattern
+DATi #32 #32 #32 #32 #32 #32 #32 #32 #197 #32 #32 #32 #32 #32 #32 #32 #32 #32 #32 #32 #32 #197 #32 #32 #32 #32 #32 #32 #32 #32 #32 #32 #32 #197 #0
+.s_randomfebb0022: CNST *52
+DATs random   #1
+DATi #32 #32 #32 #32 #197 #32 #32 #32 #32 #32 #32
+DATs #2
+DATi #32 #32 #32 #32 #197 #32 #32 #32 #32 #32
+DATs #3
+DATi #32 #32 #32 #32 #197 #32
+DATs TRANSPOSE
+DATi #0
+.s_STEPGAfebb0023: CNST *15
+DATs --- STEP GATES
+DATi #0
+.s_INSTRUfebb0024: CNST *47
+DATs --- INSTRUMENT MUTES
+DATi #32 #32 #32 #32 #32 #32 #32 #32 #197 #32
+DATs DELAY (feedback)
+DATi #0
+.s_xorWAVfebb0025: CNST *48
+DATs xor WAVEFORM
+DATi #32 #32 #32 #197
+DATs ^v
+DATi #197
+DATs TRANSPOSE
+DATi #197 #32
+DATs ATTACK
+DATi #32 #32 #32 #32 #197 #32
+DATs DECAY
+DATi #0
+.s_xorMODfebb0026: CNST *49
+DATs xor MOD TYPE
+DATi #32 #32 #32 #197
+DATs +-
+DATi #197
+DATs AMOUNT
+DATi #32 #32 #32 #197 #32
+DATs RATE
+DATi #32 #32 #32 #32 #32 #32 #197 #32
+DATs VOLUME
+DATi #0
+.s_PasteUfebb0027: CNST *47
+DATs Paste URL from https://soniccharge.com/js80trx
+DATi #0
+.s_Domainfebb0028: CNST *13
+DATs Domain error
+DATi #0
+.s_ABCDEFfebb0029: CNST *65
+DATs ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/
+DATi #0
+.s_Invalifebb002a: CNST *15
+DATs Invalid format
+DATi #0
+.s_resetfebb002b: CNST *6
+DATs reset
+DATi #0
+.s_initfebb002c: CNST *5
+DATs init
+DATi #0
+! EQUi #DEBUG #0 @.noAssertStrings
+.a_tsc0tsfebb001f: CNST *26
+DATs (tsc >= 0 && tsc < 32768)
+DATi #0
+.a_0envenfebb0020: CNST *29
+DATs (0 <= env && env <= 0x20000)
+DATi #0
+.a_atr0febb0021: CNST *11
+DATs (atr >= 0)
+DATi #0
+.noAssertStrings: !

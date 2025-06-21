@@ -42,9 +42,11 @@ const int PARAM_COUNT
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
+global int clock                 // Sample counter for timing
 global array signal[2]          // Left/Right audio samples
 global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
+global int clockFreqLimit        // Current clock frequency limit
 
 // Switch and mode state
 global int current_mode = 0     // Active processing mode (0-3)
@@ -179,24 +181,24 @@ locals int switch_input, int switch_pressed, int mode_select, int input_sample, 
 
 ```impala
 // Mode cycling with button
-params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Button pressed
-params[SWITCHES_PARAM_INDEX] = 64;   // Bypass off
-params[OPERATOR_1_PARAM_INDEX] = 0;    // Direct select off
+global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Button pressed
+global params[SWITCHES_PARAM_INDEX] = 64;   // Bypass off
+global params[OPERATOR_1_PARAM_INDEX] = 0;    // Direct select off
 
 // Direct mode selection
-params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Button not pressed
-params[SWITCHES_PARAM_INDEX] = 64;   // Bypass off
-params[OPERATOR_1_PARAM_INDEX] = 128;  // Select mode 1
+global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Button not pressed
+global params[SWITCHES_PARAM_INDEX] = 64;   // Bypass off
+global params[OPERATOR_1_PARAM_INDEX] = 128;  // Select mode 1
 
 // Bypass active
-params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Button not pressed
-params[SWITCHES_PARAM_INDEX] = 200;  // Bypass on
-params[OPERATOR_1_PARAM_INDEX] = 200;  // Any mode
+global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Button not pressed
+global params[SWITCHES_PARAM_INDEX] = 200;  // Bypass on
+global params[OPERATOR_1_PARAM_INDEX] = 200;  // Any mode
 
 // Clean signal
-params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Button not pressed
-params[SWITCHES_PARAM_INDEX] = 64;   // Bypass off
-params[OPERATOR_1_PARAM_INDEX] = 0;    // Mode 0 (clean)
+global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Button not pressed
+global params[SWITCHES_PARAM_INDEX] = 64;   // Bypass off
+global params[OPERATOR_1_PARAM_INDEX] = 0;    // Mode 0 (clean)
 ```
 
 ## Understanding Switch Control

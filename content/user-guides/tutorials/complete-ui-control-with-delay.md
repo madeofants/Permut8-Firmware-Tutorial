@@ -30,30 +30,40 @@ extern native yield
 extern native read
 extern native write
 
+// Audio and parameter constants
+const int AUDIO_MAX = 2047
+const int AUDIO_MIN = -2047
+const int PARAM_MAX = 255
+const int MEMORY_SIZE = 65536
+const int STEREO_OFFSET = 32768
+const int LED_MAX = 255
+
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX = 0
+const int OPERAND_1_LOW_PARAM_INDEX = 1
+const int OPERAND_2_LOW_PARAM_INDEX = 2
+const int OPERAND_2_HIGH_PARAM_INDEX = 3
+const int OPERATOR_1_PARAM_INDEX = 4
+const int OPERATOR_2_PARAM_INDEX = 5
+const int SWITCHES_PARAM_INDEX = 6
+const int CLOCK_FREQ_PARAM_INDEX = 7
+const int PARAM_COUNT = 8
+
 // Global variables that connect to Permut8 hardware
 global array signal[2]          // Audio input/output
-// Required parameter constants
-const int OPERAND_1_HIGH_PARAM_INDEX
-const int OPERAND_1_LOW_PARAM_INDEX
-const int OPERAND_2_HIGH_PARAM_INDEX
-const int OPERAND_2_LOW_PARAM_INDEX
-const int OPERATOR_1_PARAM_INDEX
-const int OPERATOR_2_PARAM_INDEX
-const int SWITCHES_PARAM_INDEX
-const int CLOCK_FREQ_PARAM_INDEX
-const int PARAM_COUNT
-
 global array params[PARAM_COUNT]          // All hardware parameters
 global array displayLEDs[4]     // All 4 LED displays
 global array positions[2]       // Memory positions for operators
+global clock
+global clockFreqLimit
 
 // Enhanced delay state
-global int masterClock = 0
-global int syncMode = 0
-global int reverseMode = 0
-global int tripletMode = 0
-global int dottedMode = 0
-global int writeProtectMode = 0
+global masterClock = 0
+global syncMode = 0
+global reverseMode = 0
+global tripletMode = 0
+global dottedMode = 0
+global writeProtectMode = 0
 
 // Delay processing state
 global array delayBuffer[2]
@@ -63,13 +73,15 @@ global int feedbackAmount = 100
 global int crossFeedback = 50
 
 // Operator 1: Enhanced SUB with modulation
-function operate1() returns int processed {
+function operate1() returns processed {
+    locals clockFreq, switches, operator1Type, delayHigh, delayLow, combinedOperand, tempoFactor, currentPosition, readPosition, delayedSample
+    
     // === PARAMETER READING (Using Original Interface) ===
-    int clockFreq = (int)global params[CLOCK_FREQ_PARAM_INDEX];           // Clock frequency knob
-    int switches = (int)global params[SWITCHES_PARAM_INDEX];            // Switch states bit mask
-    int operator1Type = (int)global params[OPERATOR_1_PARAM_INDEX];       // Should be SUB (8) for delay
-    int delayHigh = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];          // Instruction 1 High Operand
-    int delayLow = (int)global params[OPERAND_1_LOW_PARAM_INDEX];           // Instruction 1 Low Operand
+    clockFreq = params[CLOCK_FREQ_PARAM_INDEX]           // Clock frequency knob
+    switches = params[SWITCHES_PARAM_INDEX]            // Switch states bit mask
+    operator1Type = params[OPERATOR_1_PARAM_INDEX]       // Should be SUB (8) for delay
+    delayHigh = params[OPERAND_1_HIGH_PARAM_INDEX]          // Instruction 1 High Operand
+    delayLow = params[OPERAND_1_LOW_PARAM_INDEX]           // Instruction 1 Low Operand
     
     // === SWITCH PROCESSING (All 5 Switch States) ===
     syncMode = (switches & 0x01) != 0;           // Bit 0: SYNC switch
@@ -82,13 +94,13 @@ function operate1() returns int processed {
     masterClock = masterClock + 1;
     
     // Calculate base delay time from operands (16-bit value)
-    int combinedOperand = (delayHigh << 8) | delayLow;  // 0-65535 range
+    combinedOperand = (delayHigh << 8) | delayLow  // 0-65535 range
     baseDelayTime = (combinedOperand >> 4) + 100;       // 100-4195 samples
     
     // === TIMING MODE PROCESSING ===
     if (syncMode) {
         // Tempo-synchronized delay based on clock frequency
-        int tempoFactor = (clockFreq >> 3) + 1;  // 1-32 tempo divisions
+        tempoFactor = (clockFreq >> 3) + 1  // 1-32 tempo divisions
         
         if (tripletMode) {
             // Triplet timing: 2/3 of normal timing
@@ -113,16 +125,16 @@ function operate1() returns int processed {
     }
     
     // === MEMORY OPERATION (Enhanced SUB behavior) ===
-    int currentPosition = positions[0];
-    int readPosition = currentPosition - modulatedDelayTime;
+    currentPosition = positions[0]
+    readPosition = currentPosition - modulatedDelayTime
     
     // Handle memory wrapping
     if (readPosition < 0) readPosition = readPosition + 65536;
     if (readPosition >= 65536) readPosition = readPosition - 65536;
     
     // Read delayed audio
-    read(readPosition, 1, delayBuffer);
-    int delayedSample = delayBuffer[0];
+    read(readPosition, 1, delayBuffer)
+    delayedSample = delayBuffer[0]
     
     // Apply write protection
     if (!writeProtectMode) {
@@ -135,40 +147,42 @@ function operate1() returns int processed {
     // Store delayed sample for mixing
     signal[0] = delayedSample;
     
-    return 1;  // Signal successful processing
+    return 1  // Signal successful processing
 }
 
 // Operator 2: Cross-channel and feedback processing
-function operate2() returns int processed {
+function operate2() returns processed {
+    locals operator2Type, feedbackHigh, feedbackLow, currentPosition, readPosition, rightDelayed, leftInput, rightInput, leftDelayed, leftOutput, rightOutput
+    
     // === PARAMETER READING (Instruction 2) ===
-    int operator2Type = (int)global params[OPERATOR_2_PARAM_INDEX];       // Instruction 2 operator type
-    int feedbackHigh = (int)global params[OPERAND_2_HIGH_PARAM_INDEX];        // Instruction 2 High Operand  
-    int feedbackLow = (int)global params[OPERAND_2_LOW_PARAM_INDEX];         // Instruction 2 Low Operand
+    operator2Type = params[OPERATOR_2_PARAM_INDEX]       // Instruction 2 operator type
+    feedbackHigh = params[OPERAND_2_HIGH_PARAM_INDEX]        // Instruction 2 High Operand  
+    feedbackLow = params[OPERAND_2_LOW_PARAM_INDEX]         // Instruction 2 Low Operand
     
     // Calculate feedback parameters
     feedbackAmount = (feedbackHigh * 3) / 4;     // 0-191 feedback (75% max)
     crossFeedback = feedbackLow / 4;             // 0-63 cross-channel feedback
     
     // === STEREO PROCESSING ===
-    int currentPosition = positions[1];
-    int readPosition = currentPosition - modulatedDelayTime;
+    currentPosition = positions[1]
+    readPosition = currentPosition - modulatedDelayTime
     
     // Handle wrapping for right channel
     if (readPosition < 0) readPosition = readPosition + 65536;
     if (readPosition >= 65536) readPosition = readPosition - 65536;
     
     // Read right channel delayed audio
-    read(readPosition + 32768, 1, delayBuffer);  // Offset for stereo separation
-    int rightDelayed = delayBuffer[0];
+    read(readPosition + 32768, 1, delayBuffer)  // Offset for stereo separation
+    rightDelayed = delayBuffer[0]
     
     // === FEEDBACK PROCESSING ===
-    int leftInput = signal[0];
-    int rightInput = signal[1];
-    int leftDelayed = signal[0];  // From operate1
+    leftInput = signal[0]
+    rightInput = signal[1]
+    leftDelayed = signal[0]  // From operate1
     
     // Apply feedback with cross-channel mixing
-    int leftOutput = leftInput + (leftDelayed * feedbackAmount / 255) + (rightDelayed * crossFeedback / 255);
-    int rightOutput = rightInput + (rightDelayed * feedbackAmount / 255) + (leftDelayed * crossFeedback / 255);
+    leftOutput = leftInput + (leftDelayed * feedbackAmount / 255) + (rightDelayed * crossFeedback / 255)
+    rightOutput = rightInput + (rightDelayed * feedbackAmount / 255) + (leftDelayed * crossFeedback / 255)
     
     // Prevent clipping
     if (leftOutput > 2047) leftOutput = 2047;
@@ -189,48 +203,50 @@ function operate2() returns int processed {
     signal[0] = leftOutput;
     signal[1] = rightOutput;
     
-    return 1;
+    return 1
 }
 
 // Update function: Handle parameter changes and LED feedback
 function update() {
+    locals tempoDiv, switchDisplay, delayPattern, activityLevel, feedbackDisplay
+    
     // === LED DISPLAY 1: Clock and Sync Status ===
     if (syncMode) {
         // Show tempo divisions when synced
-        int tempoDiv = ((int)global params[CLOCK_FREQ_PARAM_INDEX] >> 3) + 1;
-        displayLEDs[0] = (1 << (tempoDiv - 1)) & 0xFF;  // Light LEDs for tempo
+        tempoDiv = (params[CLOCK_FREQ_PARAM_INDEX] >> 3) + 1
+        displayLEDs[0] = (1 << (tempoDiv - 1)) & 0xFF  // Light LEDs for tempo
     } else {
         // Show clock frequency when not synced
-        displayLEDs[0] = global params[CLOCK_FREQ_PARAM_INDEX];
+        displayLEDs[0] = params[CLOCK_FREQ_PARAM_INDEX]
     }
     
     // === LED DISPLAY 2: Switch States ===
-    int switchDisplay = 0;
-    if (syncMode) switchDisplay |= 0x01;        // LED 1: SYNC
-    if (reverseMode) switchDisplay |= 0x02;     // LED 2: REV
-    if (tripletMode) switchDisplay |= 0x04;     // LED 3: Triplet
-    if (dottedMode) switchDisplay |= 0x08;      // LED 4: Dotted
-    if (writeProtectMode) switchDisplay |= 0x10; // LED 5: Write Protect
-    displayLEDs[1] = switchDisplay;
+    switchDisplay = 0
+    if (syncMode) switchDisplay |= 0x01        // LED 1: SYNC
+    if (reverseMode) switchDisplay |= 0x02     // LED 2: REV
+    if (tripletMode) switchDisplay |= 0x04     // LED 3: Triplet
+    if (dottedMode) switchDisplay |= 0x08      // LED 4: Dotted
+    if (writeProtectMode) switchDisplay |= 0x10 // LED 5: Write Protect
+    displayLEDs[1] = switchDisplay
     
     // === LED DISPLAY 3: Delay Time Indication ===
     // Show delay time as LED pattern
-    int delayPattern = (baseDelayTime >> 8) & 0xFF;  // Scale to 0-255
-    displayLEDs[2] = delayPattern;
+    delayPattern = (baseDelayTime >> 8) & 0xFF  // Scale to 0-255
+    displayLEDs[2] = delayPattern
     
     // === LED DISPLAY 4: Feedback and Activity ===
     // Combine feedback amount with audio activity
-    int activityLevel = (abs(signal[0]) + abs(signal[1])) >> 4;  // Scale audio level
-    int feedbackDisplay = (feedbackAmount >> 1) | (activityLevel << 4);
-    displayLEDs[3] = feedbackDisplay & 0xFF;
+    activityLevel = (abs(signal[0]) + abs(signal[1])) >> 4  // Scale audio level
+    feedbackDisplay = (feedbackAmount >> 1) | (activityLevel << 4)
+    displayLEDs[3] = feedbackDisplay & 0xFF
 }
 
 // Main processing function
 function process() {
     loop {
-        operate1();  // Process Instruction 1 (delay with modulation)
-        operate2();  // Process Instruction 2 (feedback and stereo)
-        yield();
+        operate1()  // Process Instruction 1 (delay with modulation)
+        operate2()  // Process Instruction 2 (feedback and stereo)
+        yield()
     }
 }
 ```
@@ -254,12 +270,12 @@ function process() {
 
 ```impala
 // How to decode switch states from params[SWITCHES_PARAM_INDEX]
-int switches = (int)global params[SWITCHES_PARAM_INDEX];
-int syncMode = (switches & 0x01) != 0;       // Bit 0: SYNC switch
-int reverseMode = (switches & 0x02) != 0;    // Bit 1: REV switch  
-int tripletMode = (switches & 0x04) != 0;    // Bit 2: Triplet timing
-int dottedMode = (switches & 0x08) != 0;     // Bit 3: Dotted timing
-int writeProtectMode = (switches & 0x10) != 0; // Bit 4: Write protect
+switches = params[SWITCHES_PARAM_INDEX]
+syncMode = (switches & 0x01) != 0       // Bit 0: SYNC switch
+reverseMode = (switches & 0x02) != 0    // Bit 1: REV switch  
+tripletMode = (switches & 0x04) != 0    // Bit 2: Triplet timing
+dottedMode = (switches & 0x08) != 0     // Bit 3: Dotted timing
+writeProtectMode = (switches & 0x10) != 0 // Bit 4: Write protect
 ```
 
 **Switch Effects**:

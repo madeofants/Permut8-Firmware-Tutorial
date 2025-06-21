@@ -9,10 +9,10 @@ Creates basic reverb by using multiple delay lines with feedback to simulate the
 ## Quick Reference
 
 **Essential Parameters:**
-- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Room size (0-255, delay time)
-- `(int)global params[SWITCHES_PARAM_INDEX]`: Decay time (0-255, how long reverb lasts)
-- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Damping (0-255, high frequency rolloff)
-- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Dry/wet mix (0-255, blend control)
+- `params[CLOCK_FREQ_PARAM_INDEX]`: Room size (0-255, delay time)
+- `params[SWITCHES_PARAM_INDEX]`: Decay time (0-255, how long reverb lasts)
+- `params[OPERATOR_1_PARAM_INDEX]`: Damping (0-255, high frequency rolloff)
+- `params[OPERAND_1_HIGH_PARAM_INDEX]`: Dry/wet mix (0-255, blend control)
 
 **Key Concepts:** Multiple delays, feedback loops, frequency damping, spatial simulation
 
@@ -39,9 +39,11 @@ extern native read              // Read from delay line memory
 extern native write             // Write to delay line memory
 
 // Standard global variables
+global int clock                 // Sample counter for timing
 global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
+global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
+global int clockFreqLimit        // Current clock frequency limit
 
 // Simple reverb state
 global array temp_buffer[2]     // Temporary buffer for memory operations
@@ -55,10 +57,10 @@ locals int room_size, int decay, int damping, int mix, int delay1_time, int dela
 {
     loop {
         // Read parameters
-        room_size = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 2) + 10;   // 10-73 delay range
-        decay = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 1) + 64;       // 64-191 feedback amount
-        damping = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;      // 1-16 damping strength
-        mix = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];                     // 0-255 dry/wet mix
+        room_size = ((int)global params[CLOCK_FREQ_PARAM_INDEX] >> 2) + 10;   // 10-73 delay range
+        decay = ((int)global params[SWITCHES_PARAM_INDEX] >> 1) + 64;       // 64-191 feedback amount
+        damping = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;      // 1-16 damping strength
+        mix = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];                     // 0-255 dry/wet mix
         
         // Calculate delay times (different for each delay line)
         delay1_time = room_size;
@@ -150,22 +152,22 @@ locals int room_size, int decay, int damping, int mix, int delay1_time, int dela
 
 ```impala
 // Small room
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Small size
-(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Medium decay
-(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Some damping
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Subtle mix
+global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Small size
+global params[SWITCHES_PARAM_INDEX] = 128;  // Medium decay
+global params[OPERATOR_1_PARAM_INDEX] = 128;  // Some damping
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Subtle mix
 
 // Large hall
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Large size
-(int)global params[SWITCHES_PARAM_INDEX] = 200;  // Long decay
-(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Light damping
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // More noticeable
+global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Large size
+global params[SWITCHES_PARAM_INDEX] = 200;  // Long decay
+global params[OPERATOR_1_PARAM_INDEX] = 64;   // Light damping
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // More noticeable
 
 // Ambient space
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 255;  // Maximum size
-(int)global params[SWITCHES_PARAM_INDEX] = 240;  // Very long decay
-(int)global params[OPERATOR_1_PARAM_INDEX] = 180;  // Heavy damping
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Mostly wet
+global params[CLOCK_FREQ_PARAM_INDEX] = 255;  // Maximum size
+global params[SWITCHES_PARAM_INDEX] = 240;  // Very long decay
+global params[OPERATOR_1_PARAM_INDEX] = 180;  // Heavy damping
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Mostly wet
 ```
 
 ## Try These Changes

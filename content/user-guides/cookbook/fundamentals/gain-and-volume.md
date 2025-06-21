@@ -41,9 +41,11 @@ const int PARAM_COUNT
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
+global int clock                 // Sample counter for timing
 global array signal[2]          // Left/Right audio samples
 global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
+global int clockFreqLimit        // Current clock frequency limit
 
 // Volume control state
 global int smooth_volume = 1024   // Current volume level
@@ -127,24 +129,24 @@ locals int volume_target, int balance_target, int smoothing_speed, int left_samp
 
 ```impala
 // Unity gain, centered
-params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Half volume
-params[SWITCHES_PARAM_INDEX] = 128;  // Center balance
-params[OPERATOR_1_PARAM_INDEX] = 64;   // Medium smoothing
+global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Half volume
+global params[SWITCHES_PARAM_INDEX] = 128;  // Center balance
+global params[OPERATOR_1_PARAM_INDEX] = 64;   // Medium smoothing
 
 // Left-heavy mix
-params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Loud volume
-params[SWITCHES_PARAM_INDEX] = 80;   // Left balance
-params[OPERATOR_1_PARAM_INDEX] = 32;   // Slow smoothing
+global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Loud volume
+global params[SWITCHES_PARAM_INDEX] = 80;   // Left balance
+global params[OPERATOR_1_PARAM_INDEX] = 32;   // Slow smoothing
 
 // Quick response
-params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Moderate volume
-params[SWITCHES_PARAM_INDEX] = 150;  // Right balance
-params[OPERATOR_1_PARAM_INDEX] = 200;  // Fast smoothing
+global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Moderate volume
+global params[SWITCHES_PARAM_INDEX] = 150;  // Right balance
+global params[OPERATOR_1_PARAM_INDEX] = 200;  // Fast smoothing
 
 // Background level
-params[CLOCK_FREQ_PARAM_INDEX] = 40;   // Quiet volume
-params[SWITCHES_PARAM_INDEX] = 128;  // Center balance
-params[OPERATOR_1_PARAM_INDEX] = 16;   // Very slow smoothing
+global params[CLOCK_FREQ_PARAM_INDEX] = 40;   // Quiet volume
+global params[SWITCHES_PARAM_INDEX] = 128;  // Center balance
+global params[OPERATOR_1_PARAM_INDEX] = 16;   // Very slow smoothing
 ```
 
 ## Understanding Volume Control

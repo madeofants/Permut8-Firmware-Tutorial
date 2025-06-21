@@ -115,8 +115,8 @@ Timeline: 2 weeks development + 1 week testing
 // Parameters: [List with ranges]
 
 // Basic algorithm outline:
-function algorithmName(int input)
-returns int output
+function algorithmName(input)
+returns output
 {
     // Step 1: [Description]
     // Step 2: [Description] 
@@ -151,20 +151,24 @@ project-name/
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 // Required parameter constants
-const int OPERAND_1_HIGH_PARAM_INDEX
-const int OPERAND_1_LOW_PARAM_INDEX
-const int OPERAND_2_HIGH_PARAM_INDEX
-const int OPERAND_2_LOW_PARAM_INDEX
-const int OPERATOR_1_PARAM_INDEX
-const int OPERATOR_2_PARAM_INDEX
-const int SWITCHES_PARAM_INDEX
-const int CLOCK_FREQ_PARAM_INDEX
-const int PARAM_COUNT
+const int OPERAND_1_HIGH_PARAM_INDEX = 0
+const int OPERAND_1_LOW_PARAM_INDEX = 1
+const int OPERAND_2_LOW_PARAM_INDEX = 2
+const int OPERAND_2_HIGH_PARAM_INDEX = 3
+const int OPERATOR_1_PARAM_INDEX = 4
+const int OPERATOR_2_PARAM_INDEX = 5
+const int SWITCHES_PARAM_INDEX = 6
+const int CLOCK_FREQ_PARAM_INDEX = 7
+const int PARAM_COUNT = 8
 
 // [Project-specific constants]
 
 // === GLOBAL STATE ===
-// [Required Permut8 globals]
+global int clock = 0            // Sample counter for timing
+global array signal[2]          // Left/Right audio samples
+global array params[PARAM_COUNT] // Parameter values (0-255)
+global array displayLEDs[4]     // LED displays
+global int clockFreqLimit = 132300 // Current clock frequency limit
 // [Effect-specific globals]
 
 // === ALGORITHM IMPLEMENTATION ===
@@ -184,36 +188,38 @@ const int PARAM_COUNT
 // === MINIMAL WORKING DELAY (Version 0.1) ===
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-global array signal[2]
-global array params[PARAM_COUNT]
-global array displayLEDs[4]
+global int clock = 0            // Sample counter for timing
+global array signal[2]          // Left/Right audio samples
+global array params[PARAM_COUNT] // Parameter values (0-255)
+global array displayLEDs[4]     // LED displays
+global int clockFreqLimit = 132300 // Current clock frequency limit
 
 // Minimal delay buffer
 global array delayBuffer[22050]  // 0.5 second max
-global int writePos = 0
-global int readPos = 11025       // 0.25 second delay
+global writePos = 0
+global readPos = 11025       // 0.25 second delay
 
-function process()
-locals int input, int delayed, int mixed
-{
+function process() {
+    locals input, delayed, mixed
+    
     loop {
-        input = global signal[0]
+        input = signal[0]
         
         // Write to delay buffer
-        global delayBuffer[global writePos] = input
+        delayBuffer[writePos] = input
         
         // Read delayed signal
-        delayed = global delayBuffer[global readPos]
+        delayed = delayBuffer[readPos]
         
         // Simple 50/50 mix
         mixed = (input + delayed) / 2
         
-        global signal[0] = mixed
-        global signal[1] = mixed
+        signal[0] = mixed
+        signal[1] = mixed
         
         // Advance positions
-        global writePos = (global writePos + 1) % 22050
-        global readPos = (global readPos + 1) % 22050
+        writePos = (writePos + 1) % SAMPLE_RATE_HALF
+        readPos = (readPos + 1) % 22050
         
         yield()
     }
@@ -239,47 +245,46 @@ locals int input, int delayed, int mixed
 **Example: Adding Parameter Control**:
 ```impala
 // Version 0.2: Add parameter control
-global int delayTime = 11025     // Controllable delay time
-global int feedback = 128        // Controllable feedback (0-255)
+global delayTime = 11025     // Controllable delay time
+global feedback = 128        // Controllable feedback (0-255)
 
-function update()
-{
+function update() {
     // Map delay time parameter (0-255 to 100-22050 samples)
-    global delayTime = 100 + (global params[OPERAND_1_HIGH_PARAM_INDEX] * 21950 / 255)
+    delayTime = 100 + (params[OPERAND_1_HIGH_PARAM_INDEX] * 21950 / 255)
     
     // Map feedback parameter (0-255 to 0-200% for interesting effects)
-    global feedback = global params[OPERAND_1_LOW_PARAM_INDEX]
+    feedback = params[OPERAND_1_LOW_PARAM_INDEX]
     
     // Update LED display
-    global displayLEDs[0] = global params[OPERAND_1_HIGH_PARAM_INDEX]
+    displayLEDs[0] = params[OPERAND_1_HIGH_PARAM_INDEX]
 }
 
-function process()
-locals int input, int delayed, int mixed, int feedbackSample
-{
+function process() {
+    locals input, delayed, mixed, feedbackSample
+    
     loop {
-        input = global signal[0]
+        input = signal[0]
         
         // Calculate read position based on delay time
-        global readPos = global writePos - global delayTime
-        if (global readPos < 0) global readPos = global readPos + 22050
+        readPos = writePos - delayTime
+        if (readPos < 0) readPos = readPos + 22050
         
         // Read delayed signal
-        delayed = global delayBuffer[global readPos]
+        delayed = delayBuffer[readPos]
         
         // Apply feedback
-        feedbackSample = delayed * global feedback / 255
+        feedbackSample = delayed * feedback / 255
         
         // Write input + feedback to buffer
-        global delayBuffer[global writePos] = input + feedbackSample
+        delayBuffer[writePos] = input + feedbackSample
         
         // Mix dry and wet
         mixed = (input * 128 + delayed * 128) / 255  // 50/50 mix
         
-        global signal[0] = mixed
-        global signal[1] = mixed
+        signal[0] = mixed
+        signal[1] = mixed
         
-        global writePos = (global writePos + 1) % 22050
+        writePos = (writePos + 1) % SAMPLE_RATE_HALF
         yield()
     }
 }
@@ -290,26 +295,27 @@ locals int input, int delayed, int mixed, int feedbackSample
 **Critical Error Prevention**:
 ```impala
 // Safe parameter bounds checking
-function update()
-{
+function update() {
+    locals delayParam
+    
     // Ensure delay time is within valid range
-    int delayParam = global params[OPERAND_1_HIGH_PARAM_INDEX]
+    delayParam = params[OPERAND_1_HIGH_PARAM_INDEX]
     if (delayParam < 0) delayParam = 0
     if (delayParam > 255) delayParam = 255
     
-    global delayTime = 100 + (delayParam * 21950 / 255)
+    delayTime = 100 + (delayParam * 21950 / 255)
     
     // Clamp delay time to buffer size
-    if (global delayTime >= 22050) global delayTime = 22049
-    if (global delayTime < 1) global delayTime = 1
+    if (delayTime >= 22050) delayTime = 22049
+    if (delayTime < 1) delayTime = 1
 }
 
 // Safe audio processing
-function process()
-locals int input, int output
-{
+function process() {
+    locals input, output
+    
     loop {
-        input = global signal[0]
+        input = signal[0]
         
         // Clamp input to valid range
         if (input > 2047) input = 2047
@@ -321,8 +327,8 @@ locals int input, int output
         if (output > 2047) output = 2047
         if (output < -2047) output = -2047
         
-        global signal[0] = output
-        global signal[1] = output
+        signal[0] = output
+        signal[1] = output
         
         yield()
     }
@@ -388,24 +394,23 @@ pause
 #### Syntax Errors
 ```impala
 // ERROR: Missing semicolon (Impala doesn't use semicolons!)
-int value = 42;  // WRONG
+value = 42;  // WRONG
 
 // CORRECT: No semicolons in Impala
-int value = 42
+value = 42
 ```
 
 #### Type Errors
 ```impala
 // ERROR: Undefined variable
-function process()
-{
+function process() {
     undefinedVar = 42  // WRONG - variable not declared
 }
 
 // CORRECT: Declare in locals or as global
-function process()
-locals int localVar
-{
+function process() {
+    locals localVar
+    
     localVar = 42
 }
 ```
@@ -414,15 +419,14 @@ locals int localVar
 ```impala
 // ERROR: Array out of bounds
 global array buffer[1024]
-function process()
-{
+function process() {
     buffer[1024] = 42  // WRONG - index 1024 is out of bounds (0-1023)
 }
 
 // CORRECT: Check bounds
-function process()
-locals int index
-{
+function process() {
+    locals index
+    
     index = 1023  // Last valid index
     buffer[index] = 42
 }
@@ -445,27 +449,26 @@ PikaCmd.exe impala.pika compile -optimize source.impala output.gazl
 **Code Optimization for Compilation**:
 ```impala
 // SLOW: Repeated calculations in loop
-function process()
-{
+function process() {
+    locals result
+    
     loop {
-        int result = expensiveCalculation((int)global params[CLOCK_FREQ_PARAM_INDEX])
-        global signal[0] = result
+        result = expensiveCalculation(params[CLOCK_FREQ_PARAM_INDEX])
+        signal[0] = result
         yield()
     }
 }
 
 // FAST: Pre-calculate in update()
-global int precalculatedValue = 0
+global precalculatedValue = 0
 
-function update()
-{
-    global precalculatedValue = expensiveCalculation((int)global params[CLOCK_FREQ_PARAM_INDEX])
+function update() {
+    precalculatedValue = expensiveCalculation(params[CLOCK_FREQ_PARAM_INDEX])
 }
 
-function process()
-{
+function process() {
     loop {
-        global signal[0] = global precalculatedValue  // Use pre-calculated value
+        signal[0] = precalculatedValue  // Use pre-calculated value
         yield()
     }
 }
@@ -480,14 +483,15 @@ function process()
 // === TEST HARNESS FOR ALGORITHM COMPONENTS ===
 
 // Test 1: Parameter scaling
-function testParameterScaling()
-{
+function testParameterScaling() {
+    locals result1, result2, result3
+    
     // Test boundary conditions
     trace("Testing parameter scaling...")
     
-    int result1 = scaleParameter(0)      // Should be minimum
-    int result2 = scaleParameter(255)    // Should be maximum
-    int result3 = scaleParameter(128)    // Should be middle
+    result1 = scaleParameter(0)      // Should be minimum
+    result2 = scaleParameter(255)    // Should be maximum
+    result3 = scaleParameter(128)    // Should be middle
     
     trace("Min: " + intToString(result1))
     trace("Max: " + intToString(result2))
@@ -495,18 +499,19 @@ function testParameterScaling()
 }
 
 // Test 2: Audio processing
-function testAudioProcessing()
-{
+function testAudioProcessing() {
+    locals testInput1, testInput2, testInput3, output1, output2, output3
+    
     trace("Testing audio processing...")
     
     // Test with known inputs
-    int testInput1 = 1000    // Positive signal
-    int testInput2 = -1000   // Negative signal
-    int testInput3 = 0       // Zero signal
+    testInput1 = 1000    // Positive signal
+    testInput2 = -1000   // Negative signal
+    testInput3 = 0       // Zero signal
     
-    int output1 = processAudio(testInput1)
-    int output2 = processAudio(testInput2)
-    int output3 = processAudio(testInput3)
+    output1 = processAudio(testInput1)
+    output2 = processAudio(testInput2)
+    output3 = processAudio(testInput3)
     
     trace("Input 1000 -> " + intToString(output1))
     trace("Input -1000 -> " + intToString(output2))
@@ -514,8 +519,7 @@ function testAudioProcessing()
 }
 
 // Call tests in init()
-function init()
-{
+function init() {
     testParameterScaling()
     testAudioProcessing()
 }
@@ -526,37 +530,36 @@ function init()
 **Test Complete Signal Chain**:
 ```impala
 // === INTEGRATION TEST SETUP ===
-global int testPhase = 0
-global int testResults[10]
+global testPhase = 0
+global array testResults[10]
 
-function runIntegrationTests()
-{
+function runIntegrationTests() {
     trace("Starting integration tests...")
     
     // Test 1: Silent input should produce silent output
-    global signal[0] = 0
-    global signal[1] = 0
+    signal[0] = 0
+    signal[1] = 0
     process()  // Run one iteration
     
-    if (abs(global signal[0]) < 10) {
+    if (abs(signal[0]) < 10) {
         trace("✓ Silent input test passed")
-        global testResults[0] = 1
+        testResults[0] = 1
     } else {
         trace("✗ Silent input test failed")
-        global testResults[0] = 0
+        testResults[0] = 0
     }
     
     // Test 2: Maximum input should not clip
-    global signal[0] = 2047
-    global signal[1] = 2047
+    signal[0] = AUDIO_MAX
+    signal[1] = AUDIO_MAX
     process()
     
-    if (global signal[0] <= 2047 && global signal[0] >= -2047) {
+    if (signal[0] <= AUDIO_MAX && signal[0] >= AUDIO_MIN) {
         trace("✓ Clipping test passed")
-        global testResults[1] = 1
+        testResults[1] = 1
     } else {
         trace("✗ Clipping test failed")
-        global testResults[1] = 0
+        testResults[1] = 0
     }
     
     // Add more tests...
@@ -582,41 +585,39 @@ function runIntegrationTests()
 **Automated Testing Framework**:
 ```impala
 // === AUTOMATED TEST FRAMEWORK ===
-global int currentTest = 0
-global int testsPassed = 0
-global int testsFailed = 0
+global currentTest = 0
+global testsPassed = 0
+global testsFailed = 0
 
 const int NUM_TESTS = 5
 
-function runAllTests()
-{
+function runAllTests() {
     trace("=== Starting Automated Tests ===")
     
-    for (global currentTest = 0 to NUM_TESTS) {
-        runTest(global currentTest)
+    for (currentTest = 0 to NUM_TESTS) {
+        runTest(currentTest)
     }
     
     trace("=== Test Results ===")
-    trace("Passed: " + intToString(global testsPassed))
-    trace("Failed: " + intToString(global testsFailed))
+    trace("Passed: " + intToString(testsPassed))
+    trace("Failed: " + intToString(testsFailed))
     
-    if (global testsFailed == 0) {
+    if (testsFailed == 0) {
         trace("✓ All tests passed!")
     } else {
         trace("✗ Some tests failed - check implementation")
     }
 }
 
-function runTest(int testNumber)
-{
+function runTest(testNumber) {
     trace("Running test " + intToString(testNumber))
     
     if (testNumber == 0) {
-        if (testSilentInput()) global testsPassed = global testsPassed + 1
-        else global testsFailed = global testsFailed + 1
+        if (testSilentInput()) testsPassed = testsPassed + 1
+        else testsFailed = testsFailed + 1
     } else if (testNumber == 1) {
-        if (testParameterBounds()) global testsPassed = global testsPassed + 1
-        else global testsFailed = global testsFailed + 1
+        if (testParameterBounds()) testsPassed = testsPassed + 1
+        else testsFailed = testsFailed + 1
     }
     // Add more test cases...
 }
@@ -628,36 +629,37 @@ function runTest(int testNumber)
 
 **Strategic trace() Placement**:
 ```impala
-function process()
-locals int input, int output, int debugCounter
-{
+global debugCounter = 0
+
+function process() {
+    locals input, output
+    
     loop {
-        input = global signal[0]
+        input = signal[0]
         
         // Debug: Monitor input levels occasionally
-        global debugCounter = global debugCounter + 1
-        if ((global debugCounter % 1000) == 0) {
+        debugCounter = debugCounter + 1
+        if ((debugCounter % 1000) == 0) {
             trace("Input level: " + intToString(abs(input)))
         }
         
         output = processEffect(input)
         
         // Debug: Check for unexpected values
-        if (abs(output) > 2047) {
+        if (abs(output) > AUDIO_MAX) {
             trace("WARNING: Output clipping! Value: " + intToString(output))
         }
         
-        global signal[0] = output
+        signal[0] = output
         yield()
     }
 }
 
 // Debug: Parameter monitoring
-function update()
-{
+function update() {
     trace("Params updated:")
-    trace("  P1: " + intToString((int)global params[CLOCK_FREQ_PARAM_INDEX]))
-    trace("  P2: " + intToString((int)global params[SWITCHES_PARAM_INDEX]))
+    trace("  P1: " + intToString(params[CLOCK_FREQ_PARAM_INDEX]))
+    trace("  P2: " + intToString(params[SWITCHES_PARAM_INDEX]))
     
     // Process parameters...
 }
@@ -667,29 +669,31 @@ function update()
 
 **Monitor Critical State Variables**:
 ```impala
-global int debugMode = 1  // Set to 0 for release builds
+global debugMode = 1  // Set to 0 for release builds
+global oscillatorPhase = 0
+global amplitude = 0
+global cutoffFreq = 0
+global bufferPos = 0
 
-function debugPrintState()
-{
-    if (global debugMode == 0) return  // Skip in release
+function debugPrintState() {
+    if (debugMode == 0) return  // Skip in release
     
     trace("=== State Debug ===")
-    trace("Phase: " + intToString(global oscillatorPhase))
-    trace("Amplitude: " + intToString(global amplitude))
-    trace("Filter cutoff: " + intToString(global cutoffFreq))
-    trace("Buffer position: " + intToString(global bufferPos))
+    trace("Phase: " + intToString(oscillatorPhase))
+    trace("Amplitude: " + intToString(amplitude))
+    trace("Filter cutoff: " + intToString(cutoffFreq))
+    trace("Buffer position: " + intToString(bufferPos))
 }
 
 // Call debug function periodically
-global int debugTimer = 0
-function process()
-{
+global debugTimer = 0
+function process() {
     loop {
         // Your processing...
         
-        // Debug every 10,000 samples (about 0.2 seconds at 44.1kHz)
-        global debugTimer = global debugTimer + 1
-        if ((global debugTimer % 10000) == 0) {
+        // Debug every 10,000 samples (about 0.2 seconds at SAMPLE_RATE_44K1)
+        debugTimer = debugTimer + 1
+        if ((debugTimer % 10000) == 0) {
             debugPrintState()
         }
         
@@ -704,19 +708,17 @@ function process()
 ```impala
 // BUG: No bounds checking
 global array buffer[1024]
-global int position = 0
+global position = 0
 
-function process()
-{
-    buffer[position] = global signal[0]  // Can overflow!
+function process() {
+    buffer[position] = signal[0]  // Can overflow!
     position = position + 1
     yield()
 }
 
 // FIX: Always check bounds
-function process()
-{
-    buffer[position] = global signal[0]
+function process() {
+    buffer[position] = signal[0]
     position = (position + 1) % 1024  // Wrap around safely
     yield()
 }
@@ -725,33 +727,36 @@ function process()
 **Bug Pattern 2: Uninitialized Variables**
 ```impala
 // BUG: Uninitialized state
-global int filterState  // Could be any value!
+global filterState  // Could be any value!
 
-function process()
-{
-    int output = global signal[0] + global filterState  // Unpredictable!
+function process() {
+    locals output
+    
+    output = signal[0] + filterState  // Unpredictable!
     yield()
 }
 
 // FIX: Always initialize
-global int filterState = 0  // Known starting value
+global filterState = 0  // Known starting value
 ```
 
 **Bug Pattern 3: Parameter Range Issues**
 ```impala
 // BUG: No parameter validation
-function update()
-{
-    global frequency = (int)global params[CLOCK_FREQ_PARAM_INDEX] * 1000  // Could be huge!
+global frequency = 0
+
+function update() {
+    frequency = params[CLOCK_FREQ_PARAM_INDEX] * 1000  // Could be huge!
 }
 
 // FIX: Validate and clamp parameters
-function update()
-{
-    int param = (int)global params[CLOCK_FREQ_PARAM_INDEX]
-    if (param < 0) param = 0
-    if (param > 255) param = 255
-    global frequency = 20 + (param * 19980 / 255)  // 20Hz to 20kHz
+function update() {
+    locals param
+    
+    param = params[CLOCK_FREQ_PARAM_INDEX]
+    if (param < PARAM_MIN) param = PARAM_MIN
+    if (param > PARAM_MAX) param = PARAM_MAX
+    frequency = 20 + (param * 19980 / PARAM_MAX)  // 20Hz to 20kHz
 }
 ```
 
@@ -759,21 +764,22 @@ function update()
 
 **Monitor CPU Usage**:
 ```impala
-global int performanceTimer = 0
-global int cycleCount = 0
+global performanceTimer = 0
+global cycleCount = 0
 
-function process()
-{
-    int startTime = global clock
+function process() {
+    locals startTime, endTime, processingTime
+    
+    startTime = clock
     
     // Your processing here
     processAudio()
     
-    int endTime = global clock
-    int processingTime = endTime - startTime
+    endTime = clock
+    processingTime = endTime - startTime
     
-    global cycleCount = global cycleCount + 1
-    if ((global cycleCount % 1000) == 0) {
+    cycleCount = cycleCount + 1
+    if ((cycleCount % 1000) == 0) {
         trace("Avg processing time: " + intToString(processingTime))
     }
     
@@ -879,47 +885,49 @@ Debug steps:
 
 **Performance Measurement Framework**:
 ```impala
-global int profilingEnabled = 1
-global int maxProcessingTime = 0
-global int minProcessingTime = 999999
-global int totalProcessingTime = 0
-global int sampleCount = 0
+global profilingEnabled = 1
+global maxProcessingTime = 0
+global minProcessingTime = 999999
+global totalProcessingTime = 0
+global sampleCount = 0
 
 function profileStart()
-returns int timestamp
+returns timestamp
 {
-    if (global profilingEnabled == 0) return 0
-    return global clock
+    if (profilingEnabled == 0) return 0
+    return clock
 }
 
-function profileEnd(int startTime)
+function profileEnd(startTime)
 {
-    if (global profilingEnabled == 0 || startTime == 0) return
+    locals processingTime, avgTime
     
-    int processingTime = global clock - startTime
+    if (profilingEnabled == 0 || startTime == 0) return
     
-    if (processingTime > global maxProcessingTime) {
-        global maxProcessingTime = processingTime
+    processingTime = clock - startTime
+    
+    if (processingTime > maxProcessingTime) {
+        maxProcessingTime = processingTime
     }
-    if (processingTime < global minProcessingTime) {
-        global minProcessingTime = processingTime
+    if (processingTime < minProcessingTime) {
+        minProcessingTime = processingTime
     }
     
-    global totalProcessingTime = global totalProcessingTime + processingTime
-    global sampleCount = global sampleCount + 1
+    totalProcessingTime = totalProcessingTime + processingTime
+    sampleCount = sampleCount + 1
     
     // Report every 10,000 samples
-    if ((global sampleCount % 10000) == 0) {
-        int avgTime = global totalProcessingTime / global sampleCount
+    if ((sampleCount % 10000) == 0) {
+        avgTime = totalProcessingTime / sampleCount
         trace("Performance - Avg: " + intToString(avgTime) + 
-              " Min: " + intToString(global minProcessingTime) +
-              " Max: " + intToString(global maxProcessingTime))
+              " Min: " + intToString(minProcessingTime) +
+              " Max: " + intToString(maxProcessingTime))
     }
 }
 
-function process()
-locals int startTime
-{
+function process() {
+    locals startTime
+    
     loop {
         startTime = profileStart()
         
@@ -937,28 +945,30 @@ locals int startTime
 **Memory Access Optimization**:
 ```impala
 // SLOW: Repeated global access
-function process()
-{
+global filterCutoff = 0
+global filterQ = 0
+
+function process() {
     loop {
-        global signal[0] = processFilter(global signal[0], global filterCutoff, global filterQ)
+        signal[0] = processFilter(signal[0], filterCutoff, filterQ)
         yield()
     }
 }
 
 // FAST: Cache globals in locals
-function process()
-locals int input, int output, int cutoff, int q
-{
+function process() {
+    locals input, output, cutoff, q
+    
     loop {
         // Cache global values
-        input = global signal[0]
-        cutoff = global filterCutoff
-        q = global filterQ
+        input = signal[0]
+        cutoff = filterCutoff
+        q = filterQ
         
         // Process with local variables
         output = processFilter(input, cutoff, q)
         
-        global signal[0] = output
+        signal[0] = output
         yield()
     }
 }
@@ -967,26 +977,29 @@ locals int input, int output, int cutoff, int q
 **Arithmetic Optimization**:
 ```impala
 // SLOW: Division in inner loop
-function process()
-{
+global amplitude = 0
+
+function process() {
+    locals scaled
+    
     loop {
-        int scaled = global signal[0] * global amplitude / 1000  // Division is slow
+        scaled = signal[0] * amplitude / 1000  // Division is slow
         yield()
     }
 }
 
 // FAST: Pre-calculate reciprocal in update()
-global int amplitudeReciprocal = 65536 / 1000  // 16.16 fixed point
+global amplitudeReciprocal = 65536 / 1000  // 16.16 fixed point
 
-function update()
-{
-    global amplitudeReciprocal = 65536 / (global amplitude + 1)  // Avoid divide by zero
+function update() {
+    amplitudeReciprocal = 65536 / (amplitude + 1)  // Avoid divide by zero
 }
 
-function process()
-{
+function process() {
+    locals scaled
+    
     loop {
-        int scaled = (global signal[0] * global amplitude * global amplitudeReciprocal) >> 16
+        scaled = (signal[0] * amplitude * amplitudeReciprocal) >> 16
         yield()
     }
 }
@@ -995,26 +1008,29 @@ function process()
 **Loop Optimization**:
 ```impala
 // SLOW: Function calls in tight loops
-function process()
-{
+global array buffer[1024]
+
+function process() {
+    locals i
+    
     loop {
         for (i = 0 to 1023) {
-            global buffer[i] = expensiveFunction(global buffer[i])  // Slow!
+            buffer[i] = expensiveFunction(buffer[i])  // Slow!
         }
         yield()
     }
 }
 
 // FAST: Inline simple operations
-function process()
-locals int i, int temp
-{
+function process() {
+    locals i, temp
+    
     loop {
         for (i = 0 to 1023) {
-            temp = global buffer[i]
+            temp = buffer[i]
             temp = temp * 2  // Inline simple operations
             if (temp > 2047) temp = 2047
-            global buffer[i] = temp
+            buffer[i] = temp
         }
         yield()
     }
@@ -1036,15 +1052,14 @@ const int DELAY1_OFFSET = 0
 const int DELAY2_OFFSET = 1024
 const int TEMP_OFFSET = 2048
 
-function accessDelay1(int index)
-returns int value
+function accessDelay1(index)
+returns value
 {
-    return global masterBuffer[DELAY1_OFFSET + index]
+    return masterBuffer[DELAY1_OFFSET + index]
 }
 
-function setDelay1(int index, int value)
-{
-    global masterBuffer[DELAY1_OFFSET + index] = value
+function setDelay1(index, value) {
+    masterBuffer[DELAY1_OFFSET + index] = value
 }
 ```
 
@@ -1072,15 +1087,23 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 // Wow/flutter: 0% to 10% (tape speed variation)
 
 // === GLOBAL STATE VARIABLES ===
-global int delayTime = 22050        // Current delay time in samples
-global int feedback = 128           // Feedback amount (0-255)
-global int tapeAge = 64            // Tape saturation (0-255)
-global int wowFlutter = 32         // Speed variation (0-255)
+// Standard global variables
+global int clock = 0            // Sample counter for timing
+global array signal[2]          // Left/Right audio samples
+global array params[PARAM_COUNT] // Parameter values (0-PARAM_MAX)
+global array displayLEDs[4]     // LED displays
+global int clockFreqLimit = 132300 // Current clock frequency limit
+
+// Effect-specific globals
+global delayTime = SAMPLE_RATE_44K1        // Current delay time in samples
+global feedback = PARAM_MID           // Feedback amount (0-PARAM_MAX)
+global tapeAge = PARAM_MAX / 4            // Tape saturation (0-PARAM_MAX)
+global wowFlutter = PARAM_MAX / 8         // Speed variation (0-PARAM_MAX)
 
 // === DELAY LINE MEMORY ===
-global array delayBuffer[88200]    // 2 seconds max delay at 44.1kHz
-global int writePosition = 0       // Current write position
-global int readPosition = 22050    // Current read position (1 second back)
+global array delayBuffer[SAMPLE_RATE_44K1 * 2]    // 2 seconds max delay at SAMPLE_RATE_44K1
+global writePosition = 0       // Current write position
+global readPosition = SAMPLE_RATE_44K1    // Current read position (1 second back)
 
 /**
  * Apply tape saturation modeling to audio signal
@@ -1088,18 +1111,19 @@ global int readPosition = 22050    // Current read position (1 second back)
  * @param saturation: Saturation amount (0-255)
  * @return: Saturated audio sample
  */
-function applyTapeSaturation(int input, int saturation)
-returns int output
-locals int scaled, int saturated
+function applyTapeSaturation(input, saturation)
+returns output
 {
+    locals scaled, saturated
+    
     // Scale input for saturation calculation
-    scaled = input * saturation / 255
+    scaled = input * saturation / PARAM_MAX
     
     // Simple tanh approximation for tape saturation
-    if (scaled > 1500) {
-        saturated = 1500 + (scaled - 1500) / 4  // Soft limiting
-    } else if (scaled < -1500) {
-        saturated = -1500 + (scaled + 1500) / 4
+    if (scaled > (AUDIO_MAX * 3 / 4)) {
+        saturated = (AUDIO_MAX * 3 / 4) + (scaled - (AUDIO_MAX * 3 / 4)) / 4  // Soft limiting
+    } else if (scaled < -(AUDIO_MAX * 3 / 4)) {
+        saturated = -(AUDIO_MAX * 3 / 4) + (scaled + (AUDIO_MAX * 3 / 4)) / 4
     } else {
         saturated = scaled
     }
@@ -1170,10 +1194,10 @@ v1.0.0 (2024-12-30)
 Brief description of what the effect does and its intended use.
 
 ## Parameters
-- **Knob 1 (Time)**: Delay time from 50ms to 2 seconds
-- **Knob 2 (Feedback)**: Feedback amount from 0% to 120%
-- **Knob 3 (Character)**: Tape age simulation from new to vintage
-- **Knob 4 (Flutter)**: Wow and flutter from stable to warped
+- **Knob 1 (Time)**: Delay time from 50ms to 2 seconds (0-PARAM_MAX)
+- **Knob 2 (Feedback)**: Feedback amount from 0% to 120% (0-PARAM_MAX)
+- **Knob 3 (Character)**: Tape age simulation from new to vintage (0-PARAM_MAX)
+- **Knob 4 (Flutter)**: Wow and flutter from stable to warped (0-PARAM_MAX)
 
 ## LED Display
 - **LEDs 1-4**: Show delay time as moving dot pattern

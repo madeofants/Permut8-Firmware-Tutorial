@@ -43,9 +43,11 @@ const int PARAM_COUNT
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
+global int clock = 0            // Sample counter for timing
 global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
+global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
+global int clockFreqLimit = 132300 // Current clock frequency limit
 
 // Simplified phase vocoder state
 global array analysis_buffer[16]    // Analysis input buffer
@@ -58,12 +60,12 @@ global int time_stretch = 128       // Time stretch factor (128 = normal)
 global int pitch_shift = 128        // Pitch shift factor (128 = normal)
 
 function process()
-locals int i, int time_factor, int pitch_factor, int hop_size, int analysis_input, int synthesis_output, int led_pattern
+locals i, time_factor, pitch_factor, hop_size, analysis_input, synthesis_output, led_pattern
 {
     loop {
         // Read control parameters
-        global time_stretch = 64 + ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 1);   // 64-191 range (0.5x to 1.5x)
-        global pitch_shift = 64 + ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 1);    // 64-191 range (0.5x to 1.5x)
+        global time_stretch = 64 + (params[CLOCK_FREQ_PARAM_INDEX] >> 1);   // 64-191 range (0.5x to 1.5x)
+        global pitch_shift = 64 + (params[SWITCHES_PARAM_INDEX] >> 1);    // 64-191 range (0.5x to 1.5x)
         
         // Calculate processing parameters
         time_factor = global time_stretch;
@@ -71,7 +73,7 @@ locals int i, int time_factor, int pitch_factor, int hop_size, int analysis_inpu
         hop_size = 8;  // Fixed hop size for simplicity
         
         // Store input in analysis buffer
-        global analysis_buffer[global buffer_index] = (int)global signal[0];
+        global analysis_buffer[global buffer_index] = signal[0];
         global buffer_index = global buffer_index + 1;
         if (global buffer_index >= 16) {
             global buffer_index = 0;
@@ -83,39 +85,39 @@ locals int i, int time_factor, int pitch_factor, int hop_size, int analysis_inpu
             global hop_counter = 0;
             
             // Simplified spectral analysis (basic magnitude extraction)
-            global magnitude[0] = ((int)global analysis_buffer[0] + (int)global analysis_buffer[8]) >> 1;
-            if ((int)global magnitude[0] < 0) global magnitude[0] = -(int)global magnitude[0];
+            global magnitude[0] = (global analysis_buffer[0] + global analysis_buffer[8]) >> 1;
+            if (global magnitude[0] < 0) global magnitude[0] = -global magnitude[0];
             
-            global magnitude[1] = ((int)global analysis_buffer[1] + (int)global analysis_buffer[9]) >> 1;
-            if ((int)global magnitude[1] < 0) global magnitude[1] = -(int)global magnitude[1];
+            global magnitude[1] = (global analysis_buffer[1] + global analysis_buffer[9]) >> 1;
+            if (global magnitude[1] < 0) global magnitude[1] = -global magnitude[1];
             
-            global magnitude[2] = ((int)global analysis_buffer[2] + (int)global analysis_buffer[10]) >> 1;
-            if ((int)global magnitude[2] < 0) global magnitude[2] = -(int)global magnitude[2];
+            global magnitude[2] = (global analysis_buffer[2] + global analysis_buffer[10]) >> 1;
+            if (global magnitude[2] < 0) global magnitude[2] = -global magnitude[2];
             
-            global magnitude[3] = ((int)global analysis_buffer[3] + (int)global analysis_buffer[11]) >> 1;
-            if ((int)global magnitude[3] < 0) global magnitude[3] = -(int)global magnitude[3];
+            global magnitude[3] = (global analysis_buffer[3] + global analysis_buffer[11]) >> 1;
+            if (global magnitude[3] < 0) global magnitude[3] = -global magnitude[3];
             
-            global magnitude[4] = ((int)global analysis_buffer[4] + (int)global analysis_buffer[12]) >> 1;
-            if ((int)global magnitude[4] < 0) global magnitude[4] = -(int)global magnitude[4];
+            global magnitude[4] = (global analysis_buffer[4] + global analysis_buffer[12]) >> 1;
+            if (global magnitude[4] < 0) global magnitude[4] = -global magnitude[4];
             
-            global magnitude[5] = ((int)global analysis_buffer[5] + (int)global analysis_buffer[13]) >> 1;
-            if ((int)global magnitude[5] < 0) global magnitude[5] = -(int)global magnitude[5];
+            global magnitude[5] = (global analysis_buffer[5] + global analysis_buffer[13]) >> 1;
+            if (global magnitude[5] < 0) global magnitude[5] = -global magnitude[5];
             
-            global magnitude[6] = ((int)global analysis_buffer[6] + (int)global analysis_buffer[14]) >> 1;
-            if ((int)global magnitude[6] < 0) global magnitude[6] = -(int)global magnitude[6];
+            global magnitude[6] = (global analysis_buffer[6] + global analysis_buffer[14]) >> 1;
+            if (global magnitude[6] < 0) global magnitude[6] = -global magnitude[6];
             
-            global magnitude[7] = ((int)global analysis_buffer[7] + (int)global analysis_buffer[15]) >> 1;
-            if ((int)global magnitude[7] < 0) global magnitude[7] = -(int)global magnitude[7];
+            global magnitude[7] = (global analysis_buffer[7] + global analysis_buffer[15]) >> 1;
+            if (global magnitude[7] < 0) global magnitude[7] = -global magnitude[7];
             
             // Simple phase calculation (difference between consecutive samples)
-            global phase[0] = (int)global analysis_buffer[1] - (int)global analysis_buffer[0];
-            global phase[1] = (int)global analysis_buffer[2] - (int)global analysis_buffer[1];
-            global phase[2] = (int)global analysis_buffer[3] - (int)global analysis_buffer[2];
-            global phase[3] = (int)global analysis_buffer[4] - (int)global analysis_buffer[3];
-            global phase[4] = (int)global analysis_buffer[5] - (int)global analysis_buffer[4];
-            global phase[5] = (int)global analysis_buffer[6] - (int)global analysis_buffer[5];
-            global phase[6] = (int)global analysis_buffer[7] - (int)global analysis_buffer[6];
-            global phase[7] = (int)global analysis_buffer[8] - (int)global analysis_buffer[7];
+            global phase[0] = global analysis_buffer[1] - global analysis_buffer[0];
+            global phase[1] = global analysis_buffer[2] - global analysis_buffer[1];
+            global phase[2] = global analysis_buffer[3] - global analysis_buffer[2];
+            global phase[3] = global analysis_buffer[4] - global analysis_buffer[3];
+            global phase[4] = global analysis_buffer[5] - global analysis_buffer[4];
+            global phase[5] = global analysis_buffer[6] - global analysis_buffer[5];
+            global phase[6] = global analysis_buffer[7] - global analysis_buffer[6];
+            global phase[7] = global analysis_buffer[8] - global analysis_buffer[7];
             
             // Apply time stretching by adjusting magnitude scaling
             global magnitude[0] = ((int)global magnitude[0] * time_factor) >> 7;
@@ -253,22 +255,22 @@ locals int i, int time_factor, int pitch_factor, int hop_size, int analysis_inpu
 
 ```impala
 // Slow motion effect
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // 0.75x time stretch
-(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Normal pitch
-(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // High processing blend
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Standard window
+params[CLOCK_FREQ_PARAM_INDEX] = 64;   // 0.75x time stretch
+params[SWITCHES_PARAM_INDEX] = 128;  // Normal pitch
+params[OPERATOR_1_PARAM_INDEX] = 200;  // High processing blend
+params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Standard window
 
 // Chipmunk effect
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // 1.25x time stretch
-(int)global params[SWITCHES_PARAM_INDEX] = 200;  // 1.25x pitch up
-(int)global params[OPERATOR_1_PARAM_INDEX] = 255;  // Full processing
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Small window
+params[CLOCK_FREQ_PARAM_INDEX] = 200;  // 1.25x time stretch
+params[SWITCHES_PARAM_INDEX] = 200;  // 1.25x pitch up
+params[OPERATOR_1_PARAM_INDEX] = 255;  // Full processing
+params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Small window
 
 // Pitch correction
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Normal time
-(int)global params[SWITCHES_PARAM_INDEX] = 140;  // Slight pitch up
-(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // 50% blend
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 192;  // Large window
+params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Normal time
+params[SWITCHES_PARAM_INDEX] = 140;  // Slight pitch up
+params[OPERATOR_1_PARAM_INDEX] = 128;  // 50% blend
+params[OPERAND_1_HIGH_PARAM_INDEX] = 192;  // Large window
 ```
 
 ## Musical Applications

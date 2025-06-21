@@ -55,14 +55,14 @@ global int random_seed = 12345      // For humanization
 global int current_step = 0         // Step position (0-7)
 
 function process()
-locals int swing_amount, int humanization, int groove_pattern, int effect_intensity, int step_time, int is_offbeat, int timing_offset, int random_variation, int input_sample, int delayed_sample, int output_sample, int gate_state
+locals swing_amount, humanization, groove_pattern, effect_intensity, step_time, is_offbeat, timing_offset, random_variation, input_sample, delayed_sample, output_sample, gate_state
 {
     loop {
         // Read swing and timing parameters
-        swing_amount = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];       // 0-255 swing amount
-        humanization = (int)global (int)global params[SWITCHES_PARAM_INDEX];      // 0-255 humanization
-        groove_pattern = (int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 6; // 0-3 groove types
-        effect_intensity = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];  // 0-255 effect level
+        swing_amount = params[CLOCK_FREQ_PARAM_INDEX];       // 0-255 swing amount
+        humanization = params[SWITCHES_PARAM_INDEX];      // 0-255 humanization
+        groove_pattern = params[OPERATOR_1_PARAM_INDEX] >> 6; // 0-3 groove types
+        effect_intensity = params[OPERAND_1_HIGH_PARAM_INDEX];  // 0-255 effect level
         
         // Advance step counter
         global step_counter = global step_counter + 1;
@@ -123,7 +123,7 @@ locals int swing_amount, int humanization, int groove_pattern, int effect_intens
         }
         
         // Read input sample
-        input_sample = (int)global signal[0];
+        input_sample = signal[0];
         
         // Apply swing-based processing
         if (gate_state == 1) {
@@ -192,28 +192,28 @@ locals int swing_amount, int humanization, int groove_pattern, int effect_intens
 
 ```impala
 // Straight timing (no swing)
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // No swing
-(int)global params[SWITCHES_PARAM_INDEX] = 16;   // Minimal humanization
-(int)global params[OPERATOR_1_PARAM_INDEX] = 0;    // Straight pattern
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Light effect
+params[CLOCK_FREQ_PARAM_INDEX] = 128;  // No swing
+params[SWITCHES_PARAM_INDEX] = 16;   // Minimal humanization
+params[OPERATOR_1_PARAM_INDEX] = 0;    // Straight pattern
+params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Light effect
 
 // Light jazz swing
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // Moderate swing
-(int)global params[SWITCHES_PARAM_INDEX] = 32;   // Light humanization
-(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Standard swing pattern
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Medium effect
+params[CLOCK_FREQ_PARAM_INDEX] = 180;  // Moderate swing
+params[SWITCHES_PARAM_INDEX] = 32;   // Light humanization
+params[OPERATOR_1_PARAM_INDEX] = 64;   // Standard swing pattern
+params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Medium effect
 
 // Heavy shuffle
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 220;  // Heavy swing
-(int)global params[SWITCHES_PARAM_INDEX] = 64;   // More humanization
-(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Shuffle pattern
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Strong effect
+params[CLOCK_FREQ_PARAM_INDEX] = 220;  // Heavy swing
+params[SWITCHES_PARAM_INDEX] = 64;   // More humanization
+params[OPERATOR_1_PARAM_INDEX] = 128;  // Shuffle pattern
+params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Strong effect
 
 // Complex groove
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Strong swing
-(int)global params[SWITCHES_PARAM_INDEX] = 80;   // Significant humanization
-(int)global params[OPERATOR_1_PARAM_INDEX] = 192;  // Complex pattern
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Heavy effect
+params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Strong swing
+params[SWITCHES_PARAM_INDEX] = 80;   // Significant humanization
+params[OPERATOR_1_PARAM_INDEX] = 192;  // Complex pattern
+params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Heavy effect
 ```
 
 ## Understanding Swing Timing

@@ -54,16 +54,16 @@ global int buffer_index = 0     // Current buffer position
 global int update_counter = 0   // Rate control for analysis
 
 function process()
-locals int analysis_rate, int window_type, int display_mode, int i, int real_part, int imag_part, int mag_squared, int led_pattern
+locals analysis_rate, window_type, display_mode, i, real_part, imag_part, mag_squared, led_pattern
 {
     loop {
         // Read control parameters
-        analysis_rate = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 6) + 1;  // 1-4 range (update rate)
-        window_type = (int)global (int)global params[SWITCHES_PARAM_INDEX] >> 6;           // 0-3 range (window type)
-        display_mode = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 6;          // 0-3 range (display mode)
+        analysis_rate = (params[OPERATOR_1_PARAM_INDEX] >> 6) + 1;  // 1-4 range (update rate)
+        window_type = params[SWITCHES_PARAM_INDEX] >> 6;           // 0-3 range (window type)
+        display_mode = params[OPERAND_1_HIGH_PARAM_INDEX] >> 6;          // 0-3 range (display mode)
         
         // Read input and store in buffer
-        global input_buffer[(int)global buffer_index] = (int)global signal[0];
+        global input_buffer[global buffer_index] = signal[0];
         global buffer_index = global buffer_index + 1;
         if (global buffer_index >= 8) {
             global buffer_index = 0;
@@ -77,20 +77,20 @@ locals int analysis_rate, int window_type, int display_mode, int i, int real_par
             // Simple 8-point DFT approximation (fundamental frequencies only)
             // Frequency bin 0 (DC component)
             real_part = 0;
-            real_part = real_part + (int)global input_buffer[0];
-            real_part = real_part + (int)global input_buffer[1];
-            real_part = real_part + (int)global input_buffer[2];
-            real_part = real_part + (int)global input_buffer[3];
-            real_part = real_part + (int)global input_buffer[4];
-            real_part = real_part + (int)global input_buffer[5];
-            real_part = real_part + (int)global input_buffer[6];
-            real_part = real_part + (int)global input_buffer[7];
+            real_part = real_part + global input_buffer[0];
+            real_part = real_part + global input_buffer[1];
+            real_part = real_part + global input_buffer[2];
+            real_part = real_part + global input_buffer[3];
+            real_part = real_part + global input_buffer[4];
+            real_part = real_part + global input_buffer[5];
+            real_part = real_part + global input_buffer[6];
+            real_part = real_part + global input_buffer[7];
             global magnitude[0] = (real_part >> 3);  // Average (DC)
-            if ((int)global magnitude[0] < 0) global magnitude[0] = -(int)global magnitude[0];
+            if (global magnitude[0] < 0) global magnitude[0] = -global magnitude[0];
             
             // Frequency bin 1 (low frequency) - simplified calculation
-            real_part = ((int)global input_buffer[0] + (int)global input_buffer[4]) >> 1;
-            imag_part = ((int)global input_buffer[2] + (int)global input_buffer[6]) >> 1;
+            real_part = (global input_buffer[0] + global input_buffer[4]) >> 1;
+            imag_part = (global input_buffer[2] + global input_buffer[6]) >> 1;
             
             // Magnitude = sqrt(real^2 + imag^2) ≈ |real| + |imag|
             if (real_part < 0) real_part = -real_part;
@@ -190,22 +190,22 @@ Each LED on ring 0 shows the energy in one frequency bin.
 
 ```impala
 // Fast spectral analysis
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High sensitivity
-(int)global params[SWITCHES_PARAM_INDEX] = 0;    // Basic window
-(int)global params[OPERATOR_1_PARAM_INDEX] = 255;  // Fastest update rate
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 0;    // Standard display
+params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High sensitivity
+params[SWITCHES_PARAM_INDEX] = 0;    // Basic window
+params[OPERATOR_1_PARAM_INDEX] = 255;  // Fastest update rate
+params[OPERAND_1_HIGH_PARAM_INDEX] = 0;    // Standard display
 
 // Slow detailed analysis
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Normal sensitivity
-(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Enhanced window
-(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Slower updates
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Enhanced display
+params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Normal sensitivity
+params[SWITCHES_PARAM_INDEX] = 64;   // Enhanced window
+params[OPERATOR_1_PARAM_INDEX] = 64;   // Slower updates
+params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Enhanced display
 
 // Real-time monitoring
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 150;  // Good sensitivity
-(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Advanced window
-(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Fast updates
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Visual mode
+params[CLOCK_FREQ_PARAM_INDEX] = 150;  // Good sensitivity
+params[SWITCHES_PARAM_INDEX] = 128;  // Advanced window
+params[OPERATOR_1_PARAM_INDEX] = 200;  // Fast updates
+params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Visual mode
 ```
 
 ## Understanding Spectral Analysis

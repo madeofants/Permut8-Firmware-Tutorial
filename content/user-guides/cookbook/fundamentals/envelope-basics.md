@@ -27,17 +27,33 @@ An envelope controls how a parameter changes over time, most commonly the volume
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
-const int OPERAND_1_HIGH_PARAM_INDEX
-const int OPERAND_1_LOW_PARAM_INDEX
-const int OPERAND_2_HIGH_PARAM_INDEX
-const int OPERAND_2_LOW_PARAM_INDEX
-const int OPERATOR_1_PARAM_INDEX
-const int OPERATOR_2_PARAM_INDEX
-const int SWITCHES_PARAM_INDEX
-const int CLOCK_FREQ_PARAM_INDEX
-const int PARAM_COUNT
+// Audio and parameter constants
+const int AUDIO_MAX = 2047
+const int AUDIO_MIN = -2047
+const int PARAM_MAX = 255
+const int PARAM_HALF = 128
+const int ENVELOPE_PEAK = 2047
+const int ENVELOPE_ATTACK_THRESHOLD = 1900
+const int ENVELOPE_DECAY_TOLERANCE = 50
+const int ENVELOPE_SILENCE_THRESHOLD = 10
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX = 0
+const int OPERAND_1_LOW_PARAM_INDEX = 1
+const int OPERAND_2_HIGH_PARAM_INDEX = 2
+const int OPERAND_2_LOW_PARAM_INDEX = 3
+const int OPERATOR_1_PARAM_INDEX = 4
+const int OPERATOR_2_PARAM_INDEX = 5
+const int SWITCHES_PARAM_INDEX = 6
+const int CLOCK_FREQ_PARAM_INDEX = 7
+const int PARAM_COUNT = 8
+
+// Envelope stage constants
+const int STAGE_OFF = 0
+const int STAGE_ATTACK = 1
+const int STAGE_DECAY = 2
+const int STAGE_SUSTAIN = 3
+const int STAGE_RELEASE = 4
 
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
@@ -58,55 +74,55 @@ locals int attack, int decay, int sustain, int release, int stage_time, int targ
 {
     loop {
         // Read parameters
-        attack = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 3) + 1;     // 1-32 attack speed
-        decay = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 3) + 1;      // 1-32 decay speed
-        sustain = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] << 3);        // 0-2040 sustain level
-        release = ((int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 3) + 1;    // 1-32 release speed
+        attack = (params[CLOCK_FREQ_PARAM_INDEX] >> 3) + 1;     // 1-32 attack speed
+        decay = (params[SWITCHES_PARAM_INDEX] >> 3) + 1;      // 1-32 decay speed
+        sustain = (params[OPERATOR_1_PARAM_INDEX] << 3);        // 0-2040 sustain level
+        release = (params[OPERAND_1_HIGH_PARAM_INDEX] >> 3) + 1;    // 1-32 release speed
         
         // Simple gate trigger (could be connected to note input)
         // For demo: use knob position to trigger envelope
-        if ((int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX] > 128 && global gate_trigger == 0) {
+        if (params[OPERAND_1_LOW_PARAM_INDEX] > PARAM_HALF && global gate_trigger == 0) {
             global gate_trigger = 1;
-            global envelope_stage = 1;  // Start attack
+            global envelope_stage = STAGE_ATTACK;  // Start attack
             global stage_counter = 0;
-        } else if ((int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX] <= 128 && global gate_trigger == 1) {
+        } else if (params[OPERAND_1_LOW_PARAM_INDEX] <= PARAM_HALF && global gate_trigger == 1) {
             global gate_trigger = 0;
-            global envelope_stage = 4;  // Start release
+            global envelope_stage = STAGE_RELEASE;  // Start release
             global stage_counter = 0;
         }
         
         // Process envelope stages
-        if (global envelope_stage == 1) {
+        if (global envelope_stage == STAGE_ATTACK) {
             // Attack stage - rise to peak
-            target_level = 2047;
+            target_level = ENVELOPE_PEAK;
             global envelope_level = global envelope_level + ((target_level - global envelope_level) >> attack);
             
             // Check if attack is complete
-            if (global envelope_level > 1900) {
-                global envelope_stage = 2;  // Move to decay
+            if (global envelope_level > ENVELOPE_ATTACK_THRESHOLD) {
+                global envelope_stage = STAGE_DECAY;  // Move to decay
                 global stage_counter = 0;
             }
             
-        } else if (global envelope_stage == 2) {
+        } else if (global envelope_stage == STAGE_DECAY) {
             // Decay stage - drop to sustain level
             global envelope_level = global envelope_level + ((sustain - global envelope_level) >> decay);
             
             // Check if decay is complete
-            if (global envelope_level <= (sustain + 50) && global envelope_level >= (sustain - 50)) {
-                global envelope_stage = 3;  // Move to sustain
+            if (global envelope_level <= (sustain + ENVELOPE_DECAY_TOLERANCE) && global envelope_level >= (sustain - ENVELOPE_DECAY_TOLERANCE)) {
+                global envelope_stage = STAGE_SUSTAIN;  // Move to sustain
             }
             
-        } else if (global envelope_stage == 3) {
+        } else if (global envelope_stage == STAGE_SUSTAIN) {
             // Sustain stage - maintain level
             global envelope_level = sustain;
             
-        } else if (global envelope_stage == 4) {
+        } else if (global envelope_stage == STAGE_RELEASE) {
             // Release stage - fade to silence
             global envelope_level = global envelope_level + ((0 - global envelope_level) >> release);
             
             // Check if release is complete
-            if (global envelope_level < 10) {
-                global envelope_stage = 0;  // Back to idle
+            if (global envelope_level < ENVELOPE_SILENCE_THRESHOLD) {
+                global envelope_stage = STAGE_OFF;  // Back to idle
                 global envelope_level = 0;
             }
             
@@ -116,21 +132,21 @@ locals int attack, int decay, int sustain, int release, int stage_time, int targ
         }
         
         // Apply envelope to input signal
-        output = ((int)global signal[0] * global envelope_level) >> 11;
+        output = (signal[0] * global envelope_level) >> 11;
         
         // Prevent clipping
-        if (output > 2047) output = 2047;
-        if (output < -2047) output = -2047;
+        if (output > AUDIO_MAX) output = AUDIO_MAX;
+        if (output < AUDIO_MIN) output = AUDIO_MIN;
         
         // Output result
-        global signal[0] = output;
-        global signal[1] = output;
+        signal[0] = output;
+        signal[1] = output;
         
         // Show envelope activity on LEDs
-        global displayLEDs[0] = global envelope_level >> 3;  // Show envelope level
-        global displayLEDs[1] = global envelope_stage << 6;  // Show current stage
-        global displayLEDs[2] = attack << 3;                 // Show attack setting
-        global displayLEDs[3] = sustain >> 3;               // Show sustain level
+        displayLEDs[0] = global envelope_level >> 3;  // Show envelope level
+        displayLEDs[1] = global envelope_stage << 6;  // Show current stage
+        displayLEDs[2] = attack << 3;                 // Show attack setting
+        displayLEDs[3] = sustain >> 3;               // Show sustain level
         
         yield();
     }

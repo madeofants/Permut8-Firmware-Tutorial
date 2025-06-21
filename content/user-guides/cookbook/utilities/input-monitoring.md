@@ -56,17 +56,17 @@ global int signal_present = 0       // Signal presence flag
 global int previous_sample = 0      // For derivative calculation
 
 function process()
-locals int input_sample, int abs_input, int presence_threshold, int release_time, int peak_hold_time, int monitor_mode, int sample_squared, int peak_hold_samples, int release_amount, int rms_smooth
+locals input_sample, abs_input, presence_threshold, release_time, peak_hold_time, monitor_mode, sample_squared, peak_hold_samples, release_amount, rms_smooth
 {
     loop {
         // Read input sample
-        input_sample = (int)global signal[0];
+        input_sample = signal[0];
         
         // Read control parameters
-        presence_threshold = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];        // 0-255 threshold
-        release_time = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 4) + 1;   // 1-16 release speed
-        peak_hold_time = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] << 4) + 512; // 512-4608 samples
-        monitor_mode = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];              // 0-255 mode select
+        presence_threshold = params[CLOCK_FREQ_PARAM_INDEX];        // 0-255 threshold
+        release_time = (params[SWITCHES_PARAM_INDEX] >> 4) + 1;   // 1-16 release speed
+        peak_hold_time = (params[OPERATOR_1_PARAM_INDEX] << 4) + 512; // 512-4608 samples
+        monitor_mode = params[OPERAND_1_HIGH_PARAM_INDEX];              // 0-255 mode select
         
         // Calculate absolute value
         if (input_sample < 0) {
@@ -165,28 +165,28 @@ locals int input_sample, int abs_input, int presence_threshold, int release_time
 
 ```impala
 // Sensitive peak monitoring
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Low threshold - sensitive
-(int)global params[SWITCHES_PARAM_INDEX] = 32;   // Slow release
-(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Long peak hold
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Peak-based presence
+params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Low threshold - sensitive
+params[SWITCHES_PARAM_INDEX] = 32;   // Slow release
+params[OPERATOR_1_PARAM_INDEX] = 200;  // Long peak hold
+params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Peak-based presence
 
 // RMS-based monitoring
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium threshold
-(int)global params[SWITCHES_PARAM_INDEX] = 80;   // Medium release
-(int)global params[OPERATOR_1_PARAM_INDEX] = 100;  // Medium peak hold
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // RMS-based presence
+params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium threshold
+params[SWITCHES_PARAM_INDEX] = 80;   // Medium release
+params[OPERATOR_1_PARAM_INDEX] = 100;  // Medium peak hold
+params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // RMS-based presence
 
 // Fast response monitoring
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Medium threshold
-(int)global params[SWITCHES_PARAM_INDEX] = 200;  // Fast release
-(int)global params[OPERATOR_1_PARAM_INDEX] = 50;   // Short peak hold
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 80;   // Peak-based
+params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Medium threshold
+params[SWITCHES_PARAM_INDEX] = 200;  // Fast release
+params[OPERATOR_1_PARAM_INDEX] = 50;   // Short peak hold
+params[OPERAND_1_HIGH_PARAM_INDEX] = 80;   // Peak-based
 
 // Noise-resistant monitoring
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // High threshold
-(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Slow release
-(int)global params[OPERATOR_1_PARAM_INDEX] = 150;  // Medium hold
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // RMS-based
+params[CLOCK_FREQ_PARAM_INDEX] = 180;  // High threshold
+params[SWITCHES_PARAM_INDEX] = 64;   // Slow release
+params[OPERATOR_1_PARAM_INDEX] = 150;  // Medium hold
+params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // RMS-based
 ```
 
 ## Understanding Peak vs RMS

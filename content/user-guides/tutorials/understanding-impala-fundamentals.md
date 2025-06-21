@@ -4,6 +4,20 @@
 
 This comprehensive tutorial bridges the gap between general programming knowledge and Impala-specific concepts. Whether you're coming from C, JavaScript, Python, or any other language, this guide will teach you everything you need to understand Impala's unique approach to audio DSP programming.
 
+## Required Parameter Constants
+```impala
+// Standard parameter index constants used throughout all examples
+const int OPERAND_1_HIGH_PARAM_INDEX = 0
+const int OPERAND_1_LOW_PARAM_INDEX = 1
+const int OPERAND_2_LOW_PARAM_INDEX = 2
+const int OPERAND_2_HIGH_PARAM_INDEX = 3
+const int OPERATOR_1_PARAM_INDEX = 4
+const int OPERATOR_2_PARAM_INDEX = 5
+const int SWITCHES_PARAM_INDEX = 6
+const int CLOCK_FREQ_PARAM_INDEX = 7
+const int PARAM_COUNT = 8
+```
+
 ## What You'll Learn
 
 By the end of this tutorial, you'll understand:
@@ -59,9 +73,9 @@ Impala uses explicit type declarations with clear scoping:
 
 ```impala
 // Constants (compile-time values)
-const int SAMPLE_RATE = 44100
+const int SAMPLE_RATE = SAMPLE_RATE_44K1
 const int BUFFER_SIZE = 512
-const int MAX_VOLUME = 2047
+const int MAX_VOLUME = AUDIO_MAX
 
 // Global variables (persistent across function calls)
 global int currentPhase = 0
@@ -69,7 +83,7 @@ global int amplitude = 1000
 
 // Local variables (function scope)
 function processAudio()
-locals int tempValue, int result
+locals tempValue, result
 {
     tempValue = global currentPhase * 2
     result = tempValue + 100
@@ -82,9 +96,9 @@ locals int tempValue, int result
 Impala keeps it simple with essential types:
 
 ```impala
-// Integer types
-int wholeNumber = 42          // 32-bit signed integer
-const int MAX_VALUE = 2047    // Constants are always int
+// Integer types  
+wholeNumber = 42          // 32-bit signed integer (declare in locals)
+const int MAX_VALUE = AUDIO_MAX    // Constants are always int
 
 // Arrays (fixed size, no dynamic allocation)
 global array audioBuffer[1024]    // Global array
@@ -92,23 +106,23 @@ locals array tempBuffer[256]      // Local array (in function)
 
 // No floating point in basic Impala
 // Use integer math with scaling instead:
-int scaledValue = (input * 1000) / 255  // Simulate 0.0-1.0 range
+scaledValue = (input * 1000) / 255  // Simulate 0.0-1.0 range (declare in locals)
 ```
 
 ### Essential Operators
 
 ```impala
 // Arithmetic
-int sum = a + b
-int difference = a - b  
-int product = a * b
-int quotient = a / b
-int remainder = a % b
+sum = a + b          // Variables declared in locals
+difference = a - b  
+product = a * b
+quotient = a / b
+remainder = a % b
 
 // Bitwise operations (important for audio processing)
-int shifted = value << 2      // Left shift (multiply by 4)
-int masked = value & 0xFF     // Keep only lower 8 bits
-int combined = a | b          // Bitwise OR
+shifted = value << 2      // Left shift (multiply by 4)
+masked = value & 0xFF     // Keep only lower 8 bits
+combined = a | b          // Bitwise OR
 
 // Comparison
 if (a == b) { }              // Equal
@@ -130,9 +144,9 @@ Impala functions are explicit about their inputs, outputs, and local variables:
 
 ```impala
 // Basic function
-function calculateGain(int inputLevel, int maxLevel)
-returns int outputGain
-locals int scaledLevel, int result
+function calculateGain(inputLevel, maxLevel)
+returns outputGain
+locals scaledLevel, result
 {
     scaledLevel = inputLevel * 1000 / maxLevel
     result = scaledLevel + 100
@@ -141,7 +155,7 @@ locals int scaledLevel, int result
 
 // Function with no return value
 function resetState()
-locals int i
+locals i
 {
     global currentPhase = 0
     for (i = 0 to 1023) {
@@ -150,9 +164,9 @@ locals int i
 }
 
 // Function with multiple return values
-function processFilter(int input)
-returns int lowpass, int highpass
-locals int temp
+function processFilter(input)
+returns lowpass, highpass
+locals temp
 {
     temp = input / 2
     lowpass = temp
@@ -173,12 +187,12 @@ function process()
         // This runs forever, processing one audio sample per iteration
         
         // Get input audio
-        int inputLeft = global signal[0]
-        int inputRight = global signal[1]
+        inputLeft = global signal[0]
+        inputRight = global signal[1]
         
         // Process audio
-        int outputLeft = inputLeft * global amplitude / 1000
-        int outputRight = inputRight * global amplitude / 1000
+        outputLeft = inputLeft * global amplitude / 1000
+        outputRight = inputRight * global amplitude / 1000
         
         // Set output audio
         global signal[0] = outputLeft
@@ -204,7 +218,7 @@ for (i = 0 to< 10) {
 }
 
 // While loops
-while (global phase < 65536) {
+while (global phase < AUDIO_FULL_RANGE) {
     global phase = global phase + global increment
     // Process sample
 }
@@ -227,7 +241,7 @@ Unlike C, Impala uses **only static memory allocation**:
 
 ```impala
 // GOOD: Static allocation
-global array delayBuffer[44100]    // 1 second delay at 44.1kHz
+global array delayBuffer[SAMPLE_RATE_44K1]    // 1 second delay at 44.1kHz
 const int BUFFER_SIZE = 1024
 
 // BAD: Dynamic allocation (not available in Impala)
@@ -244,7 +258,7 @@ global int oscillatorPhase = 0      // Keeps state between audio samples
 global array filterHistory[4]       // Persistent filter memory
 
 function process()
-locals int inputSample, int outputSample  // Created fresh each call
+locals inputSample, outputSample  // Created fresh each call
 {
     inputSample = global signal[0]
     
@@ -281,18 +295,18 @@ if (readPos < 0) readPos = readPos + BUFFER_SIZE
 
 ### 12-Bit Audio Range
 
-Permut8 uses 12-bit audio with range **-2047 to +2047**:
+Permut8 uses 12-bit audio with range **-AUDIO_MAX to +AUDIO_MAX**:
 
 ```impala
 // Audio sample range
-const int AUDIO_MIN = -2047
-const int AUDIO_MAX = 2047
+const int AUDIO_MIN = -AUDIO_MAX
+const int AUDIO_MAX = AUDIO_MAX
 const int AUDIO_ZERO = 0
 
 // Safe gain application
-function applyGain(int sample, int gainPercent)
-returns int result
-locals int scaled
+function applyGain(sample, gainPercent)
+returns result
+locals scaled
 {
     // gainPercent: 0-255 represents 0% to 100%
     scaled = sample * gainPercent / 255
@@ -311,15 +325,15 @@ Permut8 knobs provide values from 0 to 255:
 
 ```impala
 // Parameter scaling examples
-function scaleToGain(int param)
-returns int gain
+function scaleToGain(param)
+returns gain
 {
     // Linear scaling: 0-255 → 0-1000 (0% to 100%)
     gain = param * 1000 / 255
 }
 
-function scaleToFrequency(int param)  
-returns int frequency
+function scaleToFrequency(param)  
+returns frequency
 {
     // Logarithmic scaling: 0-255 → 20Hz to 20kHz
     // Using lookup table or approximation
@@ -367,6 +381,61 @@ Impala provides built-in functions for Permut8 integration:
 ### Audio Processing Natives
 
 ```impala
+// ===== STANDARD PERMUT8 CONSTANTS =====
+
+// Parameter System Constants
+const int PARAM_MAX = 255                    // Maximum knob/parameter value (8-bit)
+const int PARAM_MIN = 0                      // Minimum knob/parameter value
+const int PARAM_MID = 128                    // Parameter midpoint for bipolar controls
+const int PARAM_SWITCH_THRESHOLD = 127       // Boolean parameter on/off threshold
+
+// Audio Sample Range Constants (12-bit signed audio)
+const int AUDIO_MAX = 2047                   // Maximum audio sample value (+12-bit)
+const int AUDIO_MIN = -2047                  // Minimum audio sample value (-12-bit)
+const int AUDIO_ZERO = 0                     // Audio silence/center value
+
+// Sample Rate Constants
+const int SAMPLE_RATE_44K1 = 44100          // Standard audio sample rate (Hz)
+const int SAMPLE_RATE_HALF = 22050          // Half sample rate (0.5 second buffer at 44.1kHz)
+const int SAMPLE_RATE_QUARTER = 11025       // Quarter sample rate (0.25 second buffer)
+
+// Audio Scaling Constants (16-bit ranges for phase accumulators)
+const int AUDIO_FULL_RANGE = 65536          // 16-bit full scale range (0-65535)
+const int AUDIO_HALF_RANGE = 32768          // 16-bit half scale (bipolar center)
+const int AUDIO_QUARTER_RANGE = 16384       // 16-bit quarter scale (triangle wave peaks)
+
+// Mathematical Constants
+const float PI = 3.14159265                 // Mathematical pi constant
+const float TWO_PI = 6.28318531             // 2 * pi (full circle radians)
+const float PI_OVER_2 = 1.57079633          // pi/2 (quarter circle radians)
+
+// Buffer Size Constants (powers of 2 for efficiency)
+const int SMALL_BUFFER = 128                // Small buffer size
+const int MEDIUM_BUFFER = 512               // Medium buffer size  
+const int LARGE_BUFFER = 1024               // Large buffer size
+const int MAX_BUFFER = 2048                 // Maximum buffer size
+
+// Bit Manipulation Constants
+const int BITS_PER_BYTE = 8                 // Standard byte size
+const int SHIFT_DIVIDE_BY_2 = 1             // Bit shift for divide by 2
+const int SHIFT_DIVIDE_BY_4 = 2             // Bit shift for divide by 4
+const int SHIFT_DIVIDE_BY_8 = 3             // Bit shift for divide by 8
+
+// LED Display Constants
+const int LED_OFF = 0x00                    // All LEDs off
+const int LED_ALL_ON = 0xFF                 // All 8 LEDs on
+const int LED_SINGLE = 0x01                 // Single LED pattern
+const int LED_DOUBLE = 0x03                 // Two LED pattern
+const int LED_QUAD = 0x0F                   // Four LED pattern
+const int LED_BRIGHTNESS_FULL = 255         // Full LED brightness
+const int LED_BRIGHTNESS_HALF = 127         // Half LED brightness
+
+// Musical/Timing Constants
+const int STANDARD_BPM = 120                // Standard tempo reference
+const int QUARTER_NOTE_DIVISIONS = 4        // Divisions per quarter note
+const int SEMITONES_PER_OCTAVE = 12         // Musical semitones in octave
+const float A4_FREQUENCY = 440.0            // A4 reference frequency (Hz)
+
 // Required native function declarations
 extern native yield
 extern native read
@@ -374,9 +443,9 @@ extern native write
 
 // Example: Simple delay effect
 function createDelay()
-locals int delayTime, array inputBuffer[2], array outputBuffer[2]
+locals delayTime, array inputBuffer[2], array outputBuffer[2]
 {
-    delayTime = 22050  // 0.5 second delay at 44.1kHz
+    delayTime = SAMPLE_RATE_HALF  // 0.5 second delay at 44.1kHz
     
     loop {
         // Read current input
@@ -478,6 +547,8 @@ extern native yield
 global array signal[2]
 global array params[PARAM_COUNT] 
 global array displayLEDs[4]
+global clock = 0
+global clockFreqLimit = 0
 
 // Our state
 global int amplification = 1000
@@ -492,7 +563,7 @@ function update()
 }
 
 function process()
-locals int inputLeft, int inputRight, int outputLeft, int outputRight
+locals inputLeft, inputRight, outputLeft, outputRight
 {
     loop {
         // Get input samples
@@ -504,10 +575,10 @@ locals int inputLeft, int inputRight, int outputLeft, int outputRight
         outputRight = inputRight * global amplification / 1000
         
         // Clamp to valid range
-        if (outputLeft > 2047) outputLeft = 2047
-        if (outputLeft < -2047) outputLeft = -2047
-        if (outputRight > 2047) outputRight = 2047
-        if (outputRight < -2047) outputRight = -2047
+        if (outputLeft > AUDIO_MAX) outputLeft = AUDIO_MAX
+        if (outputLeft < -AUDIO_MAX) outputLeft = -AUDIO_MAX
+        if (outputRight > AUDIO_MAX) outputRight = AUDIO_MAX
+        if (outputRight < -AUDIO_MAX) outputRight = -AUDIO_MAX
         
         // Set output
         global signal[0] = outputLeft
@@ -524,8 +595,8 @@ locals int inputLeft, int inputRight, int outputLeft, int outputRight
 
 ```impala
 // Linear scaling (0-255 to any range)
-function scaleLinear(int param, int minValue, int maxValue)
-returns int scaled
+function scaleLinear(param, minValue, maxValue)
+returns scaled
 {
     scaled = minValue + (param * (maxValue - minValue) / 255)
 }
@@ -547,7 +618,7 @@ function update()
 global int writePosition = 0
 const int BUFFER_SIZE = 1024
 
-function writeToCircularBuffer(int value)
+function writeToCircularBuffer(value)
 {
     global audioBuffer[global writePosition] = value
     global writePosition = global writePosition + 1
@@ -556,9 +627,9 @@ function writeToCircularBuffer(int value)
     }
 }
 
-function readFromCircularBuffer(int offset)
-returns int value
-locals int readPos
+function readFromCircularBuffer(offset)
+returns value
+locals readPos
 {
     readPos = global writePosition - offset
     if (readPos < 0) {
@@ -572,17 +643,17 @@ locals int readPos
 
 ```impala
 // Always clamp audio to valid range
-function clampAudio(int sample)
-returns int clamped
+function clampAudio(sample)
+returns clamped
 {
-    if (sample > 2047) return 2047
-    if (sample < -2047) return -2047
+    if (sample > AUDIO_MAX) return AUDIO_MAX
+    if (sample < -AUDIO_MAX) return -AUDIO_MAX
     return sample
 }
 
 // Safe gain application
-function applyGainSafe(int sample, int gain)
-returns int result
+function applyGainSafe(sample, gain)
+returns result
 {
     result = sample * gain / 1000
     return clampAudio(result)
@@ -593,7 +664,7 @@ returns int result
 
 ```impala
 function updateLEDDisplay()
-locals int level, int ledMask, int i
+locals level, ledMask, i
 {
     // Create level meter from audio amplitude
     level = abs(global signal[0]) / 256  // 0-8 range
@@ -639,19 +710,19 @@ function process()
 function process()
 {
     loop {
-        global signal[0] = global signal[0] * 10  // Might exceed ±2047!
+        global signal[0] = global signal[0] * 10  // Might exceed ±AUDIO_MAX!
         yield()
     }
 }
 
 // CORRECT: Always clamp results
 function process()
-locals int result
+locals result
 {
     loop {
         result = global signal[0] * 10
-        if (result > 2047) result = 2047
-        if (result < -2047) result = -2047
+        if (result > AUDIO_MAX) result = AUDIO_MAX
+        if (result < -AUDIO_MAX) result = -AUDIO_MAX
         global signal[0] = result
         yield()
     }
@@ -753,11 +824,11 @@ Congratulations! You now understand Impala's fundamental concepts. Here's what t
 ### Essential Syntax
 ```impala
 const int CONSTANT = 42
-global int globalVar = 0
-locals int localVar
+global globalVar = 0  
+locals localVar       // In function declaration
 
-function myFunction(int param)
-returns int result
+function myFunction(param)
+returns result
 { }
 
 loop { yield() }
@@ -783,8 +854,8 @@ function process() {
 ### Safe Patterns
 ```impala
 // Clamp audio
-if (sample > 2047) sample = 2047
-if (sample < -2047) sample = -2047
+if (sample > AUDIO_MAX) sample = AUDIO_MAX
+if (sample < -AUDIO_MAX) sample = -AUDIO_MAX
 
 // Scale parameters  
 scaled = param * range / 255

@@ -60,14 +60,14 @@ global array equal_power_sin[16] = {0, 42, 70, 98, 126, 153, 178, 200,
                                    219, 234, 245, 252, 255, 255, 255, 255}
 
 function process()
-locals int signal_a_level, int signal_b_level, int crossfade_pos, int curve_select, int signal_a, int signal_b, int gain_a, int gain_b, int output_a, int output_b, int mixed_output, int table_index, int input_sample
+locals signal_a_level, signal_b_level, crossfade_pos, curve_select, signal_a, signal_b, gain_a, gain_b, output_a, output_b, mixed_output, table_index, input_sample
 {
     loop {
         // Read control parameters
-        signal_a_level = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];    // Signal A level (0-255)
-        signal_b_level = (int)global (int)global params[SWITCHES_PARAM_INDEX];    // Signal B level (0-255)
-        crossfade_pos = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];     // Crossfade position (0-255)
-        curve_select = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];      // Curve type (0-255)
+        signal_a_level = params[CLOCK_FREQ_PARAM_INDEX];    // Signal A level (0-255)
+        signal_b_level = params[SWITCHES_PARAM_INDEX];    // Signal B level (0-255)
+        crossfade_pos = params[OPERATOR_1_PARAM_INDEX];     // Crossfade position (0-255)
+        curve_select = params[OPERAND_1_HIGH_PARAM_INDEX];      // Curve type (0-255)
         
         // Generate test signals (sine and sawtooth)
         // Signal A: Sine wave
@@ -93,8 +93,8 @@ locals int signal_a_level, int signal_b_level, int crossfade_pos, int curve_sele
             table_index = crossfade_pos >> 4;  // Scale to 0-15 range
             if (table_index > 15) table_index = 15;
             
-            gain_a = (int)global equal_power_cos[table_index];
-            gain_b = (int)global equal_power_sin[table_index];
+            gain_a = global equal_power_cos[table_index];
+            gain_b = global equal_power_sin[table_index];
             
         } else {
             // Linear crossfade
@@ -153,28 +153,28 @@ locals int signal_a_level, int signal_b_level, int crossfade_pos, int curve_sele
 
 ```impala
 // Linear crossfade between different frequencies
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Signal A: moderate frequency
-(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Signal B: higher frequency
-(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Center position
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Linear curve
+params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Signal A: moderate frequency
+params[SWITCHES_PARAM_INDEX] = 128;  // Signal B: higher frequency
+params[OPERATOR_1_PARAM_INDEX] = 128;  // Center position
+params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Linear curve
 
 // Equal power crossfade
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 80;   // Signal A frequency
-(int)global params[SWITCHES_PARAM_INDEX] = 120;  // Signal B frequency
-(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Mostly signal B
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Equal power curve
+params[CLOCK_FREQ_PARAM_INDEX] = 80;   // Signal A frequency
+params[SWITCHES_PARAM_INDEX] = 120;  // Signal B frequency
+params[OPERATOR_1_PARAM_INDEX] = 200;  // Mostly signal B
+params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Equal power curve
 
 // Smooth transition demo
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Signal A
-(int)global params[SWITCHES_PARAM_INDEX] = 160;  // Signal B
-(int)global params[OPERATOR_1_PARAM_INDEX] = 0;    // Start with A, manually sweep to 255
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Equal power
+params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Signal A
+params[SWITCHES_PARAM_INDEX] = 160;  // Signal B
+params[OPERATOR_1_PARAM_INDEX] = 0;    // Start with A, manually sweep to 255
+params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Equal power
 
 // High contrast crossfade
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 32;   // Low frequency A
-(int)global params[SWITCHES_PARAM_INDEX] = 200;  // High frequency B
-(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Center position
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 220;  // Equal power curve
+params[CLOCK_FREQ_PARAM_INDEX] = 32;   // Low frequency A
+params[SWITCHES_PARAM_INDEX] = 200;  // High frequency B
+params[OPERATOR_1_PARAM_INDEX] = 128;  // Center position
+params[OPERAND_1_HIGH_PARAM_INDEX] = 220;  // Equal power curve
 ```
 
 ## Understanding Crossfade Curves

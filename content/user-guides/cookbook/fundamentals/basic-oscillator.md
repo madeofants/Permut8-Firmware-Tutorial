@@ -32,10 +32,10 @@ No Audio Input → [Custom oscillator algorithm generates samples] → Audio Out
 ## Quick Reference
 
 **Essential Parameters:**
-- `params[CLOCK_FREQ_PARAM_INDEX]`: Frequency (0-255, controls pitch)
-- `params[SWITCHES_PARAM_INDEX]`: Waveform type (0-255, selects wave shape)
-- `params[OPERATOR_1_PARAM_INDEX]`: Amplitude (0-255, controls volume)
-- `params[OPERAND_1_HIGH_PARAM_INDEX]`: Fine tune (0-255, pitch adjustment)
+- `params[CLOCK_FREQ_PARAM_INDEX]`: Frequency (0-PARAM_MAX, controls pitch)
+- `params[SWITCHES_PARAM_INDEX]`: Waveform type (0-PARAM_MAX, selects wave shape)
+- `params[OPERATOR_1_PARAM_INDEX]`: Amplitude (0-PARAM_MAX, controls volume)
+- `params[OPERAND_1_HIGH_PARAM_INDEX]`: Fine tune (0-PARAM_MAX, pitch adjustment)
 
 **Waveform Types:**
 - **Sine**: Pure tone, no harmonics
@@ -49,6 +49,24 @@ No Audio Input → [Custom oscillator algorithm generates samples] → Audio Out
 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
+
+// ===== STANDARD PERMUT8 CONSTANTS =====
+
+// Parameter System Constants
+const int PARAM_MAX = 255                    // Maximum knob/parameter value (8-bit)
+const int PARAM_MIN = 0                      // Minimum knob/parameter value
+const int PARAM_MID = 128                    // Parameter midpoint for bipolar controls
+const int PARAM_SWITCH_THRESHOLD = 127       // Boolean parameter on/off threshold
+
+// Audio Sample Range Constants (12-bit signed audio)
+const int AUDIO_MAX = 2047                   // Maximum audio sample value (+12-bit)
+const int AUDIO_MIN = -2047                  // Minimum audio sample value (-12-bit)
+const int AUDIO_ZERO = 0                     // Audio silence/center value
+
+// Audio Scaling Constants (16-bit ranges for phase accumulators)
+const int AUDIO_FULL_RANGE = 65536          // 16-bit full scale range (0-65535)
+const int AUDIO_HALF_RANGE = 32768          // 16-bit half scale (bipolar center)
+const int AUDIO_QUARTER_RANGE = 16384       // 16-bit quarter scale (triangle wave peaks)
 
 // Required parameter constants
 const int OPERAND_1_HIGH_PARAM_INDEX
@@ -65,21 +83,23 @@ const int PARAM_COUNT
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
+global int clock = 0            // Sample counter for timing
 global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT] // Parameter values (0-255)
+global array params[PARAM_COUNT] // Parameter values (0-PARAM_MAX)
 global array displayLEDs[4]     // LED displays
+global int clockFreqLimit = 132300 // Current clock frequency limit
 
 // Simple oscillator state
-global int phase = 0            // Current phase position (0-65535)
+global int phase = 0            // Current phase position (0-AUDIO_FULL_RANGE-1)
 
-function process() locals int var1, int var2
+function process()
 locals int frequency, int wave_type, int amplitude, int fine_tune, int phase_inc, int wave_output, int output
 {
     loop {
         // Read parameters
         frequency = ((int)global params[CLOCK_FREQ_PARAM_INDEX] << 4) + 100;  // 100-4196 range
         wave_type = ((int)global params[SWITCHES_PARAM_INDEX] >> 6);         // 0-3 wave types
-        amplitude = ((int)global params[OPERATOR_1_PARAM_INDEX] << 3);         // 0-2040 amplitude
+        amplitude = ((int)global params[OPERATOR_1_PARAM_INDEX] << 3);         // 0-(PARAM_MAX*8) amplitude
         fine_tune = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 3) - 16;    // -16 to +15 fine tune
         
         // Calculate phase increment (determines frequency)
@@ -88,39 +108,39 @@ locals int frequency, int wave_type, int amplitude, int fine_tune, int phase_inc
         
         // Update phase accumulator
         global phase = global phase + phase_inc;
-        if (global phase > 65535) global phase = global phase - 65535;
+        if (global phase >= AUDIO_FULL_RANGE) global phase = global phase - AUDIO_FULL_RANGE;
         
         // Generate waveform based on type
         if (wave_type == 0) {
             // Sine wave (approximation using triangle + smoothing)
-            if (global phase < 16384) {
+            if (global phase < AUDIO_QUARTER_RANGE) {
                 wave_output = global phase >> 2;          // Rising 0 to 4095
-            } else if (global phase < 32768) {
-                wave_output = 4095 - ((global phase - 16384) >> 2);  // Falling 4095 to 0
-            } else if (global phase < 49152) {
-                wave_output = -((global phase - 32768) >> 2);        // Falling 0 to -4095
+            } else if (global phase < AUDIO_HALF_RANGE) {
+                wave_output = 4095 - ((global phase - AUDIO_QUARTER_RANGE) >> 2);  // Falling 4095 to 0
+            } else if (global phase < (AUDIO_HALF_RANGE + AUDIO_QUARTER_RANGE)) {
+                wave_output = -((global phase - AUDIO_HALF_RANGE) >> 2);        // Falling 0 to -4095
             } else {
-                wave_output = -4095 + ((global phase - 49152) >> 2); // Rising -4095 to 0
+                wave_output = -4095 + ((global phase - (AUDIO_HALF_RANGE + AUDIO_QUARTER_RANGE)) >> 2); // Rising -4095 to 0
             }
             
         } else if (wave_type == 1) {
             // Square wave
-            if (global phase < 32768) {
-                wave_output = 2047;   // High
+            if (global phase < AUDIO_HALF_RANGE) {
+                wave_output = AUDIO_MAX;   // High
             } else {
-                wave_output = -2047;  // Low
+                wave_output = AUDIO_MIN;  // Low
             }
             
         } else if (wave_type == 2) {
             // Sawtooth wave
-            wave_output = (global phase >> 4) - 2047;  // -2047 to 2047 ramp
+            wave_output = (global phase >> 4) - AUDIO_MAX;  // -AUDIO_MAX to AUDIO_MAX ramp
             
         } else {
             // Triangle wave
-            if (global phase < 32768) {
-                wave_output = (global phase >> 3) - 2047;     // Rising -2047 to 2047
+            if (global phase < AUDIO_HALF_RANGE) {
+                wave_output = (global phase >> 3) - AUDIO_MAX;     // Rising -AUDIO_MAX to AUDIO_MAX
             } else {
-                wave_output = 2047 - ((global phase - 32768) >> 3); // Falling 2047 to -2047
+                wave_output = AUDIO_MAX - ((global phase - AUDIO_HALF_RANGE) >> 3); // Falling AUDIO_MAX to -AUDIO_MAX
             }
         }
         
@@ -128,8 +148,8 @@ locals int frequency, int wave_type, int amplitude, int fine_tune, int phase_inc
         output = (wave_output * amplitude) >> 11;  // Scale by amplitude
         
         // Prevent clipping
-        if (output > 2047) output = 2047;
-        if (output < -2047) output = -2047;
+        if (output > AUDIO_MAX) output = AUDIO_MAX;
+        if (output < AUDIO_MIN) output = AUDIO_MIN;
         
         // Output same signal to both channels
         global signal[0] = output;
@@ -148,7 +168,7 @@ locals int frequency, int wave_type, int amplitude, int fine_tune, int phase_inc
 
 ## How It Works
 
-**Phase Accumulator**: A counter that cycles from 0 to 65535, representing one complete waveform cycle.
+**Phase Accumulator**: A counter that cycles from 0 to AUDIO_FULL_RANGE-1, representing one complete waveform cycle.
 
 **Phase Increment**: How much the phase advances each sample - larger values = higher frequency.
 
@@ -158,36 +178,36 @@ locals int frequency, int wave_type, int amplitude, int fine_tune, int phase_inc
 
 **Parameter Control**:
 - **Control 1**: Frequency (higher = higher pitch)
-- **Control 2**: Waveform (0-63=sine, 64-127=square, 128-191=saw, 192-255=triangle)
+- **Control 2**: Waveform (0-63=sine, 64-127=square, 128-191=saw, 192-PARAM_MAX=triangle)
 - **Control 3**: Amplitude (higher = louder)
-- **Control 4**: Fine tune (128 = center, adjust for precise tuning)
+- **Control 4**: Fine tune (PARAM_MID = center, adjust for precise tuning)
 
 ## Try These Settings
 
 ```impala
 // Deep bass sine
-params[CLOCK_FREQ_PARAM_INDEX] = 50;   // Low frequency
-params[SWITCHES_PARAM_INDEX] = 32;   // Sine wave
-params[OPERATOR_1_PARAM_INDEX] = 200;  // Medium volume
-params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Center tune
+global params[CLOCK_FREQ_PARAM_INDEX] = 50;   // Low frequency
+global params[SWITCHES_PARAM_INDEX] = 32;   // Sine wave
+global params[OPERATOR_1_PARAM_INDEX] = 200;  // Medium volume
+global params[OPERAND_1_HIGH_PARAM_INDEX] = PARAM_MID;  // Center tune
 
 // Classic square lead
-params[CLOCK_FREQ_PARAM_INDEX] = 150;  // Mid frequency
-params[SWITCHES_PARAM_INDEX] = 100;  // Square wave
-params[OPERATOR_1_PARAM_INDEX] = 180;  // Good volume
-params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Center tune
+global params[CLOCK_FREQ_PARAM_INDEX] = 150;  // Mid frequency
+global params[SWITCHES_PARAM_INDEX] = 100;  // Square wave
+global params[OPERATOR_1_PARAM_INDEX] = 180;  // Good volume
+global params[OPERAND_1_HIGH_PARAM_INDEX] = PARAM_MID;  // Center tune
 
 // Bright sawtooth
-params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Higher frequency
-params[SWITCHES_PARAM_INDEX] = 160;  // Sawtooth wave
-params[OPERATOR_1_PARAM_INDEX] = 160;  // Moderate volume
-params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Center tune
+global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Higher frequency
+global params[SWITCHES_PARAM_INDEX] = 160;  // Sawtooth wave
+global params[OPERATOR_1_PARAM_INDEX] = 160;  // Moderate volume
+global params[OPERAND_1_HIGH_PARAM_INDEX] = PARAM_MID;  // Center tune
 
 // Warm triangle
-params[CLOCK_FREQ_PARAM_INDEX] = 120;  // Low-mid frequency
-params[SWITCHES_PARAM_INDEX] = 220;  // Triangle wave
-params[OPERATOR_1_PARAM_INDEX] = 200;  // Good volume
-params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Center tune
+global params[CLOCK_FREQ_PARAM_INDEX] = 120;  // Low-mid frequency
+global params[SWITCHES_PARAM_INDEX] = 220;  // Triangle wave
+global params[OPERATOR_1_PARAM_INDEX] = 200;  // Good volume
+global params[OPERAND_1_HIGH_PARAM_INDEX] = PARAM_MID;  // Center tune
 ```
 
 ## Understanding Waveforms

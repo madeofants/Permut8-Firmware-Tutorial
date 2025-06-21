@@ -9,10 +9,10 @@ Creates granular synthesis by capturing audio into a buffer and playing back sma
 ## Quick Reference
 
 **Essential Parameters:**
-- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Grain size (20-100 samples, controls grain duration)
-- `(int)global params[SWITCHES_PARAM_INDEX]`: Playback position (0-255, where in buffer to read)
-- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Grain trigger rate (0-255, how often new grains start)
-- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Dry/wet mix (0-255, blend control)
+- `params[CLOCK_FREQ_PARAM_INDEX]`: Grain size (20-100 samples, controls grain duration)
+- `params[SWITCHES_PARAM_INDEX]`: Playback position (0-255, where in buffer to read)
+- `params[OPERATOR_1_PARAM_INDEX]`: Grain trigger rate (0-255, how often new grains start)
+- `params[OPERAND_1_HIGH_PARAM_INDEX]`: Dry/wet mix (0-255, blend control)
 
 **Key Concepts:** Circular buffering, grain windowing, position control, texture creation
 
@@ -39,9 +39,11 @@ extern native read              // Read from delay line memory
 extern native write             // Write to delay line memory
 
 // Standard global variables
+global int clock = 0            // Sample counter for timing
 global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
+global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
+global int clockFreqLimit = 132300 // Current clock frequency limit
 
 // Simple granular state
 global array temp_buffer[2]     // Temporary buffer for memory operations
@@ -52,24 +54,14 @@ global int grain_trigger = 0    // Timer for grain triggering
 const int BUFFER_SIZE = 2048    // Circular buffer size for granular processing
 
 function process()
-locals int grain_size
-locals int position
-locals int trigger_rate
-locals int mix
-locals int grain_sample_l
-locals int grain_sample_r
-locals int output_l
-locals int output_r
-locals int envelope
-locals int half_size
-locals int read_pos
+locals int grain_size, int position, int trigger_rate, int mix, int grain_sample_l, int grain_sample_r, int output_l, int output_r, int envelope, int half_size, int read_pos, int offset
 {
     loop {
         // Read parameters
-        grain_size = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 2) + 20;  // 20-83 samples
-        position = (int)global (int)global params[SWITCHES_PARAM_INDEX];                // 0-255 position
-        trigger_rate = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 3) + 1; // 1-32 rate
-        mix = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];                     // 0-255 mix
+        grain_size = ((int)global params[CLOCK_FREQ_PARAM_INDEX] >> 2) + 20;  // 20-83 samples
+        position = (int)global params[SWITCHES_PARAM_INDEX];                // 0-255 position
+        trigger_rate = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 3) + 1; // 1-32 rate
+        mix = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];                     // 0-255 mix
         
         // Safety bounds for grain size
         if (grain_size > 100) grain_size = 100;
@@ -89,7 +81,7 @@ locals int read_pos
             global grain_trigger = 0;
             
             // Calculate grain start position based on parameter with safety bounds
-            int offset = ((position * (BUFFER_SIZE >> 2)) >> 8) + grain_size;
+            offset = ((position * (BUFFER_SIZE >> 2)) >> 8) + grain_size;
             global grain_pos = (global write_pos - offset + BUFFER_SIZE) % BUFFER_SIZE;
             global grain_counter = 0;
         }
@@ -179,16 +171,16 @@ locals int read_pos
 
 ```impala
 // Smooth texture
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Large grains
-(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Slight delay
-(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Medium rate
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // 50% mix
+global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Large grains
+global params[SWITCHES_PARAM_INDEX] = 64;   // Slight delay
+global params[OPERATOR_1_PARAM_INDEX] = 128;  // Medium rate
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // 50% mix
 
 // Glitchy texture
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 50;   // Small grains
-(int)global params[SWITCHES_PARAM_INDEX] = 200;  // Distant position
-(int)global params[OPERATOR_1_PARAM_INDEX] = 32;   // Fast triggers
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Mostly wet
+global params[CLOCK_FREQ_PARAM_INDEX] = 50;   // Small grains
+global params[SWITCHES_PARAM_INDEX] = 200;  // Distant position
+global params[OPERATOR_1_PARAM_INDEX] = 32;   // Fast triggers
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Mostly wet
 ```
 
 ## Try These Changes

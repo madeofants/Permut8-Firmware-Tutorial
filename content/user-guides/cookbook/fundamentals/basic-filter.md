@@ -64,15 +64,17 @@ const int PARAM_COUNT
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
+global int clock                 // Sample counter for timing
 global array signal[2]          // Left/Right audio samples
 global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
+global int clockFreqLimit        // Current clock frequency limit
 
 // Simple filter state
 global int filter_state1 = 0    // First filter state variable
 global int filter_state2 = 0    // Second filter state variable
 
-function process() locals int var1, int var2
+function process()
 locals int cutoff, int resonance, int filter_type, int mix, int input, int filter_amount, int low_pass, int high_pass, int band_pass, int filtered, int output
 {
     loop {
@@ -161,29 +163,29 @@ locals int cutoff, int resonance, int filter_type, int mix, int input, int filte
 
 ```impala
 // Warm low-pass
-params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium cutoff
-params[SWITCHES_PARAM_INDEX] = 64;   // Light resonance
-params[OPERATOR_1_PARAM_INDEX] = 32;   // Low-pass
-params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Mostly filtered
+global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium cutoff
+global params[SWITCHES_PARAM_INDEX] = 64;   // Light resonance
+global params[OPERATOR_1_PARAM_INDEX] = 32;   // Low-pass
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Mostly filtered
 
 // Bright high-pass
-params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High cutoff
-params[SWITCHES_PARAM_INDEX] = 100;  // Medium resonance
-params[OPERATOR_1_PARAM_INDEX] = 100;  // High-pass
-params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Balanced mix
+global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High cutoff
+global params[SWITCHES_PARAM_INDEX] = 100;  // Medium resonance
+global params[OPERATOR_1_PARAM_INDEX] = 100;  // High-pass
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Balanced mix
 
 // Telephone effect
-params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Low cutoff
-params[SWITCHES_PARAM_INDEX] = 150;  // Strong resonance
-params[OPERATOR_1_PARAM_INDEX] = 160;  // Band-pass
-params[OPERAND_1_HIGH_PARAM_INDEX] = 220;  // Mostly wet
+global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Low cutoff
+global params[SWITCHES_PARAM_INDEX] = 150;  // Strong resonance
+global params[OPERATOR_1_PARAM_INDEX] = 160;  // Band-pass
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 220;  // Mostly wet
 
 // Classic synth sweep
-params[CLOCK_FREQ_PARAM_INDEX] = 50;   // Start low
-params[SWITCHES_PARAM_INDEX] = 200;  // High resonance
-params[OPERATOR_1_PARAM_INDEX] = 32;   // Low-pass
-params[OPERAND_1_HIGH_PARAM_INDEX] = 255;  // Full wet
-// (slowly increase params[CLOCK_FREQ_PARAM_INDEX] for sweep effect)
+global params[CLOCK_FREQ_PARAM_INDEX] = 50;   // Start low
+global params[SWITCHES_PARAM_INDEX] = 200;  // High resonance
+global params[OPERATOR_1_PARAM_INDEX] = 32;   // Low-pass
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 255;  // Full wet
+// (slowly increase global params[CLOCK_FREQ_PARAM_INDEX] for sweep effect)
 ```
 
 ## Understanding Filters

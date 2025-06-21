@@ -18,39 +18,108 @@ Learn how to add user controls to any audio effect. We'll take a basic tremolo e
 Create `controlled_tremolo.impala` with this simple tremolo effect:
 
 ```impala
+// ===== STANDARD PERMUT8 CONSTANTS =====
+
+// Parameter System Constants
+const int PARAM_MAX = 255                    // Maximum knob/parameter value (8-bit)
+const int PARAM_MIN = 0                      // Minimum knob/parameter value
+const int PARAM_MID = 128                    // Parameter midpoint for bipolar controls
+const int PARAM_SWITCH_THRESHOLD = 127       // Boolean parameter on/off threshold
+
+// Audio Sample Range Constants (12-bit signed audio)
+const int AUDIO_MAX = 2047                   // Maximum audio sample value (+12-bit)
+const int AUDIO_MIN = -2047                  // Minimum audio sample value (-12-bit)
+const int AUDIO_ZERO = 0                     // Audio silence/center value
+
+// Sample Rate Constants
+const int SAMPLE_RATE_44K1 = 44100          // Standard audio sample rate (Hz)
+const int SAMPLE_RATE_HALF = 22050          // Half sample rate (0.5 second buffer at 44.1kHz)
+const int SAMPLE_RATE_QUARTER = 11025       // Quarter sample rate (0.25 second buffer)
+
+// Audio Scaling Constants (16-bit ranges for phase accumulators)
+const int AUDIO_FULL_RANGE = 65536          // 16-bit full scale range (0-65535)
+const int AUDIO_HALF_RANGE = 32768          // 16-bit half scale (bipolar center)
+const int AUDIO_QUARTER_RANGE = 16384       // 16-bit quarter scale (triangle wave peaks)
+
+// Mathematical Constants
+const float PI = 3.14159265                 // Mathematical pi constant
+const float TWO_PI = 6.28318531             // 2 * pi (full circle radians)
+const float PI_OVER_2 = 1.57079633          // pi/2 (quarter circle radians)
+
+// Buffer Size Constants (powers of 2 for efficiency)
+const int SMALL_BUFFER = PARAM_MID                // Small buffer size
+const int MEDIUM_BUFFER = 512               // Medium buffer size  
+const int LARGE_BUFFER = 1024               // Large buffer size
+const int MAX_BUFFER = 2048                 // Maximum buffer size
+
+// Bit Manipulation Constants
+const int BITS_PER_BYTE = 8                 // Standard byte size
+const int SHIFT_DIVIDE_BY_2 = 1             // Bit shift for divide by 2
+const int SHIFT_DIVIDE_BY_4 = 2             // Bit shift for divide by 4
+const int SHIFT_DIVIDE_BY_8 = 3             // Bit shift for divide by 8
+
+// LED Display Constants
+const int LED_OFF = 0x00                    // All LEDs off
+const int LED_ALL_ON = 0xFF                 // All 8 LEDs on
+const int LED_SINGLE = 0x01                 // Single LED pattern
+const int LED_DOUBLE = 0x03                 // Two LED pattern
+const int LED_QUAD = 0x0F                   // Four LED pattern
+const int LED_BRIGHTNESS_FULL = PARAM_MAX         // Full LED brightness
+const int LED_BRIGHTNESS_HALF = PARAM_SWITCH_THRESHOLD         // Half LED brightness
+
+// Musical/Timing Constants
+const int STANDARD_BPM = 120                // Standard tempo reference
+const int QUARTER_NOTE_DIVISIONS = 4        // Divisions per quarter note
+const int SEMITONES_PER_OCTAVE = 12         // Musical semitones in octave
+const float A4_FREQUENCY = 440.0            // A4 reference frequency (Hz)
+
 // Tremolo Effect - We'll Add Controls To This
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+global int clock = 0
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
+global int clockFreqLimit = 132300
 
 // Tremolo state
 global int lfoPhase = 0         // Oscillator phase
 global int tremoloRate = 100    // Fixed rate (we'll make this controllable)
-global int tremoloDepth = 128   // Fixed depth (we'll make this controllable)
+global int tremoloDepth = PARAM_MID   // Fixed depth (we'll make this controllable)
 
 function process()
+locals int lfoValue, int amplitude
 {
     loop {
         // Simple sine wave LFO for tremolo
         // Approximate sine with triangle wave for now
         int lfoValue = 0
-        if (lfoPhase < 16384) {
+        if (lfoPhase < AUDIO_QUARTER_RANGE) {
             lfoValue = (lfoPhase * 2)       // Rising
         } else {
-            lfoValue = (65536 - lfoPhase) * 2   // Falling  
+            lfoValue = (AUDIO_FULL_RANGE - lfoPhase) * 2   // Falling  
         }
         
-        // Convert to amplitude multiplier (0-255)
-        int amplitude = 128 + ((lfoValue * tremoloDepth) / 65536)
+        // Convert to amplitude multiplier (0-PARAM_MAX)
+        int amplitude = PARAM_MID + ((lfoValue * tremoloDepth) / AUDIO_FULL_RANGE)
         
         // Apply tremolo to audio
-        signal[0] = (signal[0] * amplitude) / 255
-        signal[1] = (signal[1] * amplitude) / 255
+        signal[0] = (signal[0] * amplitude) / PARAM_MAX
+        signal[1] = (signal[1] * amplitude) / PARAM_MAX
         
         // Update LFO phase
-        lfoPhase = (lfoPhase + tremoloRate) % 65536
+        lfoPhase = (lfoPhase + tremoloRate) % AUDIO_FULL_RANGE
         
         yield()
     }
@@ -69,35 +138,91 @@ function process()
 ## Step 2: Add Linear Rate Control
 
 ### 2.1 Understanding Parameter Mapping
-Knobs give us values from 0-255. We need to map this to useful tremolo rates:
+Knobs give us values from 0-PARAM_MAX. We need to map this to useful tremolo rates:
 - 0 = very slow (almost stopped)
-- 255 = very fast (rapid tremolo)
+- PARAM_MAX = very fast (rapid tremolo)
 
 ### 2.2 Add Rate Control
 Replace the `process()` function:
 
 ```impala
+// ===== STANDARD PERMUT8 CONSTANTS =====
+
+// Parameter System Constants
+const int PARAM_MAX = 255                    // Maximum knob/parameter value (8-bit)
+const int PARAM_MIN = 0                      // Minimum knob/parameter value
+const int PARAM_MID = 128                    // Parameter midpoint for bipolar controls
+const int PARAM_SWITCH_THRESHOLD = 127       // Boolean parameter on/off threshold
+
+// Audio Sample Range Constants (12-bit signed audio)
+const int AUDIO_MAX = 2047                   // Maximum audio sample value (+12-bit)
+const int AUDIO_MIN = -2047                  // Minimum audio sample value (-12-bit)
+const int AUDIO_ZERO = 0                     // Audio silence/center value
+
+// Sample Rate Constants
+const int SAMPLE_RATE_44K1 = 44100          // Standard audio sample rate (Hz)
+const int SAMPLE_RATE_HALF = 22050          // Half sample rate (0.5 second buffer at 44.1kHz)
+const int SAMPLE_RATE_QUARTER = 11025       // Quarter sample rate (0.25 second buffer)
+
+// Audio Scaling Constants (16-bit ranges for phase accumulators)
+const int AUDIO_FULL_RANGE = 65536          // 16-bit full scale range (0-65535)
+const int AUDIO_HALF_RANGE = 32768          // 16-bit half scale (bipolar center)
+const int AUDIO_QUARTER_RANGE = 16384       // 16-bit quarter scale (triangle wave peaks)
+
+// Mathematical Constants
+const float PI = 3.14159265                 // Mathematical pi constant
+const float TWO_PI = 6.28318531             // 2 * pi (full circle radians)
+const float PI_OVER_2 = 1.57079633          // pi/2 (quarter circle radians)
+
+// Buffer Size Constants (powers of 2 for efficiency)
+const int SMALL_BUFFER = PARAM_MID                // Small buffer size
+const int MEDIUM_BUFFER = 512               // Medium buffer size  
+const int LARGE_BUFFER = 1024               // Large buffer size
+const int MAX_BUFFER = 2048                 // Maximum buffer size
+
+// Bit Manipulation Constants
+const int BITS_PER_BYTE = 8                 // Standard byte size
+const int SHIFT_DIVIDE_BY_2 = 1             // Bit shift for divide by 2
+const int SHIFT_DIVIDE_BY_4 = 2             // Bit shift for divide by 4
+const int SHIFT_DIVIDE_BY_8 = 3             // Bit shift for divide by 8
+
+// LED Display Constants
+const int LED_OFF = 0x00                    // All LEDs off
+const int LED_ALL_ON = 0xFF                 // All 8 LEDs on
+const int LED_SINGLE = 0x01                 // Single LED pattern
+const int LED_DOUBLE = 0x03                 // Two LED pattern
+const int LED_QUAD = 0x0F                   // Four LED pattern
+const int LED_BRIGHTNESS_FULL = PARAM_MAX         // Full LED brightness
+const int LED_BRIGHTNESS_HALF = PARAM_SWITCH_THRESHOLD         // Half LED brightness
+
+// Musical/Timing Constants
+const int STANDARD_BPM = 120                // Standard tempo reference
+const int QUARTER_NOTE_DIVISIONS = 4        // Divisions per quarter note
+const int SEMITONES_PER_OCTAVE = 12         // Musical semitones in octave
+const float A4_FREQUENCY = 440.0            // A4 reference frequency (Hz)
+
 function process()
+locals int rateParam, int lfoValue, int amplitude
 {
     loop {
         // CONTROL 1: Rate from knob 1 (linear mapping)
-        int rateParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]           // Get knob value (0-255)
+        rateParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // Get knob value (0-PARAM_MAX)
         tremoloRate = 10 + (rateParam / 2)  // Map to 10-137 range
         
         // Same tremolo code as before
         int lfoValue = 0
-        if (lfoPhase < 16384) {
+        if (lfoPhase < AUDIO_QUARTER_RANGE) {
             lfoValue = (lfoPhase * 2)
         } else {
-            lfoValue = (65536 - lfoPhase) * 2
+            lfoValue = (AUDIO_FULL_RANGE - lfoPhase) * 2
         }
         
-        int amplitude = 128 + ((lfoValue * tremoloDepth) / 65536)
+        int amplitude = PARAM_MID + ((lfoValue * tremoloDepth) / AUDIO_FULL_RANGE)
         
-        signal[0] = (signal[0] * amplitude) / 255
-        signal[1] = (signal[1] * amplitude) / 255
+        signal[0] = (signal[0] * amplitude) / PARAM_MAX
+        signal[1] = (signal[1] * amplitude) / PARAM_MAX
         
-        lfoPhase = (lfoPhase + tremoloRate) % 65536
+        lfoPhase = (lfoPhase + tremoloRate) % AUDIO_FULL_RANGE
         
         yield()
     }
@@ -122,34 +247,90 @@ Volume and depth controls feel more natural when they use exponential curves bec
 Replace `process()` again:
 
 ```impala
+// ===== STANDARD PERMUT8 CONSTANTS =====
+
+// Parameter System Constants
+const int PARAM_MAX = 255                    // Maximum knob/parameter value (8-bit)
+const int PARAM_MIN = 0                      // Minimum knob/parameter value
+const int PARAM_MID = 128                    // Parameter midpoint for bipolar controls
+const int PARAM_SWITCH_THRESHOLD = 127       // Boolean parameter on/off threshold
+
+// Audio Sample Range Constants (12-bit signed audio)
+const int AUDIO_MAX = 2047                   // Maximum audio sample value (+12-bit)
+const int AUDIO_MIN = -2047                  // Minimum audio sample value (-12-bit)
+const int AUDIO_ZERO = 0                     // Audio silence/center value
+
+// Sample Rate Constants
+const int SAMPLE_RATE_44K1 = 44100          // Standard audio sample rate (Hz)
+const int SAMPLE_RATE_HALF = 22050          // Half sample rate (0.5 second buffer at 44.1kHz)
+const int SAMPLE_RATE_QUARTER = 11025       // Quarter sample rate (0.25 second buffer)
+
+// Audio Scaling Constants (16-bit ranges for phase accumulators)
+const int AUDIO_FULL_RANGE = 65536          // 16-bit full scale range (0-65535)
+const int AUDIO_HALF_RANGE = 32768          // 16-bit half scale (bipolar center)
+const int AUDIO_QUARTER_RANGE = 16384       // 16-bit quarter scale (triangle wave peaks)
+
+// Mathematical Constants
+const float PI = 3.14159265                 // Mathematical pi constant
+const float TWO_PI = 6.28318531             // 2 * pi (full circle radians)
+const float PI_OVER_2 = 1.57079633          // pi/2 (quarter circle radians)
+
+// Buffer Size Constants (powers of 2 for efficiency)
+const int SMALL_BUFFER = PARAM_MID                // Small buffer size
+const int MEDIUM_BUFFER = 512               // Medium buffer size  
+const int LARGE_BUFFER = 1024               // Large buffer size
+const int MAX_BUFFER = 2048                 // Maximum buffer size
+
+// Bit Manipulation Constants
+const int BITS_PER_BYTE = 8                 // Standard byte size
+const int SHIFT_DIVIDE_BY_2 = 1             // Bit shift for divide by 2
+const int SHIFT_DIVIDE_BY_4 = 2             // Bit shift for divide by 4
+const int SHIFT_DIVIDE_BY_8 = 3             // Bit shift for divide by 8
+
+// LED Display Constants
+const int LED_OFF = 0x00                    // All LEDs off
+const int LED_ALL_ON = 0xFF                 // All 8 LEDs on
+const int LED_SINGLE = 0x01                 // Single LED pattern
+const int LED_DOUBLE = 0x03                 // Two LED pattern
+const int LED_QUAD = 0x0F                   // Four LED pattern
+const int LED_BRIGHTNESS_FULL = PARAM_MAX         // Full LED brightness
+const int LED_BRIGHTNESS_HALF = PARAM_SWITCH_THRESHOLD         // Half LED brightness
+
+// Musical/Timing Constants
+const int STANDARD_BPM = 120                // Standard tempo reference
+const int QUARTER_NOTE_DIVISIONS = 4        // Divisions per quarter note
+const int SEMITONES_PER_OCTAVE = 12         // Musical semitones in octave
+const float A4_FREQUENCY = 440.0            // A4 reference frequency (Hz)
+
 function process()
+locals int rateParam, int depthParam, int depthSquared, int lfoValue, int amplitude
 {
     loop {
         // CONTROL 1: Rate (linear)
-        int rateParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
+        rateParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
         tremoloRate = 10 + (rateParam / 2)
         
         // CONTROL 2: Depth (exponential curve)
-        int depthParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]              // Get knob value (0-255)
+        depthParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]  // Get knob value (0-PARAM_MAX)
         
-        // Create exponential curve: depth = param^2 / 255
-        int depthSquared = (depthParam * depthParam) / 255
+        // Create exponential curve: depth = param^2 / PARAM_MAX
+        depthSquared = (depthParam * depthParam) / PARAM_MAX
         tremoloDepth = depthSquared / 2         // Scale to usable range
         
         // Tremolo processing
         int lfoValue = 0
-        if (lfoPhase < 16384) {
+        if (lfoPhase < AUDIO_QUARTER_RANGE) {
             lfoValue = (lfoPhase * 2)
         } else {
-            lfoValue = (65536 - lfoPhase) * 2
+            lfoValue = (AUDIO_FULL_RANGE - lfoPhase) * 2
         }
         
-        int amplitude = 128 + ((lfoValue * tremoloDepth) / 65536)
+        int amplitude = PARAM_MID + ((lfoValue * tremoloDepth) / AUDIO_FULL_RANGE)
         
-        signal[0] = (signal[0] * amplitude) / 255
-        signal[1] = (signal[1] * amplitude) / 255
+        signal[0] = (signal[0] * amplitude) / PARAM_MAX
+        signal[1] = (signal[1] * amplitude) / PARAM_MAX
         
-        lfoPhase = (lfoPhase + tremoloRate) % 65536
+        lfoPhase = (lfoPhase + tremoloRate) % AUDIO_FULL_RANGE
         
         yield()
     }
@@ -174,37 +355,93 @@ Musicians think in musical intervals (octaves), not linear frequency. A musical 
 Let's make knob 1 more musical. Replace `process()`:
 
 ```impala
+// ===== STANDARD PERMUT8 CONSTANTS =====
+
+// Parameter System Constants
+const int PARAM_MAX = 255                    // Maximum knob/parameter value (8-bit)
+const int PARAM_MIN = 0                      // Minimum knob/parameter value
+const int PARAM_MID = 128                    // Parameter midpoint for bipolar controls
+const int PARAM_SWITCH_THRESHOLD = 127       // Boolean parameter on/off threshold
+
+// Audio Sample Range Constants (12-bit signed audio)
+const int AUDIO_MAX = 2047                   // Maximum audio sample value (+12-bit)
+const int AUDIO_MIN = -2047                  // Minimum audio sample value (-12-bit)
+const int AUDIO_ZERO = 0                     // Audio silence/center value
+
+// Sample Rate Constants
+const int SAMPLE_RATE_44K1 = 44100          // Standard audio sample rate (Hz)
+const int SAMPLE_RATE_HALF = 22050          // Half sample rate (0.5 second buffer at 44.1kHz)
+const int SAMPLE_RATE_QUARTER = 11025       // Quarter sample rate (0.25 second buffer)
+
+// Audio Scaling Constants (16-bit ranges for phase accumulators)
+const int AUDIO_FULL_RANGE = 65536          // 16-bit full scale range (0-65535)
+const int AUDIO_HALF_RANGE = 32768          // 16-bit half scale (bipolar center)
+const int AUDIO_QUARTER_RANGE = 16384       // 16-bit quarter scale (triangle wave peaks)
+
+// Mathematical Constants
+const float PI = 3.14159265                 // Mathematical pi constant
+const float TWO_PI = 6.28318531             // 2 * pi (full circle radians)
+const float PI_OVER_2 = 1.57079633          // pi/2 (quarter circle radians)
+
+// Buffer Size Constants (powers of 2 for efficiency)
+const int SMALL_BUFFER = 128                // Small buffer size
+const int MEDIUM_BUFFER = 512               // Medium buffer size  
+const int LARGE_BUFFER = 1024               // Large buffer size
+const int MAX_BUFFER = 2048                 // Maximum buffer size
+
+// Bit Manipulation Constants
+const int BITS_PER_BYTE = 8                 // Standard byte size
+const int SHIFT_DIVIDE_BY_2 = 1             // Bit shift for divide by 2
+const int SHIFT_DIVIDE_BY_4 = 2             // Bit shift for divide by 4
+const int SHIFT_DIVIDE_BY_8 = 3             // Bit shift for divide by 8
+
+// LED Display Constants
+const int LED_OFF = 0x00                    // All LEDs off
+const int LED_ALL_ON = 0xFF                 // All 8 LEDs on
+const int LED_SINGLE = 0x01                 // Single LED pattern
+const int LED_DOUBLE = 0x03                 // Two LED pattern
+const int LED_QUAD = 0x0F                   // Four LED pattern
+const int LED_BRIGHTNESS_FULL = 255         // Full LED brightness
+const int LED_BRIGHTNESS_HALF = 127         // Half LED brightness
+
+// Musical/Timing Constants
+const int STANDARD_BPM = 120                // Standard tempo reference
+const int QUARTER_NOTE_DIVISIONS = 4        // Divisions per quarter note
+const int SEMITONES_PER_OCTAVE = 12         // Musical semitones in octave
+const float A4_FREQUENCY = 440.0            // A4 reference frequency (Hz)
+
 function process()
+locals int rateParam, int octaves, int musicalRate, int depthParam, int depthSquared, int lfoValue, int amplitude
 {
     loop {
         // CONTROL 1: Rate (musical/exponential)
-        int rateParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
+        rateParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
         
         // Musical mapping: each 32 knob units = double the rate
-        int octaves = rateParam / 32                    // 0-7 octaves
+        octaves = rateParam / 32                    // 0-7 octaves
         int baseRate = 20                               // Starting rate
-        int musicalRate = baseRate << (octaves / 2)     // Approximate doubling
+        musicalRate = baseRate << (octaves / 2)     // Approximate doubling
         tremoloRate = musicalRate + (rateParam % 32)    // Fine tuning
         
         // CONTROL 2: Depth (exponential) 
-        int depthParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]
-        int depthSquared = (depthParam * depthParam) / 255
+        depthParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]
+        depthSquared = (depthParam * depthParam) / PARAM_MAX
         tremoloDepth = depthSquared / 2
         
         // Tremolo processing
         int lfoValue = 0
-        if (lfoPhase < 16384) {
+        if (lfoPhase < AUDIO_QUARTER_RANGE) {
             lfoValue = (lfoPhase * 2)
         } else {
-            lfoValue = (65536 - lfoPhase) * 2
+            lfoValue = (AUDIO_FULL_RANGE - lfoPhase) * 2
         }
         
-        int amplitude = 128 + ((lfoValue * tremoloDepth) / 65536)
+        int amplitude = PARAM_MID + ((lfoValue * tremoloDepth) / AUDIO_FULL_RANGE)
         
-        signal[0] = (signal[0] * amplitude) / 255
-        signal[1] = (signal[1] * amplitude) / 255
+        signal[0] = (signal[0] * amplitude) / PARAM_MAX
+        signal[1] = (signal[1] * amplitude) / PARAM_MAX
         
-        lfoPhase = (lfoPhase + tremoloRate) % 65536
+        lfoPhase = (lfoPhase + tremoloRate) % AUDIO_FULL_RANGE
         
         yield()
     }
@@ -229,25 +466,81 @@ Sometimes you want one knob to access completely different ranges. We'll make kn
 Replace `process()` with this enhanced version:
 
 ```impala
+// ===== STANDARD PERMUT8 CONSTANTS =====
+
+// Parameter System Constants
+const int PARAM_MAX = 255                    // Maximum knob/parameter value (8-bit)
+const int PARAM_MIN = 0                      // Minimum knob/parameter value
+const int PARAM_MID = 128                    // Parameter midpoint for bipolar controls
+const int PARAM_SWITCH_THRESHOLD = 127       // Boolean parameter on/off threshold
+
+// Audio Sample Range Constants (12-bit signed audio)
+const int AUDIO_MAX = 2047                   // Maximum audio sample value (+12-bit)
+const int AUDIO_MIN = -2047                  // Minimum audio sample value (-12-bit)
+const int AUDIO_ZERO = 0                     // Audio silence/center value
+
+// Sample Rate Constants
+const int SAMPLE_RATE_44K1 = 44100          // Standard audio sample rate (Hz)
+const int SAMPLE_RATE_HALF = 22050          // Half sample rate (0.5 second buffer at 44.1kHz)
+const int SAMPLE_RATE_QUARTER = 11025       // Quarter sample rate (0.25 second buffer)
+
+// Audio Scaling Constants (16-bit ranges for phase accumulators)
+const int AUDIO_FULL_RANGE = 65536          // 16-bit full scale range (0-65535)
+const int AUDIO_HALF_RANGE = 32768          // 16-bit half scale (bipolar center)
+const int AUDIO_QUARTER_RANGE = 16384       // 16-bit quarter scale (triangle wave peaks)
+
+// Mathematical Constants
+const float PI = 3.14159265                 // Mathematical pi constant
+const float TWO_PI = 6.28318531             // 2 * pi (full circle radians)
+const float PI_OVER_2 = 1.57079633          // pi/2 (quarter circle radians)
+
+// Buffer Size Constants (powers of 2 for efficiency)
+const int SMALL_BUFFER = 128                // Small buffer size
+const int MEDIUM_BUFFER = 512               // Medium buffer size  
+const int LARGE_BUFFER = 1024               // Large buffer size
+const int MAX_BUFFER = 2048                 // Maximum buffer size
+
+// Bit Manipulation Constants
+const int BITS_PER_BYTE = 8                 // Standard byte size
+const int SHIFT_DIVIDE_BY_2 = 1             // Bit shift for divide by 2
+const int SHIFT_DIVIDE_BY_4 = 2             // Bit shift for divide by 4
+const int SHIFT_DIVIDE_BY_8 = 3             // Bit shift for divide by 8
+
+// LED Display Constants
+const int LED_OFF = 0x00                    // All LEDs off
+const int LED_ALL_ON = 0xFF                 // All 8 LEDs on
+const int LED_SINGLE = 0x01                 // Single LED pattern
+const int LED_DOUBLE = 0x03                 // Two LED pattern
+const int LED_QUAD = 0x0F                   // Four LED pattern
+const int LED_BRIGHTNESS_FULL = 255         // Full LED brightness
+const int LED_BRIGHTNESS_HALF = 127         // Half LED brightness
+
+// Musical/Timing Constants
+const int STANDARD_BPM = 120                // Standard tempo reference
+const int QUARTER_NOTE_DIVISIONS = 4        // Divisions per quarter note
+const int SEMITONES_PER_OCTAVE = 12         // Musical semitones in octave
+const float A4_FREQUENCY = 440.0            // A4 reference frequency (Hz)
+
 function process()
+locals int rateParam, int octaves, int musicalRate, int depthParam, int depthSquared, int modeParam, int finalDepth, int currentMode, int lfoValue, int amplitude
 {
     loop {
         // CONTROL 1: Rate (musical)
-        int rateParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
-        int octaves = rateParam / 32
+        rateParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
+        octaves = rateParam / 32
         int baseRate = 20
-        int musicalRate = baseRate << (octaves / 2)
+        musicalRate = baseRate << (octaves / 2)
         tremoloRate = musicalRate + (rateParam % 32)
         
         // CONTROL 2: Depth (exponential)
-        int depthParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]
-        int depthSquared = (depthParam * depthParam) / 255
+        depthParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]
+        depthSquared = (depthParam * depthParam) / PARAM_MAX
         tremoloDepth = depthSquared / 2
         
         // CONTROL 3: Mode switching (multi-range)
-        int modeParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]               // Get knob value
+        modeParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]  // Get knob value
         
-        int finalDepth = 0
+        finalDepth = 0
         if (modeParam < 85) {
             // Mode 1: Subtle (0-33% of knob range)
             finalDepth = tremoloDepth / 4        // Quarter intensity
@@ -257,23 +550,23 @@ function process()
         } else {
             // Mode 3: Extreme (66-100% of knob range)
             finalDepth = tremoloDepth * 2        // Double intensity
-            if (finalDepth > 255) finalDepth = 255
+            if (finalDepth > PARAM_MAX) finalDepth = PARAM_MAX
         }
         
         // Tremolo processing with final depth
         int lfoValue = 0
-        if (lfoPhase < 16384) {
+        if (lfoPhase < AUDIO_QUARTER_RANGE) {
             lfoValue = (lfoPhase * 2)
         } else {
-            lfoValue = (65536 - lfoPhase) * 2
+            lfoValue = (AUDIO_FULL_RANGE - lfoPhase) * 2
         }
         
-        int amplitude = 128 + ((lfoValue * finalDepth) / 65536)
+        int amplitude = PARAM_MID + ((lfoValue * finalDepth) / AUDIO_FULL_RANGE)
         
-        signal[0] = (signal[0] * amplitude) / 255
-        signal[1] = (signal[1] * amplitude) / 255
+        signal[0] = (signal[0] * amplitude) / PARAM_MAX
+        signal[1] = (signal[1] * amplitude) / PARAM_MAX
         
-        lfoPhase = (lfoPhase + tremoloRate) % 65536
+        lfoPhase = (lfoPhase + tremoloRate) % AUDIO_FULL_RANGE
         
         yield()
     }
@@ -305,24 +598,25 @@ Replace `process()` one final time:
 
 ```impala
 function process()
+locals int rateParam, int octaves, int musicalRate, int depthParam, int depthSquared, int modeParam, int finalDepth, int currentMode, int lfoValue, int amplitude, int ratePosition, int depthLEDs, int activity
 {
     loop {
         // CONTROL 1: Rate (musical)
-        int rateParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
-        int octaves = rateParam / 32
+        rateParam = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
+        octaves = rateParam / 32
         int baseRate = 20
-        int musicalRate = baseRate << (octaves / 2)
+        musicalRate = baseRate << (octaves / 2)
         tremoloRate = musicalRate + (rateParam % 32)
         
         // CONTROL 2: Depth (exponential)
-        int depthParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]
-        int depthSquared = (depthParam * depthParam) / 255
+        depthParam = (int)global params[OPERAND_2_LOW_PARAM_INDEX]
+        depthSquared = (depthParam * depthParam) / PARAM_MAX
         tremoloDepth = depthSquared / 2
         
         // CONTROL 3: Mode (multi-range)
-        int modeParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]
-        int finalDepth = 0
-        int currentMode = 0
+        modeParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]
+        finalDepth = 0
+        currentMode = 0
         
         if (modeParam < 85) {
             finalDepth = tremoloDepth / 4
@@ -332,31 +626,31 @@ function process()
             currentMode = 2  // Normal mode
         } else {
             finalDepth = tremoloDepth * 2
-            if (finalDepth > 255) finalDepth = 255
+            if (finalDepth > PARAM_MAX) finalDepth = PARAM_MAX
             currentMode = 3  // Extreme mode
         }
         
         // Tremolo processing
         int lfoValue = 0
-        if (lfoPhase < 16384) {
+        if (lfoPhase < AUDIO_QUARTER_RANGE) {
             lfoValue = (lfoPhase * 2)
         } else {
-            lfoValue = (65536 - lfoPhase) * 2
+            lfoValue = (AUDIO_FULL_RANGE - lfoPhase) * 2
         }
         
-        int amplitude = 128 + ((lfoValue * finalDepth) / 65536)
+        int amplitude = PARAM_MID + ((lfoValue * finalDepth) / AUDIO_FULL_RANGE)
         
-        signal[0] = (signal[0] * amplitude) / 255
-        signal[1] = (signal[1] * amplitude) / 255
+        signal[0] = (signal[0] * amplitude) / PARAM_MAX
+        signal[1] = (signal[1] * amplitude) / PARAM_MAX
         
         // LED FEEDBACK for different control types
         
         // LED 1: Rate visualization (moving dot)
-        int ratePosition = (lfoPhase / 8192) % 8    // 0-7 position
+        ratePosition = (lfoPhase / 8192) % 8    // 0-7 position
         displayLEDs[0] = 1 << ratePosition
         
         // LED 2: Depth visualization (intensity bar)
-        int depthLEDs = 0
+        depthLEDs = 0
         if (finalDepth > 200) depthLEDs = 0xFF      // All 8 LEDs
         else if (finalDepth > 150) depthLEDs = 0x7F // 7 LEDs
         else if (finalDepth > 100) depthLEDs = 0x3F // 6 LEDs
@@ -373,10 +667,10 @@ function process()
         else displayLEDs[2] = 0xC0                          // Last 2 LEDs
         
         // LED 4: Combined activity (flashing with tremolo)
-        int activity = (amplitude > 150) ? 0xFF : 0x00
+        activity = (amplitude > 150) ? 0xFF : 0x00
         displayLEDs[3] = activity
         
-        lfoPhase = (lfoPhase + tremoloRate) % 65536
+        lfoPhase = (lfoPhase + tremoloRate) % AUDIO_FULL_RANGE
         
         yield()
     }
@@ -400,8 +694,8 @@ function process()
 
 | Control Type | When to Use | Formula | Example |
 |-------------|-------------|---------|---------|
-| **Linear** | Technical parameters | `output = min + (param * range / 255)` | Filter cutoff frequency |
-| **Exponential** | Volume/intensity | `output = (param * param) / 255` | Effect depth, gain |
+| **Linear** | Technical parameters | `output = min + (param * range / PARAM_MAX)` | Filter cutoff frequency |
+| **Exponential** | Volume/intensity | `output = (param * param) / PARAM_MAX` | Effect depth, gain |
 | **Musical** | Frequency/tempo | `output = base << (param / steps)` | LFO rate, delay time |
 | **Multi-range** | Mode switching | `if/else` ranges | Character, algorithm select |
 
@@ -428,16 +722,72 @@ function process()
 You can add controls to ANY effect using this pattern:
 
 ```impala
+// ===== STANDARD PERMUT8 CONSTANTS =====
+
+// Parameter System Constants
+const int PARAM_MAX = 255                    // Maximum knob/parameter value (8-bit)
+const int PARAM_MIN = 0                      // Minimum knob/parameter value
+const int PARAM_MID = 128                    // Parameter midpoint for bipolar controls
+const int PARAM_SWITCH_THRESHOLD = 127       // Boolean parameter on/off threshold
+
+// Audio Sample Range Constants (12-bit signed audio)
+const int AUDIO_MAX = 2047                   // Maximum audio sample value (+12-bit)
+const int AUDIO_MIN = -2047                  // Minimum audio sample value (-12-bit)
+const int AUDIO_ZERO = 0                     // Audio silence/center value
+
+// Sample Rate Constants
+const int SAMPLE_RATE_44K1 = 44100          // Standard audio sample rate (Hz)
+const int SAMPLE_RATE_HALF = 22050          // Half sample rate (0.5 second buffer at 44.1kHz)
+const int SAMPLE_RATE_QUARTER = 11025       // Quarter sample rate (0.25 second buffer)
+
+// Audio Scaling Constants (16-bit ranges for phase accumulators)
+const int AUDIO_FULL_RANGE = 65536          // 16-bit full scale range (0-65535)
+const int AUDIO_HALF_RANGE = 32768          // 16-bit half scale (bipolar center)
+const int AUDIO_QUARTER_RANGE = 16384       // 16-bit quarter scale (triangle wave peaks)
+
+// Mathematical Constants
+const float PI = 3.14159265                 // Mathematical pi constant
+const float TWO_PI = 6.28318531             // 2 * pi (full circle radians)
+const float PI_OVER_2 = 1.57079633          // pi/2 (quarter circle radians)
+
+// Buffer Size Constants (powers of 2 for efficiency)
+const int SMALL_BUFFER = 128                // Small buffer size
+const int MEDIUM_BUFFER = 512               // Medium buffer size  
+const int LARGE_BUFFER = 1024               // Large buffer size
+const int MAX_BUFFER = 2048                 // Maximum buffer size
+
+// Bit Manipulation Constants
+const int BITS_PER_BYTE = 8                 // Standard byte size
+const int SHIFT_DIVIDE_BY_2 = 1             // Bit shift for divide by 2
+const int SHIFT_DIVIDE_BY_4 = 2             // Bit shift for divide by 4
+const int SHIFT_DIVIDE_BY_8 = 3             // Bit shift for divide by 8
+
+// LED Display Constants
+const int LED_OFF = 0x00                    // All LEDs off
+const int LED_ALL_ON = 0xFF                 // All 8 LEDs on
+const int LED_SINGLE = 0x01                 // Single LED pattern
+const int LED_DOUBLE = 0x03                 // Two LED pattern
+const int LED_QUAD = 0x0F                   // Four LED pattern
+const int LED_BRIGHTNESS_FULL = 255         // Full LED brightness
+const int LED_BRIGHTNESS_HALF = 127         // Half LED brightness
+
+// Musical/Timing Constants
+const int STANDARD_BPM = 120                // Standard tempo reference
+const int QUARTER_NOTE_DIVISIONS = 4        // Divisions per quarter note
+const int SEMITONES_PER_OCTAVE = 12         // Musical semitones in octave
+const float A4_FREQUENCY = 440.0            // A4 reference frequency (Hz)
+
 function process()
+locals int param1, int param2, int usefulValue1, int usefulValue2
 {
     loop {
         // 1. READ PARAMETERS
-        int param1 = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // Get raw knob values
-        int param2 = (int)global params[OPERAND_2_LOW_PARAM_INDEX]
+        param1 = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // Get raw knob values
+        param2 = (int)global params[OPERAND_2_LOW_PARAM_INDEX]
         
         // 2. MAP TO USEFUL RANGES  
-        int usefulValue1 = mapToRange(param1)    // Apply mapping technique
-        int usefulValue2 = mapToRange(param2)
+        usefulValue1 = mapToRange(param1)    // Apply mapping technique
+        usefulValue2 = mapToRange(param2)
         
         // 3. APPLY TO EFFECT
         // ... your effect code using usefulValue1, usefulValue2 ...

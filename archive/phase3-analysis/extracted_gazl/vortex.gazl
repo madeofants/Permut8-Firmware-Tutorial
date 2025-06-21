@@ -1,0 +1,1693 @@
+PRAWN_FIRMWARE_PATCH_FORMAT: ! DEFi #2
+FALSE: ! DEFi #0
+TRUE: ! DEFi #1
+panelTextRows: CNST *8
+DATA &.s_FREEtrd7e336cd &.s_QUANTId7e336ce
+DATA &.s_CYCLINd7e336cf &.s_UNIFORd7e336d0
+DATA &.s_12loopd7e336d1 &.s_11d7e336d2 &.s_21SPACd7e336d3
+DATA &.s_41Densd7e336d4
+GLOB *1
+clock: DATi #0
+GLOB *1
+hostPosition: DATi #0
+params: GLOB *PARAM_COUNT
+displayLEDs: GLOB *4
+GLOB *1
+instance: DATi #0
+CNST *1
+clockFreqLimit: DATi #132300
+signal: GLOB *2
+GLOB *1
+! SHLi <A> #1 #OPERAND_1_HIGH_PARAM_INDEX
+! SHLi <B> #1 #OPERATOR_1_PARAM_INDEX
+! IORi <A> <A> <B>
+updateMask: DATi <A>
+LOG2: ! DEFf #0.69314718055994530942
+LOG2R: ! DEFf #1.44269504088896340736
+LOG10R: ! DEFf #0.43429448190325182765
+E: ! DEFf #2.71828182845904523536
+HALF_PI: ! DEFf #1.57079632679489661923
+PI: ! DEFf #3.14159265358979323846
+! MULf <A> #PI #2.0
+TWICE_PI: ! DEFf <A>
+COS_EPSILON: ! DEFf #1.0e-6
+trunc: FUNC
+$y: OUTf
+$x: INPf
+GEQf $x #0.0 @.f0
+SUBf %0 #0.0 $x
+FLOf %0 %0
+SUBf $y #0.0 %0
+GOTO @.e1
+.f0: FLOf $y $x
+.e1: RETU
+fmod: FUNC
+$z: OUTf
+$x: INPf
+$y: INPf
+DIVf %1 $x $y
+CALL &trunc %0 *2
+MULf %0 %0 $y
+SUBf $z $x %0
+RETU
+cos: FUNC
+$y: OUTf
+$x: INPf
+$a: LOCf
+$n: LOCf
+$m: LOCf
+$t: LOCf
+MOVf %1 $x
+MOVf %2 #TWICE_PI
+CALL &fmod %0 *3
+MOVf $m %0
+SUBf %0 #0.0 $m
+MULf $m %0 $m
+MOVf $a #1.0
+MOVf $n #1.0
+MOVf $y #1.0
+.l0: MOVf $t $y
+MULf %0 $n $n
+MULf %1 $a $m
+ADDf %0 %0 $n
+DIVf $a %1 %0
+ADDf $y $y $a
+ADDf $n $n #2.0
+NEQf $y $t @.l0
+ABSf %1 $y
+GEQf %1 #COS_EPSILON @.f1
+MOVf $y #0.0
+.f1: RETU
+sin: FUNC
+$y: OUTf
+$x: INPf
+SUBf %1 $x #HALF_PI
+CALL &cos %0 *2
+MOVf $y %0
+RETU
+sqrtApprox: FUNC
+$y: OUTf
+$x: INPf
+$t: LOCf
+MULf %0 #3.6986 $x
+SUBf %0 %0 #9.24928
+MULf %0 %0 $x
+ADDf %0 %0 #8.8951
+MULf %0 %0 $x
+ADDf $y %0 #0.0362258
+DIVf %0 $x $y
+ADDf %0 $y %0
+MULf $y #0.5 %0
+DIVf %0 $x $y
+ADDf %0 $y %0
+MULf $y #0.5 %0
+DIVf %0 $x $y
+ADDf %0 $y %0
+MULf $y #0.5 %0
+DIVf %0 $x $y
+ADDf %0 $y %0
+MULf $y #0.5 %0
+RETU
+ceil: FUNC
+$y: OUTf
+$x: INPf
+SUBf %0 #0.0 $x
+FLOf %0 %0
+SUBf $y #0.0 %0
+RETU
+exp: FUNC
+$y: OUTf
+$x: INPf
+$a: LOCf
+$n: LOCf
+$m: LOCf
+$t: LOCf
+ABSf $m $x
+MOVf $a #1.0
+MOVf $n #1.0
+MOVf $y #1.0
+.l0: MOVf $t $y
+MULf %0 $a $m
+DIVf $a %0 $n
+ADDf $y $y $a
+ADDf $n $n #1.0
+NEQf $y $t @.l0
+GEQf $x #0.0 @.f1
+DIVf $y #1.0 $y
+.f1: RETU
+log: FUNC
+$y: OUTf
+$x: INPf
+$a: LOCf
+$b: LOCf
+$m: LOCf
+$n: LOCf
+$t: LOCf
+MOVf $b #0.0
+MOVf $m $x
+.l0: GEQf $m #0.5 @.e1
+MULf $m $m #2.0
+SUBf $b $b #LOG2
+GOTO @.l0
+.e1: NOOP
+.l2: LEQf $m #1.5 @.e3
+MULf $m $m #0.5
+ADDf $b $b #LOG2
+GOTO @.l2
+.e3: SUBf $m #1.0 $m
+MOVf $a #-1.0
+MOVf $n #1.0
+MOVf $y #0.0
+.l4: MOVf $t $y
+MULf $a $a $m
+DIVf %0 $a $n
+ADDf $y $y %0
+ADDf $n $n #1.0
+NEQf $y $t @.l4
+ADDf $y $y $b
+RETU
+pow: FUNC
+$z: OUTf
+$x: INPf
+$y: INPf
+$a: LOCf
+MOVf $z #0.0
+MOVf $a $x
+GEQf $a #0.0 @.f1
+FLOf %0 $y
+NEQf $y %0 @.f1
+SUBf $a #0.0 $a
+.f1: LEQf $a #0.0 @.f2
+MOVf %2 $a
+CALL &log %1 *2
+MULf %1 %1 $y
+CALL &exp %0 *2
+MOVf $z %0
+.f2: EQUf $a $x @.f4
+MULf %0 $y #0.5
+MULf %1 $y #0.5
+FLOf %0 %0
+EQUf %1 %0 @.f4
+SUBf $z #0.0 $z
+.f4: RETU
+GLOB *1
+rndSeedX: DATi #1
+GLOB *1
+rndSeedY: DATi #1
+seedRandom: FUNC
+PARA *1
+$seed: INPi
+$x: LOCi
+ADDi $x $seed #1
+SHLi %1 $x #11
+XORi $x $x %1
+MULi %1 $x #134775813
+SHRu %1 %1 #13
+MULi $x $x %1
+SHRu %1 $x #17
+XORi $x $x %1
+POKE &rndSeedX $x
+POKE &rndSeedY #1
+RETU
+randomInt: FUNC
+$i: OUTi
+$x: LOCi
+$y: LOCi
+$t: LOCi
+PEEK $x &rndSeedX
+PEEK $y &rndSeedY
+SHLi %1 $x #10
+XORi $t $x %1
+MOVi $x $y
+SHRu %1 $y #13
+XORi %1 $y %1
+XORi %1 %1 $t
+SHRu %0 $t #10
+XORi $y %1 %0
+ADDi $i $x $y
+POKE &rndSeedX $x
+POKE &rndSeedY $y
+RETU
+randomFloat: FUNC
+$f: OUTf
+CALL &randomInt %0 *1
+ANDi %0 %0 #0x7FFFFFFF
+iTOf $f %0 #4.6566128730774e-10
+RETU
+pow2: FUNC
+$y: OUTf
+$x: INPf
+MULf $y $x $x
+RETU
+pow3: FUNC
+$y: OUTf
+$x: INPf
+MULf %0 $x $x
+MULf $y %0 $x
+RETU
+pow5: FUNC
+$y: OUTf
+$x: INPf
+MULf $y $x $x
+MULf %0 $y $y
+MULf $y %0 $x
+RETU
+pow9: FUNC
+$y: OUTf
+$x: INPf
+MULf $y $x $x
+MULf $y $y $y
+MULf %0 $y $y
+MULf $y %0 $x
+RETU
+minFloat: FUNC
+$y: OUTf
+$a: INPf
+$b: INPf
+MOVf $y $a
+GEQf $b $y @.f0
+MOVf $y $b
+.f0: RETU
+maxFloat: FUNC
+$y: OUTf
+$a: INPf
+$b: INPf
+MOVf $y $a
+LEQf $b $y @.f0
+MOVf $y $b
+.f0: RETU
+clampFloat: FUNC
+$y: OUTf
+$x: INPf
+$mini: INPf
+$maxi: INPf
+MOVf $y $x
+LEQf $y $maxi @.f0
+MOVf $y $maxi
+GOTO @.e1
+.f0: GEQf $y $mini @.f2
+MOVf $y $mini
+.f2: NOOP
+.e1: RETU
+VOICE_STATE_SIZE: ! DEFi #31
+VOICE_COUNT: ! DEFi #8
+OFF_MODE: ! DEFi #0
+UNALIGNED_MODE: ! DEFi #1
+ALIGNED_MODE: ! DEFi #2
+CYCLING_MODE: ! DEFi #3
+UNIFORM_MODE: ! DEFi #4
+SR: ! DEFf #44100.0
+! DIVf <A> #1.0 #SR
+RSR: ! DEFf <A>
+! DIVf <A> #4096.0 #SR
+SIXTEENTH: ! DEFf <A>
+MUTE_RATE: ! DEFf #0.015625
+VERB_STATE_SIZE: ! DEFi #12
+ALMOST_SILENT: ! DEFf #0.0039810715243220329
+FLOAT_BIT_COUNTS: CNST *16
+DATA #0.0 #1.0 #1.0 #2.0 #1.0 #2.0 #2.0 #3.0 #1.0 #2.0
+DATA #2.0 #3.0 #2.0 #3.0 #3.0 #4.0
+BIT_COUNTS: CNST *16
+DATA #0 #1 #1 #2 #1 #2 #2 #3 #1 #2 #2 #3 #2 #3 #3 #4
+UNIFORM_RATES: CNST *16
+DATA #1.0 #9.0 #5.0 #13.0 #3.0 #11.0 #7.0 #15.0 #2.0 #10.0
+DATA #6.0 #14.0 #4.0 #12.0 #8.0 #16.0
+SIN_TABLE_SIZE: ! DEFi #2048
+! SUBi <A> #SIN_TABLE_SIZE #1
+SIN_TABLE_MASK: ! DEFi <A>
+! iTOf <A> #SIN_TABLE_SIZE #1.0
+SIN_TABLE_SIZE_FLOAT: ! DEFf <A>
+! MULi <A> #VOICE_COUNT #VOICE_STATE_SIZE
+voiceData: GLOB *<A>
+sinTable: GLOB *SIN_TABLE_SIZE
+VERB_DL_SIZE: ! DEFi #16384
+! SUBi <A> #VERB_DL_SIZE #1
+VERB_DL_MASK: ! DEFi <A>
+verbLine: GLOB *VERB_DL_SIZE
+verbState: GLOB *VERB_STATE_SIZE
+GLOB *1
+songPos: DATi #0
+GLOB *1
+lastSeed: DATi #0
+GLOB *1
+spaceLeds: DATi #0
+GLOB *1
+lengthLeds: DATi #0
+GLOB *1
+pitchLeds: DATi #0
+GLOB *1
+modulationLeds: DATi #0
+GLOB *1
+reverbLeds: DATi #0
+GLOB *1
+isChasing: DATi #0
+setupVerb: FUNC
+PARA *1
+$roomSize: INPi
+$preDelay: INPi
+$size: LOCi
+$delay: LOCi
+$o13: LOCi
+$o3: LOCi
+$o11: LOCi
+$o5: LOCi
+$o7: LOCi
+$oL1: LOCi
+$oL2: LOCi
+$oR: LOCi
+$l: LOCi
+$dI: LOCf
+ADRL %0 $size *0
+COPY %0 &verbState *VERB_STATE_SIZE
+MOVi $size $roomSize
+MOVi $delay $preDelay
+ADDi %0 $size #6
+DIVi $o13 %0 #13
+ADDi %0 $size #1
+DIVi $o3 %0 #3
+ADDi %0 $size #5
+DIVi %0 %0 #11
+ADDi $o11 $o3 %0
+ADDi %0 $size #2
+DIVi %0 %0 #5
+ADDi $o5 $o3 %0
+ADDi %0 $size #3
+DIVi %0 %0 #7
+ADDi $o7 $o5 %0
+ADDi $oL1 $o7 $delay
+ADDi $oR $oL1 #1057
+ADDi $oL2 $oL1 #2311
+ADRL %0 $size *0
+COPY &verbState %0 *VERB_STATE_SIZE
+RETU
+processVerb: FUNC
+PARA *1
+$in64: INPp
+$feedback: INPf
+$damping: INPf
+$outLeft64: INPp
+$outRight64: INPp
+$i: LOCi
+$d0: LOCf
+$i3: LOCi
+$d3: LOCf
+$i13: LOCi
+$i5: LOCi
+$d5: LOCf
+$i11: LOCi
+$i7: LOCi
+$line: LOCp
+$size: LOCi
+$delay: LOCi
+$o13: LOCi
+$o3: LOCi
+$o11: LOCi
+$o5: LOCi
+$o7: LOCi
+$oL1: LOCi
+$oL2: LOCi
+$oR: LOCi
+$l: LOCi
+$dI: LOCf
+ADRL %0 $size *0
+COPY %0 &verbState *VERB_STATE_SIZE
+MOVp $line &verbLine
+MOVi $i #0
+GEQi #0 #64 @.e0
+.l1: SUBi %0 $l $size
+ANDi %0 %0 #VERB_DL_MASK
+PEEK %0 $line %0
+PEEK %1 $in64 $i
+MULf %0 %0 $feedback
+ADDf %1 %1 %0
+SUBf %1 %1 $dI
+MULf %1 %1 $damping
+ADDf $dI $dI %1
+MOVf $d0 $dI
+SUBi %1 $l $o3
+ANDi $i3 %1 #VERB_DL_MASK
+PEEK $d3 $line $i3
+MULf %1 $d3 #0.5
+ADDf $d0 $d0 %1
+MULf %1 $d0 #0.5
+SUBf $d3 $d3 %1
+SUBi %1 $l $o13
+ANDi $i13 %1 #VERB_DL_MASK
+PEEK %1 $line $i13
+MULf %1 %1 #0.5
+ADDf $d0 $d0 %1
+PEEK %1 $line $i13
+MULf %0 $d0 #0.5
+SUBf %1 %1 %0
+POKE $line $i13 %1
+SUBi %1 $l $o5
+ANDi $i5 %1 #VERB_DL_MASK
+PEEK $d5 $line $i5
+MULf %1 $d5 #0.5
+ADDf $d3 $d3 %1
+MULf %1 $d3 #0.5
+SUBf $d5 $d5 %1
+SUBi %1 $l $o11
+ANDi $i11 %1 #VERB_DL_MASK
+PEEK %1 $line $i11
+MULf %1 %1 #0.5
+ADDf $d3 $d3 %1
+PEEK %1 $line $i11
+MULf %0 $d3 #0.5
+SUBf %1 %1 %0
+POKE $line $i11 %1
+SUBi %1 $l $o7
+ANDi $i7 %1 #VERB_DL_MASK
+PEEK %1 $line $i7
+MULf %1 %1 #0.5
+ADDf $d5 $d5 %1
+PEEK %1 $line $i7
+MULf %0 $d5 #0.5
+SUBf %1 %1 %0
+POKE $line $i7 %1
+POKE $line $i3 $d3
+POKE $line $i5 $d5
+POKE $line $l $d0
+SUBi %1 $l $oL1
+ANDi %1 %1 #VERB_DL_MASK
+SUBi %0 $l $oL2
+ANDi %0 %0 #VERB_DL_MASK
+PEEK %1 $line %1
+PEEK %0 $line %0
+SUBf %1 %1 %0
+MULf %1 %1 #0.75
+POKE $outLeft64 $i %1
+SUBi %1 $l $oR
+ANDi %1 %1 #VERB_DL_MASK
+PEEK %1 $line %1
+SUBf %1 #0.0 %1
+POKE $outRight64 $i %1
+ADDi $l $l #1
+FORi $i #64 @.l1
+.e0: NEQi $l #VERB_DL_SIZE @.f2
+MOVi $l #0
+.f2: ADRL %1 $size *0
+COPY &verbState %1 *VERB_STATE_SIZE
+RETU
+calcDecayFactor: FUNC
+$factor: OUTf
+$time: INPf
+$reach: INPf
+MOVf $factor #0.0
+EQUf $time #0.0 @.f0
+DIVf %2 #1.0 $reach
+CALL &log %1 *2
+DIVf %2 #-1.0 $time
+MULf %1 %2 %1
+CALL &exp %0 *2
+MOVf $factor %0
+.f0: RETU
+scale: FUNC
+$y: OUTf
+$x: INPf
+$inFrom: INPf
+$inTo: INPf
+$outFrom: INPf
+$outTo: INPf
+SUBf %0 $outTo $outFrom
+SUBf %1 $x $inFrom
+MULf %0 %0 %1
+SUBf %1 $inTo $inFrom
+DIVf %0 %0 %1
+ADDf $y $outFrom %0
+RETU
+logScale: FUNC
+$y: OUTf
+$x: INPf
+$inFrom: INPf
+$inTo: INPf
+$outFrom: INPf
+$outTo: INPf
+DIVf %1 $outTo $outFrom
+SUBf %2 $x $inFrom
+SUBf %3 $inTo $inFrom
+DIVf %2 %2 %3
+CALL &pow %0 *3
+MULf $y $outFrom %0
+RETU
+fromDecibel: FUNC
+$y: OUTf
+$dB: INPf
+MULf %1 $dB #0.1151292546497022
+CALL &exp %0 *2
+MOVf $y %0
+RETU
+intPow: FUNC
+$z: OUTf
+$x: INPf
+$y: INPi
+$x2: LOCf
+$x4: LOCf
+$x8: LOCf
+SUBi %0 $y #1
+SWCH %0 *10 @.s0
+.s0#0: MOVf $z $x
+GOTO @.e1
+.s0#1: MULf $x2 $x $x
+MOVf $z $x2
+GOTO @.e1
+.s0#2: MULf $x2 $x $x
+MULf $z $x2 $x
+GOTO @.e1
+.s0#3: MULf $x2 $x $x
+MULf $x4 $x2 $x2
+MOVf $z $x4
+GOTO @.e1
+.s0#4: MULf $x2 $x $x
+MULf $x4 $x2 $x2
+MULf $z $x4 $x
+GOTO @.e1
+.s0#5: MULf $x2 $x $x
+MULf $x4 $x2 $x2
+MULf $z $x4 $x2
+GOTO @.e1
+.s0#6: MULf $x2 $x $x
+MULf $x4 $x2 $x2
+MULf %0 $x4 $x2
+MULf $z %0 $x
+GOTO @.e1
+.s0#7: MULf $x2 $x $x
+MULf $x4 $x2 $x2
+MULf $x8 $x4 $x4
+MOVf $z $x8
+GOTO @.e1
+.s0#8: MULf $x2 $x $x
+MULf $x4 $x2 $x2
+MULf $x8 $x4 $x4
+MULf $z $x8 $x
+GOTO @.e1
+.s0#9: MULf $x2 $x $x
+MULf $x4 $x2 $x2
+MULf $x8 $x4 $x4
+MULf $z $x8 $x2
+.s0: NOOP
+.e1: RETU
+biPow: FUNC
+$y: OUTf
+$x: INPf
+$negY: INPi
+$posY: INPi
+GEQf $x #0.0 @.f0
+SUBf %1 #0.0 $x
+MOVi %2 $negY
+CALL &intPow %0 *3
+SUBf $y #0.0 %0
+GOTO @.e1
+.f0: MOVf %1 $x
+MOVi %2 $posY
+CALL &intPow %0 *3
+MOVf $y %0
+.e1: RETU
+SINGLE_POLE_K_APPROX_C1: ! DEFf #3.017202252562013
+SINGLE_POLE_K_APPROX_C2: ! DEFf #2.9654982727404704
+singlePoleKApprox: FUNC
+$k: OUTf
+$f: INPf
+$x: LOCf
+$a: LOCf
+$b: LOCf
+! DIVf <A> #TWICE_PI #4.0
+MULf $x <A> $f
+SUBf $a $x #SINGLE_POLE_K_APPROX_C1
+ADDf $b $x #SINGLE_POLE_K_APPROX_C1
+MULf %0 $a $a
+MULf %1 $b $b
+ADDf %0 %0 #SINGLE_POLE_K_APPROX_C2
+ADDf %1 %1 #SINGLE_POLE_K_APPROX_C2
+DIVf $k %0 %1
+MULf $k $k $k
+MULf $k $k $k
+SUBf $k #1.0 $k
+RETU
+reseedVoice: FUNC
+PARA *1
+$voiceId: INPi
+$seed: LOCi
+PEEK $seed &params:OPERAND_1_HIGH_PARAM_INDEX
+POKE &lastSeed $seed
+SHLi %0 $seed #16
+ADDi $seed %0 $voiceId
+SHLi %0 $seed #11
+XORi $seed $seed %0
+MULi %0 $seed #134775813
+SHRu %0 %0 #13
+MULi $seed $seed %0
+SHRu %0 $seed #17
+XORi $seed $seed %0
+POKE &rndSeedX $seed
+POKE &rndSeedY $seed
+RETU
+selectSegment: FUNC
+$segment: OUTi
+$mask: INPi
+$skew: INPi
+$r: LOCi
+$m: LOCi
+$i: LOCi
+CALL &randomInt %0 *1
+ANDi $r %0 #0xFFFF
+NEQi $mask #0 @.f0
+MOVi $segment #0
+GOTO @.e1
+.f0: MOVi $i #1
+GEQi #1 $skew @.e2
+.l3: MULi %0 $r $r
+SHRu $r %0 #16
+FORi $i $skew @.l3
+.e2: PEEK %0 &BIT_COUNTS $mask
+MULi %0 $r %0
+SHRu $r %0 #16
+! EQUi #DEBUG #0 @.a4
+GRTi #0 $r @.f5
+LEQi $r #3 @.a4
+.f5: MOVp %1 &.a_0rr3d7e336cd
+CALL ^assertFail %0 *1
+.a4: MOVi $m $mask
+MOVi $segment #1
+.l6: ANDi %0 $m #8
+EQUi %0 #0 @.f7
+SUBi $r $r #1
+GEQi $r #0 @.f7
+GOTO @return
+.f7: SHLi $m $m #1
+ADDi $segment $segment #1
+GOTO @.l6
+.e1: NOOP
+return: RETU
+segmentRandom: FUNC
+$value: OUTf
+$segment: INPi
+$r: LOCf
+MOVf $value #0.0
+CALL &randomFloat %0 *1
+MOVf $r %0
+LEQi $segment #0 @.f0
+SUBi %0 $segment #1
+iTOf %0 %0 #1.0
+ADDf %0 %0 $r
+MULf $value %0 #0.25
+.f0: RETU
+randomSign: FUNC
+$s: OUTf
+MOVf $s #1.0
+CALL &randomInt %0 *1
+GEQi %0 #0 @.f0
+MOVf $s #-1.0
+.f0: RETU
+renderVoice: FUNC
+$envReturn: OUTf
+$voiceId: INPi
+$voiceDataPointer: INPp
+$lengthBits: INPi
+$spacingBits: INPf
+$modulationBits: INPi
+$reverbBits: INPf
+$pitchBits: INPi
+$left64: INPp
+$right64: INPp
+$wet64: INPp
+$position: INPi
+$reseedMask: INPi
+$seed: LOCi
+$envPhase: LOCi
+$lastTrig: LOCi
+$nextTrig: LOCi
+$env: LOCf
+$attackRate: LOCf
+$decayFactor: LOCf
+$low: LOCf
+$high: LOCf
+$gone: LOCf
+$amp: LOCf
+$repeatDecay: LOCf
+$posPower: LOCi
+$negPower: LOCi
+$fmAmount: LOCf
+$fmRateHigh: LOCf
+$fmRateLow: LOCf
+$fmRateGone: LOCf
+$wetAmount: LOCf
+$fmType: LOCi
+$leftAmp: LOCf
+$rightAmp: LOCf
+$fmPhase: LOCf
+$fmNoiseD0: LOCf
+$fmNoiseD1: LOCf
+$carrierPhase: LOCf
+$spaceSegment: LOCi
+$lengthSegment: LOCi
+$pitchSegment: LOCi
+$modulationSegment: LOCi
+$reverbSegment: LOCi
+$durationSecs: LOCf
+$lengthSecs: LOCf
+$envTilt: LOCf
+$attackTime: LOCf
+$releaseTime: LOCf
+$f: LOCf
+$f2: LOCf
+$pan: LOCf
+$mono64: LOCA *64
+$m: LOCp
+$i: LOCi
+$fmRate: LOCf
+$fm0: LOCf
+$fm1: LOCf
+$fm2: LOCf
+$fm3: LOCf
+$enva: LOCf
+$m0: LOCf
+$m1: LOCf
+$m2: LOCf
+$m3: LOCf
+$fmNoiseAmp: LOCf
+$fmNoiseFilterK: LOCf
+$drop: LOCf
+$lowFreq: LOCf
+$highFreq: LOCf
+$prngSeedX: LOCi
+$prngSeedY: LOCi
+ADRL %0 $seed *0
+COPY %0 $voiceDataPointer *VOICE_STATE_SIZE
+PEEK $prngSeedX &rndSeedX
+PEEK $prngSeedY &rndSeedY
+LSSi $position #0 @.f2
+LEQi $position $lastTrig @.t1
+NEQi $seed #0 @.f2
+.t1: XORi %1 $voiceId #-1
+CALL &reseedVoice %0 *2
+MOVf %1 $spacingBits
+MOVi %2 #4
+CALL &selectSegment %0 *3
+MOVi $spaceSegment %0
+MOVi %2 $spaceSegment
+CALL &segmentRandom %1 *2
+CALL &pow2 %0 *2
+MOVf $durationSecs %0
+MOVi %1 $voiceId
+CALL &reseedVoice %0 *2
+PEEK %0 &params:OPERATOR_1_PARAM_INDEX
+NEQi %0 #ALIGNED_MODE @.f3
+DIVf %1 $durationSecs #SIXTEENTH
+CALL &ceil %0 *2
+MULf $durationSecs %0 #SIXTEENTH
+.f3: PEEK %0 &params:OPERATOR_1_PARAM_INDEX
+NEQi %0 #UNIFORM_MODE @.f4
+MOVf $durationSecs #0.0
+.f4: MOVi $lastTrig #0
+! DIVf <A> #SR #64.0
+MULf %0 $durationSecs <A>
+ADDf %0 %0 #0.5
+fTOi $nextTrig %0 #1.0
+PEEK $seed &rndSeedX
+.f2: MOVf $drop #0.0
+LSSi $position $nextTrig @.f5
+LEQf $amp #ALMOST_SILENT @.f7
+LEQf $env #ALMOST_SILENT @.f7
+MOVf $drop #MUTE_RATE
+GOTO @.e8
+.f7: ANDi %0 $nextTrig $reseedMask
+ANDi %1 $lastTrig $reseedMask
+EQUi %0 %1 @.f9
+MOVi %1 $voiceId
+CALL &reseedVoice %0 *2
+PEEK $seed &rndSeedX
+.f9: POKE &rndSeedX $seed
+POKE &rndSeedY $seed
+MOVf %1 $spacingBits
+MOVi %2 #4
+CALL &selectSegment %0 *3
+MOVi $spaceSegment %0
+MOVi %1 $lengthBits
+MOVi %2 #4
+CALL &selectSegment %0 *3
+MOVi $lengthSegment %0
+MOVf %1 $reverbBits
+MOVi %2 #1
+CALL &selectSegment %0 *3
+MOVi $reverbSegment %0
+MOVi %1 $modulationBits
+MOVi %2 #1
+CALL &selectSegment %0 *3
+MOVi $modulationSegment %0
+MOVi %1 $pitchBits
+MOVi %2 #1
+CALL &selectSegment %0 *3
+MOVi $pitchSegment %0
+MOVi %2 $spaceSegment
+CALL &segmentRandom %1 *2
+CALL &pow5 %0 *2
+MULf %0 #30.0 %0
+ADDf $durationSecs #0.08 %0
+MOVi %2 $lengthSegment
+CALL &segmentRandom %1 *2
+CALL &pow5 %0 *2
+MULf $lengthSecs #30.0 %0
+CALL &randomFloat %1 *1
+CALL &pow3 %0 *2
+MOVf $envTilt %0
+MULf %0 $lengthSecs $envTilt
+ADDf $attackTime #0.001 %0
+SUBf %0 #1.0 $envTilt
+MULf %0 $lengthSecs %0
+ADDf $releaseTime #0.08 %0
+PEEK %0 &params:OPERATOR_1_PARAM_INDEX
+EQUi %0 #UNIFORM_MODE @.t10
+PEEK %0 &params:OPERATOR_1_PARAM_INDEX
+NEQi %0 #ALIGNED_MODE @.f11
+.t10: DIVf %1 $durationSecs #SIXTEENTH
+CALL &ceil %0 *2
+MULf $durationSecs %0 #SIXTEENTH
+DIVf %0 $attackTime #SIXTEENTH
+FLOf %0 %0
+MULf %0 %0 #SIXTEENTH
+ADDf $attackTime #0.001 %0
+DIVf %1 $releaseTime #SIXTEENTH
+CALL &ceil %0 *2
+MULf %0 %0 #SIXTEENTH
+SUBf $releaseTime %0 #0.001
+.f11: NOOP
+! MULf <A> #SR #0.25
+MULf %1 $attackTime <A>
+MOVf %2 #1.0
+CALL &maxFloat %0 *3
+DIVf $attackRate #1.0 %0
+! MULf <A> #SR #0.25
+MULf %2 $releaseTime <A>
+MOVf %3 #1.0
+CALL &maxFloat %1 *3
+MOVf %2 #ALMOST_SILENT
+CALL &calcDecayFactor %0 *3
+MOVf $decayFactor %0
+PEEK %0 &params:OPERATOR_1_PARAM_INDEX
+NEQi %0 #UNIFORM_MODE @.f12
+PEEK %0 &params:OPERAND_2_HIGH_PARAM_INDEX
+SHRi %0 %0 #4
+ANDi %0 %0 #15
+PEEK %0 &UNIFORM_RATES %0
+MULf $durationSecs %0 #SIXTEENTH
+MOVf $attackTime #0.0
+MOVf $releaseTime #0.0
+.f12: MOVi $lastTrig $nextTrig
+MOVf %1 $durationSecs
+ADDf %2 $attackTime $releaseTime
+CALL &maxFloat %0 *3
+! DIVf <A> #SR #64.0
+MULf %0 %0 <A>
+ADDf %0 %0 #0.5
+fTOi %0 %0 #1.0
+ADDi $nextTrig $nextTrig %0
+MOVi %2 $pitchSegment
+CALL &segmentRandom %1 *2
+MOVf %2 #0.0
+MOVf %3 #1.0
+MOVf %4 #40.0
+MOVf %5 #2560.0
+CALL &logScale %0 *6
+MOVf $lowFreq %0
+MULf $highFreq $lowFreq #4.0
+CALL &randomFloat %1 *1
+MOVf %2 #0.0
+MOVf %3 #1.0
+MOVf %4 $lowFreq
+MOVf %5 $highFreq
+CALL &logScale %0 *6
+MOVf $low %0
+MOVi %3 $modulationSegment
+CALL &segmentRandom %2 *2
+CALL &randomSign %3 *1
+MULf %2 %2 %3
+CALL &pow9 %1 *2
+MULf %1 $highFreq %1
+ADDf %1 $low %1
+MOVf %2 $lowFreq
+MOVf %3 $highFreq
+CALL &clampFloat %0 *4
+MOVf $high %0
+MOVi %3 $modulationSegment
+CALL &segmentRandom %2 *2
+CALL &randomSign %3 *1
+MULf %2 %2 %3
+CALL &pow9 %1 *2
+MULf %1 $highFreq %1
+ADDf %1 $high %1
+MOVf %2 $lowFreq
+MOVf %3 $highFreq
+CALL &clampFloat %0 *4
+MOVf $gone %0
+MULf $low $low #RSR
+MULf $high $high #RSR
+MULf $gone $gone #RSR
+MOVf %1 $low
+MOVf %2 #0.49
+CALL &minFloat %0 *3
+MOVf $low %0
+MOVf %1 $high
+MOVf %2 #0.49
+CALL &minFloat %0 *3
+MOVf $high %0
+MOVf %1 $gone
+MOVf %2 #0.49
+CALL &minFloat %0 *3
+MOVf $gone %0
+CALL &randomFloat %1 *1
+MULf %1 %1 #-24.0
+SUBf %1 %1 #6.0
+CALL &fromDecibel %0 *2
+MOVf $amp %0
+CALL &randomFloat %0 *1
+MOVf %3 $lengthSecs
+MOVf %4 #0.02
+CALL &minFloat %2 *3
+MOVf %3 #0.0
+MOVf %4 #0.02
+MOVf %5 #0.0
+MOVf %6 #0.95
+CALL &scale %1 *6
+MULf $repeatDecay %0 %1
+CALL &randomInt %0 *1
+ANDi %0 %0 #0x7FFFFFFF
+MODi %0 %0 #10
+ADDi $posPower %0 #1
+CALL &randomInt %0 *1
+ANDi %0 %0 #0x7FFFFFFF
+MODi %0 %0 #10
+ADDi $negPower %0 #1
+MOVf %2 $low
+MOVf %3 $high
+CALL &minFloat %1 *3
+MOVf %2 $gone
+CALL &minFloat %0 *3
+MOVf $f %0
+MOVf %2 $low
+MOVf %3 $high
+CALL &maxFloat %1 *3
+MOVf %2 $gone
+CALL &maxFloat %0 *3
+MOVf $f2 %0
+MOVi %2 $modulationSegment
+CALL &segmentRandom %1 *2
+CALL &pow3 %0 *2
+MULf $fmAmount $f %0
+SUBf %2 #0.49 $f2
+MOVf %3 $f
+CALL &minFloat %1 *3
+MOVf %2 $fmAmount
+CALL &minFloat %0 *3
+CALL &randomSign %1 *1
+MULf $fmAmount %0 %1
+CALL &randomFloat %2 *1
+MOVf %3 #0.0
+MOVf %4 #1.0
+MOVf %5 #1.0
+MULf %6 $f #SR
+CALL &logScale %1 *6
+MULf %1 %1 #RSR
+MOVf %2 #0.0001
+MOVf %3 $f
+CALL &clampFloat %0 *4
+MOVf $fmRateHigh %0
+MOVi %3 $modulationSegment
+CALL &segmentRandom %2 *2
+CALL &randomSign %3 *1
+MULf %2 %2 %3
+CALL &pow5 %1 *2
+MULf %1 $f %1
+ADDf %1 $fmRateHigh %1
+MOVf %2 #0.0001
+MOVf %3 $f
+CALL &clampFloat %0 *4
+MOVf $fmRateLow %0
+MOVi %3 $modulationSegment
+CALL &segmentRandom %2 *2
+CALL &randomSign %3 *1
+MULf %2 %2 %3
+CALL &pow5 %1 *2
+MULf %1 $f %1
+ADDf %1 $fmRateLow %1
+MOVf %2 #0.0001
+MOVf %3 $f
+CALL &clampFloat %0 *4
+MOVf $fmRateGone %0
+CALL &randomFloat %0 *1
+MULf %0 %0 #2.0
+SUBf $pan %0 #1.0
+MOVi %1 $reverbSegment
+CALL &segmentRandom %0 *2
+MOVf $wetAmount %0
+SUBf $leftAmp #1.0 $wetAmount
+MOVf $rightAmp $leftAmp
+LEQf $pan #0.0 @.f13
+SUBf %0 #1.0 $pan
+MULf $leftAmp $leftAmp %0
+GOTO @.e14
+.f13: ADDf %0 #1.0 $pan
+MULf $rightAmp $rightAmp %0
+.e14: CALL &randomInt %0 *1
+ANDi $fmType %0 #3
+MOVf $fmNoiseD0 #0.0
+MOVf $fmNoiseD1 #0.0
+MOVf $carrierPhase #0.0
+MOVf $fmPhase #0.0
+MOVf $env #0.0
+MOVi $envPhase #1
+LSSi $position $nextTrig @.f15
+MOVi $envPhase #0
+MOVf $amp #0.0
+POKE &isChasing #TRUE
+.f15: PEEK $seed &rndSeedX
+.e8: NOOP
+.f5: LEQi $spaceSegment #0 @.f16
+PEEK %0 &spaceLeds
+SHRi %1 #16 $spaceSegment
+IORi %0 %0 %1
+POKE &spaceLeds %0
+.f16: POKE &rndSeedX $prngSeedX
+POKE &rndSeedY $prngSeedY
+EQUi $envPhase #0 @.f17
+LEQi $lengthSegment #0 @.f18
+PEEK %0 &lengthLeds
+SHRi %1 #16 $lengthSegment
+IORi %0 %0 %1
+POKE &lengthLeds %0
+.f18: LEQi $pitchSegment #0 @.f19
+PEEK %0 &pitchLeds
+SHRi %1 #16 $pitchSegment
+IORi %0 %0 %1
+POKE &pitchLeds %0
+.f19: LEQi $modulationSegment #0 @.f20
+PEEK %0 &modulationLeds
+SHRi %1 #16 $modulationSegment
+IORi %0 %0 %1
+POKE &modulationLeds %0
+.f20: LEQi $reverbSegment #0 @.f21
+PEEK %0 &reverbLeds
+SHRi %1 #16 $reverbSegment
+IORi %0 %0 %1
+POKE &reverbLeds %0
+.f21: ADRL $m $mono64 *0
+MOVi $i #0
+GEQi #0 #16 @.e22
+.l23: SWCH $envPhase *3 @.s24
+.s24#0: MOVf $f #0.0
+MOVf $fmRate #0.0
+GOTO @.e25
+.s24#1: ADDf $env $env $attackRate
+LSSf $env #1.0 @.f26
+MOVf $env #1.0
+MOVi $envPhase #2
+.f26: SUBf %0 $fmRateHigh $fmRateLow
+MULf %0 %0 $env
+ADDf $fmRate $fmRateLow %0
+SUBf %0 $high $low
+MULf %0 %0 $env
+ADDf $f $low %0
+GOTO @.e25
+.s24#2: MULf $env $env $decayFactor
+GRTf $env #ALMOST_SILENT @.f27
+MOVf $env #0.0
+MULf $amp $amp $repeatDecay
+MOVi $envPhase #1
+GRTf $amp #ALMOST_SILENT @.f27
+MOVi $envPhase #0
+.f27: SUBf %0 $fmRateHigh $fmRateGone
+MULf %0 %0 $env
+ADDf $fmRate $fmRateGone %0
+SUBf %0 $high $gone
+MULf %0 %0 $env
+ADDf $f $gone %0
+.s24: NOOP
+.e25: EQUi $envPhase #0 @.f29
+SWCH $fmType *4 @.s30
+.s30#0: fTOi %0 $fmPhase #SIN_TABLE_SIZE_FLOAT
+ANDi %0 %0 #SIN_TABLE_MASK
+PEEK $fm0 &sinTable %0
+ADDf $fmPhase $fmPhase $fmRate
+FLOf %0 $fmPhase
+SUBf $fmPhase $fmPhase %0
+fTOi %0 $fmPhase #SIN_TABLE_SIZE_FLOAT
+ANDi %0 %0 #SIN_TABLE_MASK
+PEEK $fm1 &sinTable %0
+ADDf $fmPhase $fmPhase $fmRate
+FLOf %0 $fmPhase
+SUBf $fmPhase $fmPhase %0
+fTOi %0 $fmPhase #SIN_TABLE_SIZE_FLOAT
+ANDi %0 %0 #SIN_TABLE_MASK
+PEEK $fm2 &sinTable %0
+ADDf $fmPhase $fmPhase $fmRate
+FLOf %0 $fmPhase
+SUBf $fmPhase $fmPhase %0
+fTOi %0 $fmPhase #SIN_TABLE_SIZE_FLOAT
+ANDi %0 %0 #SIN_TABLE_MASK
+PEEK $fm3 &sinTable %0
+ADDf $fmPhase $fmPhase $fmRate
+FLOf %0 $fmPhase
+SUBf $fmPhase $fmPhase %0
+GOTO @.e31
+.s30#1: MULf %0 $fmPhase #2.0
+FLOf %0 %0
+MULf %0 %0 #2.0
+SUBf $fm0 #1.0 %0
+ADDf $fmPhase $fmPhase $fmRate
+FLOf %0 $fmPhase
+SUBf $fmPhase $fmPhase %0
+MULf %0 $fmPhase #2.0
+FLOf %0 %0
+MULf %0 %0 #2.0
+SUBf $fm1 #1.0 %0
+ADDf $fmPhase $fmPhase $fmRate
+FLOf %0 $fmPhase
+SUBf $fmPhase $fmPhase %0
+MULf %0 $fmPhase #2.0
+FLOf %0 %0
+MULf %0 %0 #2.0
+SUBf $fm2 #1.0 %0
+ADDf $fmPhase $fmPhase $fmRate
+FLOf %0 $fmPhase
+SUBf $fmPhase $fmPhase %0
+MULf %0 $fmPhase #2.0
+FLOf %0 %0
+MULf %0 %0 #2.0
+SUBf $fm3 #1.0 %0
+ADDf $fmPhase $fmPhase $fmRate
+FLOf %0 $fmPhase
+SUBf $fmPhase $fmPhase %0
+GOTO @.e31
+.s30#2: MULf %0 $fmPhase #2.0
+SUBf $fm0 %0 #1.0
+ADDf $fmPhase $fmPhase $fmRate
+FLOf %0 $fmPhase
+SUBf $fmPhase $fmPhase %0
+MULf %0 $fmPhase #2.0
+SUBf $fm1 %0 #1.0
+ADDf $fmPhase $fmPhase $fmRate
+FLOf %0 $fmPhase
+SUBf $fmPhase $fmPhase %0
+MULf %0 $fmPhase #2.0
+SUBf $fm2 %0 #1.0
+ADDf $fmPhase $fmPhase $fmRate
+FLOf %0 $fmPhase
+SUBf $fmPhase $fmPhase %0
+MULf %0 $fmPhase #2.0
+SUBf $fm3 %0 #1.0
+ADDf $fmPhase $fmPhase $fmRate
+FLOf %0 $fmPhase
+SUBf $fmPhase $fmPhase %0
+GOTO @.e31
+.s30#3: MOVf %1 $fmRate
+CALL &sqrtApprox %0 *2
+! MULf <A> #0.7071067811865475244 #0.69314718246459961
+DIVf $fmNoiseAmp <A> %0
+MOVf %1 $fmRate
+CALL &singlePoleKApprox %0 *2
+MOVf $fmNoiseFilterK %0
+CALL &randomFloat %0 *1
+MULf %0 %0 #2.0
+SUBf %0 %0 #1.0
+MULf %0 %0 $fmNoiseAmp
+SUBf %0 %0 $fmNoiseD0
+MULf %0 %0 $fmNoiseFilterK
+ADDf $fmNoiseD0 $fmNoiseD0 %0
+SUBf %0 $fmNoiseD0 $fmNoiseD1
+MULf %0 %0 $fmNoiseFilterK
+ADDf $fmNoiseD1 $fmNoiseD1 %0
+MOVf $fm0 $fmNoiseD1
+CALL &randomFloat %0 *1
+MULf %0 %0 #2.0
+SUBf %0 %0 #1.0
+MULf %0 %0 $fmNoiseAmp
+SUBf %0 %0 $fmNoiseD0
+MULf %0 %0 $fmNoiseFilterK
+ADDf $fmNoiseD0 $fmNoiseD0 %0
+SUBf %0 $fmNoiseD0 $fmNoiseD1
+MULf %0 %0 $fmNoiseFilterK
+ADDf $fmNoiseD1 $fmNoiseD1 %0
+MOVf $fm1 $fmNoiseD1
+CALL &randomFloat %0 *1
+MULf %0 %0 #2.0
+SUBf %0 %0 #1.0
+MULf %0 %0 $fmNoiseAmp
+SUBf %0 %0 $fmNoiseD0
+MULf %0 %0 $fmNoiseFilterK
+ADDf $fmNoiseD0 $fmNoiseD0 %0
+SUBf %0 $fmNoiseD0 $fmNoiseD1
+MULf %0 %0 $fmNoiseFilterK
+ADDf $fmNoiseD1 $fmNoiseD1 %0
+MOVf $fm2 $fmNoiseD1
+CALL &randomFloat %0 *1
+MULf %0 %0 #2.0
+SUBf %0 %0 #1.0
+MULf %0 %0 $fmNoiseAmp
+SUBf %0 %0 $fmNoiseD0
+MULf %0 %0 $fmNoiseFilterK
+ADDf $fmNoiseD0 $fmNoiseD0 %0
+SUBf %0 $fmNoiseD0 $fmNoiseD1
+MULf %0 %0 $fmNoiseFilterK
+ADDf $fmNoiseD1 $fmNoiseD1 %0
+MOVf $fm3 $fmNoiseD1
+.s30: NOOP
+.e31: SUBf $amp $amp $drop
+GEQf $amp #0.0 @.f32
+MOVf $amp #0.0
+.f32: MULf $enva $env $amp
+fTOi %0 $carrierPhase #SIN_TABLE_SIZE_FLOAT
+ANDi %0 %0 #SIN_TABLE_MASK
+PEEK $m0 &sinTable %0
+ADDf %0 $carrierPhase $f
+MULf %1 $fm0 $fmAmount
+ADDf $carrierPhase %0 %1
+FLOf %0 $carrierPhase
+SUBf $carrierPhase $carrierPhase %0
+fTOi %0 $carrierPhase #SIN_TABLE_SIZE_FLOAT
+ANDi %0 %0 #SIN_TABLE_MASK
+PEEK $m1 &sinTable %0
+ADDf %0 $carrierPhase $f
+MULf %1 $fm1 $fmAmount
+ADDf $carrierPhase %0 %1
+FLOf %0 $carrierPhase
+SUBf $carrierPhase $carrierPhase %0
+fTOi %0 $carrierPhase #SIN_TABLE_SIZE_FLOAT
+ANDi %0 %0 #SIN_TABLE_MASK
+PEEK $m2 &sinTable %0
+ADDf %0 $carrierPhase $f
+MULf %1 $fm2 $fmAmount
+ADDf $carrierPhase %0 %1
+FLOf %0 $carrierPhase
+SUBf $carrierPhase $carrierPhase %0
+fTOi %0 $carrierPhase #SIN_TABLE_SIZE_FLOAT
+ANDi %0 %0 #SIN_TABLE_MASK
+PEEK $m3 &sinTable %0
+ADDf %0 $carrierPhase $f
+MULf %1 $fm3 $fmAmount
+ADDf $carrierPhase %0 %1
+FLOf %0 $carrierPhase
+SUBf $carrierPhase $carrierPhase %0
+MOVf %1 $m0
+MOVi %2 $negPower
+MOVi %3 $posPower
+CALL &biPow %0 *4
+MULf $m0 %0 $enva
+MOVf %1 $m1
+MOVi %2 $negPower
+MOVi %3 $posPower
+CALL &biPow %0 *4
+MULf $m1 %0 $enva
+MOVf %1 $m2
+MOVi %2 $negPower
+MOVi %3 $posPower
+CALL &biPow %0 *4
+MULf $m2 %0 $enva
+MOVf %1 $m3
+MOVi %2 $negPower
+MOVi %3 $posPower
+CALL &biPow %0 *4
+MULf $m3 %0 $enva
+POKE $m #0 $m0
+POKE $m #1 $m1
+POKE $m #2 $m2
+POKE $m #3 $m3
+GOTO @.e33
+.f29: POKE $m #0 #0.0
+POKE $m #1 #0.0
+POKE $m #2 #0.0
+POKE $m #3 #0.0
+.e33: ADDp $m $m #4
+FORi $i #16 @.l23
+.e22: MOVi $i #0
+GEQi #0 #64 @.e36
+.l35: GETL $m0 $mono64 $i
+MULf %0 $m0 $leftAmp
+POKE $left64 $i %0
+MULf %0 $m0 $rightAmp
+POKE $right64 $i %0
+MULf %0 $m0 $wetAmount
+POKE $wet64 $i %0
+FORi $i #64 @.l35
+GOTO @.e36
+.f17: MOVi $i #0
+GEQi #0 #64 @.e37
+.l38: POKE $left64 $i #0.0
+POKE $right64 $i #0.0
+POKE $wet64 $i #0.0
+FORi $i #64 @.l38
+.e37: NOOP
+.e36: ADRL %0 $seed *0
+COPY $voiceDataPointer %0 *VOICE_STATE_SIZE
+MOVf $envReturn $env
+RETU
+init: FUNC
+PARA *1
+$i: LOCi
+$p: LOCf
+MOVp %1 &.s_initd7e336d5
+CALL ^trace %0 *2
+MOVf $p #0.0
+MOVi $i #0
+GEQi #0 #SIN_TABLE_SIZE @.e0
+.l1: MOVf %1 $p
+CALL &sin %0 *2
+POKE &sinTable $i %0
+! DIVf <A> #TWICE_PI #SIN_TABLE_SIZE_FLOAT
+ADDf $p $p <A>
+FORi $i #SIN_TABLE_SIZE @.l1
+.e0: NOOP
+! DIVf <A> #11579.0 #44100.0
+fTOi %1 <A> #SR
+MOVi %2 #2000
+MOVi %3 #32000
+CALL &setupVerb %0 *4
+RETU
+reset: FUNC
+PARA *1
+$i: LOCi
+$p: LOCp
+MOVp %1 &.s_resetd7e336d6
+CALL ^trace %0 *2
+MOVp $p &verbLine
+MOVi $i #0
+! DIVi <A> #VERB_DL_SIZE #8
+GEQi #0 <A> @.e0
+.l1: POKE $p #0 #0.0
+POKE $p #1 #0.0
+POKE $p #2 #0.0
+POKE $p #3 #0.0
+POKE $p #4 #0.0
+POKE $p #5 #0.0
+POKE $p #6 #0.0
+POKE $p #7 #0.0
+ADDp $p $p #8
+FORi $i <A> @.l1
+.e0: MOVi $i #0
+! MULi <A> #VOICE_COUNT #VOICE_STATE_SIZE
+GEQi #0 <A> @.e2
+.l3: POKE &voiceData $i #0
+FORi $i <A> @.l3
+.e2: POKE &songPos #0
+RETU
+process: FUNC
+PARA *1
+$voiceL64: LOCA *64
+$voiceR64: LOCA *64
+$wet64: LOCA *64
+$i: LOCi
+$j: LOCi
+$sumL64: LOCA *64
+$sumR64: LOCA *64
+$sumWet64: LOCA *64
+$verbL64: LOCA *64
+$verbR64: LOCA *64
+$lengthBits: LOCi
+$spacingBits: LOCi
+$modulationBits: LOCi
+$reverbBits: LOCi
+$pitchBits: LOCi
+$muteBits: LOCi
+$dirXor: LOCi
+$lrPair: LOCA *2
+$env: LOCf
+$muteBit: LOCi
+$muteLeds: LOCi
+$op1Mode: LOCi
+$op2Mode: LOCi
+$clock: LOCi
+$x: LOCi
+$y: LOCf
+$measure: LOCi
+$songPos: LOCi
+$loopedPos: LOCi
+$reseedMask: LOCi
+$params: LOCA *PARAM_COUNT
+$reverbDamping: LOCf
+MOVi $loopedPos #0
+DIVf %1 #5000.0 #SR
+CALL &singlePoleKApprox %0 *2
+MOVf $reverbDamping %0
+MOVf %1 $reverbDamping
+MOVf %2 #0.01
+MOVf %3 #0.49
+CALL &clampFloat %0 *4
+MOVf $reverbDamping %0
+.l0: ADRL %0 $params *0
+COPY %0 &params *PARAM_COUNT
+ANDi $lengthBits $params:OPERAND_2_HIGH_PARAM_INDEX #15
+SHRi %0 $params:OPERAND_2_HIGH_PARAM_INDEX #4
+ANDi $spacingBits %0 #15
+ANDi $reverbBits $params:OPERAND_1_LOW_PARAM_INDEX #15
+ANDi $modulationBits $params:OPERAND_2_LOW_PARAM_INDEX #15
+SHRi %0 $params:OPERAND_2_LOW_PARAM_INDEX #4
+ANDi $pitchBits %0 #15
+SHRi %0 $params:OPERAND_1_LOW_PARAM_INDEX #4
+ANDi $muteBits %0 #15
+MOVi $op1Mode $params:OPERATOR_1_PARAM_INDEX
+MOVi $op2Mode $params:OPERATOR_2_PARAM_INDEX
+MOVi $reseedMask #0
+LSSi $op2Mode #1 @.f2
+NEQi $op1Mode #CYCLING_MODE @.f2
+SUBi %0 $op2Mode #1
+SHLi %0 #512 %0
+SUBi %0 %0 #1
+XORi $reseedMask %0 #-1
+.f2: NEQi $op2Mode #0 @.f4
+PEEK %0 &lastSeed
+EQUi $params:OPERAND_1_HIGH_PARAM_INDEX %0 @.f4
+! XORi <A> #1023 #-1
+MOVi $reseedMask <A>
+.f4: PEEK $songPos &songPos
+NEQi $op1Mode #OFF_MODE @.f5
+MOVi $loopedPos #-1
+GOTO @.e6
+.f5: ANDi %0 $params:SWITCHES_PARAM_INDEX #SWITCHES_SYNC_MASK
+NEQi %0 #0 @.f7
+ADDi $songPos $songPos #1
+MOVi $loopedPos $songPos
+GOTO @.e8
+.f7: PEEK %0 &hostPosition
+GEQi %0 #0 @.f9
+MOVi $loopedPos #-1
+GOTO @.e10
+.f9: PEEK $songPos &clock
+ANDi %0 $params:SWITCHES_PARAM_INDEX #SWITCHES_REVERSE_MASK
+EQUi %0 #0 @.f11
+XORi $songPos $songPos #0xFFFF
+.f11: PEEK %0 &hostPosition
+SHLi %1 $songPos #16
+! MULi <A> #HOST_POSITION_PPQ #2
+SHRi %1 %1 #31
+ADDi %0 %0 #HOST_POSITION_PPQ
+MULi %1 <A> %1
+ADDi %0 %0 %1
+! MULi <A> #HOST_POSITION_PPQ #4
+DIVi $measure %0 <A>
+SHLi %0 $measure #10
+SHRu %1 $songPos #6
+IORi $songPos %0 %1
+MOVi $loopedPos $songPos
+.e10: NOOP
+.e8: NOOP
+.e6: POKE &songPos $songPos
+LSSi $loopedPos #0 @.f14
+LSSi $op2Mode #0 @.f14
+EQUi $op1Mode #UNALIGNED_MODE @.t13
+EQUi $op1Mode #ALIGNED_MODE @.t13
+NEQi $op1Mode #UNIFORM_MODE @.f14
+.t13: SUBi %0 $op2Mode #1
+SHLi %0 #512 %0
+SUBi %0 %0 #1
+ANDi $loopedPos $loopedPos %0
+.f14: MOVi $j #0
+GEQi #0 #64 @.e15
+.l16: SETL $sumL64 $j #0.0
+SETL $sumR64 $j #0.0
+SETL $sumWet64 $j #0.0
+FORi $j #64 @.l16
+.e15: POKE &spaceLeds #0
+POKE &lengthLeds #0
+POKE &pitchLeds #0
+POKE &modulationLeds #0
+POKE &reverbLeds #0
+POKE &isChasing #FALSE
+MOVi $muteLeds #0
+MOVi $i #0
+GEQi #0 #VOICE_COUNT @.e17
+.l18: SHRi %0 $i #1
+SHLi $muteBit #1 %0
+MOVf $env #0.0
+ANDi %0 $muteBits $muteBit
+NEQi %0 #0 @.f19
+ADDi %1 #12934913 $i
+MULi %2 $i #VOICE_STATE_SIZE
+ADDp %2 &voiceData %2
+MOVi %3 $lengthBits
+MOVi %4 $spacingBits
+MOVi %5 $modulationBits
+MOVi %6 $reverbBits
+MOVi %7 $pitchBits
+ADRL %8 $voiceL64 *0
+ADRL %9 $voiceR64 *0
+ADRL %10 $wet64 *0
+MOVi %11 $loopedPos
+MOVi %12 $reseedMask
+CALL &renderVoice %0 *13
+MOVf $env %0
+LEQf $env #0.1 @.f20
+IORi $muteLeds $muteLeds $muteBit
+.f20: MOVi $j #0
+GEQi #0 #64 @.f19
+.l22: GETL %0 $sumL64 $j
+GETL %1 $voiceL64 $j
+ADDf %0 %0 %1
+SETL $sumL64 $j %0
+GETL %0 $sumR64 $j
+GETL %1 $voiceR64 $j
+ADDf %0 %0 %1
+SETL $sumR64 $j %0
+GETL %0 $sumWet64 $j
+GETL %1 $wet64 $j
+ADDf %0 %0 %1
+SETL $sumWet64 $j %0
+FORi $j #64 @.l22
+.f19: FORi $i #VOICE_COUNT @.l18
+.e17: PEEK %0 &isChasing
+EQUi %0 #FALSE @.f23
+PEEK %0 &clock
+SHRu %0 %0 #11
+ANDi %0 %0 #7
+SHRu %0 #128 %0
+POKE &displayLEDs:3 %0
+POKE &displayLEDs:2 %0
+POKE &displayLEDs:1 %0
+POKE &displayLEDs:0 %0
+GOTO @.e24
+.f23: PEEK %0 &lastSeed
+POKE &displayLEDs:0 %0
+SHLi %0 $muteLeds #4
+PEEK %1 &reverbLeds
+IORi %0 %0 %1
+POKE &displayLEDs:1 %0
+PEEK %0 &spaceLeds
+SHLi %0 %0 #4
+PEEK %1 &lengthLeds
+IORi %0 %0 %1
+POKE &displayLEDs:2 %0
+PEEK %0 &pitchLeds
+SHLi %0 %0 #4
+PEEK %1 &modulationLeds
+IORi %0 %0 %1
+POKE &displayLEDs:3 %0
+.e24: ADRL %1 $sumWet64 *0
+MOVf %2 #0.5
+MOVf %3 $reverbDamping
+ADRL %4 $verbL64 *0
+ADRL %5 $verbR64 *0
+CALL &processVerb %0 *6
+MOVi $j #0
+GEQi #0 #64 @.l0
+.l26: ADRL %0 $lrPair *0
+COPY %0 &signal *2
+GETL %0 $sumL64 $j
+GETL %1 $verbL64 $j
+ADDf %0 %0 %1
+fTOi %0 %0 #2047.0
+ADDi $lrPair:0 $lrPair:0 %0
+GETL %0 $sumR64 $j
+GETL %1 $verbR64 $j
+ADDf %0 %0 %1
+fTOi %0 %0 #2047.0
+ADDi $lrPair:1 $lrPair:1 %0
+PEEK %1 &clock
+MOVi %2 #1
+ADRL %3 $lrPair *0
+CALL ^write %0 *4
+PEEK %1 &clock
+SUBi %1 %1 #1
+MOVi %2 #1
+MOVp %3 &signal
+CALL ^read %0 *4
+CALL ^yield %0 *1
+FORi $j #64 @.l26
+GOTO @.l0
+RETU
+.s_FREEtrd7e336cd: CNST *40
+DATs FREE
+DATi #32 #32 #32 #32 #32 #32 #195
+DATs -- trigger modes (NOP: STOP)
+DATi #0
+.s_QUANTId7e336ce: CNST *54
+DATs QUANTIZED
+DATi #32 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #0
+.s_CYCLINd7e336cf: CNST *54
+DATs CYCLING
+DATi #32 #32 #209 #32
+DATs RANDOM SEED
+DATi #32 #32 #32 #32 #32 #32 #197 #32 #32 #32 #32
+DATs MUTES
+DATi #32 #32 #32 #197 #32 #32 #32
+DATs REVERB
+DATi #32 #32 #0
+.s_UNIFORd7e336d0: CNST *54
+DATs UNIFORM
+DATi #32 #209 #32 #32 #32
+DATs 00 -
+DATi #193 #32
+DATs FF
+DATi #32 #32 #32 #32 #32 #32 #32 #32 #197 #32
+DATs A  B  C  D
+DATi #32 #197
+DATs Dry --
+DATi #193 #32
+DATs Wet
+DATi #0
+.s_12loopd7e336d1: CNST *36
+DATs 1/2
+DATi #32 #195
+DATs -- loop lengths (NOP: ENDLESS)
+DATi #0
+.s_11d7e336d2: CNST *54
+DATs 1/1
+DATi #212 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #211 #0
+.s_21SPACd7e336d3: CNST *54
+DATs 2/1
+DATi #197 #32 #32 #32
+DATs SPACING
+DATi #32 #32 #197 #32 #32 #32
+DATs LENGTH
+DATi #32 #32 #197 #32 #32 #32
+DATs PITCH
+DATi #32 #32 #32 #32 #197 #32
+DATs MODULATION
+DATi #0
+.s_41Densd7e336d4: CNST *54
+DATs 4/1
+DATi #197
+DATs Dense
+DATi #193
+DATs Sparse
+DATi #197
+DATs Short-
+DATi #193
+DATs Long
+DATi #197
+DATs Low --
+DATi #193 #32
+DATs High
+DATi #197
+DATs Min --
+DATi #193 #32
+DATs Max
+DATi #0
+.s_initd7e336d5: CNST *5
+DATs init
+DATi #0
+.s_resetd7e336d6: CNST *6
+DATs reset
+DATi #0
+! EQUi #DEBUG #0 @.noAssertStrings
+.a_0rr3d7e336cd: CNST *19
+DATs (0 <= r && r <= 3)
+DATi #0
+.noAssertStrings: !

@@ -72,9 +72,12 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 // Required native function declarations
 extern native yield             // Return control to Permut8 audio engine
 
+// Standard global variables
+global int clock = 0
 global array signal[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
+global int clockFreqLimit = 132300
 
 // Oscillator state
 global int phase = 0        // Current position in the waveform
@@ -97,7 +100,7 @@ function process()
         signal[1] = output          // Right channel (same sound)
         
         // Update phase for next sample
-        phase = (phase + frequency) % 65536
+        phase = (phase + frequency) % AUDIO_FULL_RANGE
         
         yield()
     }
@@ -183,7 +186,7 @@ function process()
         signal[1] = output
         
         // Update phase
-        phase = (phase + frequency) % 65536
+        phase = (phase + frequency) % AUDIO_FULL_RANGE
         
         yield()
     }
@@ -234,7 +237,7 @@ function process()
         signal[0] = output
         signal[1] = output
         
-        phase = (phase + frequency) % 65536
+        phase = (phase + frequency) % AUDIO_FULL_RANGE
         
         yield()
     }
@@ -293,7 +296,7 @@ function process()
         signal[0] = output
         signal[1] = output
         
-        phase = (phase + frequency) % 65536
+        phase = (phase + frequency) % AUDIO_FULL_RANGE
         
         yield()
     }
@@ -321,13 +324,13 @@ Add this before `yield()`:
 // LED visualization
 displayLEDs[0] = note * 20        // Show current note selection
 displayLEDs[1] = volume / 4       // Show volume level
-displayLEDs[2] = (phase / 8192)   // Show oscillator phase (creates moving pattern)
+displayLEDs[2] = (phase / (AUDIO_FULL_RANGE / 8))   // Show oscillator phase (creates moving pattern)
 
 // Activity indicator
 if (output > 100 || output < -100) {
-    displayLEDs[3] = 0xFF  // Flash when sound is playing
+    displayLEDs[3] = 255  // Flash when sound is playing (LED_ALL_ON)
 } else {
-    displayLEDs[3] = 0x01  // Dim when quiet
+    displayLEDs[3] = 1  // Dim when quiet (LED_SINGLE)
 }
 ```
 
@@ -348,9 +351,23 @@ Here's your complete first sound generator:
 // Complete Tone Generator - Musical Note Synthesizer
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+// Standard global variables
+global int clock = 0
 global array signal[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
+global int clockFreqLimit = 132300
 
 // Oscillator state variables
 global int phase = 0        // Current waveform position (0-65535)
@@ -401,13 +418,13 @@ function process()
         
         // Activity indicator (flashes with audio)
         if (output > 100 || output < -100) {
-            displayLEDs[3] = 0xFF             // Bright when sound is active
+            displayLEDs[3] = 255             // Bright when sound is active (LED_ALL_ON)
         } else {
-            displayLEDs[3] = 0x01             // Dim when quiet
+            displayLEDs[3] = 1             // Dim when quiet (LED_SINGLE)
         }
         
         // Update oscillator phase for next sample
-        phase = (phase + frequency) % 65536
+        phase = (phase + frequency) % AUDIO_FULL_RANGE
         
         yield()
     }

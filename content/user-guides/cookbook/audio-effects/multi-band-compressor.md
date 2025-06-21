@@ -9,10 +9,10 @@ Creates a simple 2-band compressor that splits audio into low and high frequenci
 ## Quick Reference
 
 **Essential Parameters:**
-- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: Low band threshold (0-255, bass compression level)
-- `(int)global params[SWITCHES_PARAM_INDEX]`: High band threshold (0-255, treble compression level)
-- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Crossover frequency (0-255, where to split bass/treble)
-- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Output gain (0-255, level compensation)
+- `params[CLOCK_FREQ_PARAM_INDEX]`: Low band threshold (0-255, bass compression level)
+- `params[SWITCHES_PARAM_INDEX]`: High band threshold (0-255, treble compression level)
+- `params[OPERATOR_1_PARAM_INDEX]`: Crossover frequency (0-255, where to split bass/treble)
+- `params[OPERAND_1_HIGH_PARAM_INDEX]`: Output gain (0-255, level compensation)
 
 **Key Concepts:** Frequency splitting, independent compression, band recombination
 
@@ -37,9 +37,11 @@ const int PARAM_COUNT
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
+global int clock                 // Sample counter for timing
 global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
+global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
+global int clockFreqLimit        // Current clock frequency limit
 
 // Simple multi-band state
 global int low_envelope = 0     // Low band envelope
@@ -53,10 +55,10 @@ locals int crossover, int low_thresh, int high_thresh, int output_gain, int inpu
 {
     loop {
         // Read parameters
-        low_thresh = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] << 3) + 512;    // 512-2560 range
-        high_thresh = ((int)global (int)global params[SWITCHES_PARAM_INDEX] << 3) + 512;   // 512-2560 range
-        crossover = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;       // 1-16 filter strength
-        output_gain = ((int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 1) + 128;   // 128-255 gain
+        low_thresh = ((int)global params[CLOCK_FREQ_PARAM_INDEX] << 3) + 512;    // 512-2560 range
+        high_thresh = ((int)global params[SWITCHES_PARAM_INDEX] << 3) + 512;   // 512-2560 range
+        crossover = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;       // 1-16 filter strength
+        output_gain = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 1) + 128;   // 128-255 gain
         
         input = (int)global signal[0];
         
@@ -165,16 +167,16 @@ locals int crossover, int low_thresh, int high_thresh, int output_gain, int inpu
 
 ```impala
 // Heavy bass compression, light treble
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Low threshold
-(int)global params[SWITCHES_PARAM_INDEX] = 200;  // High threshold  
-(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Medium crossover
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Some makeup gain
+global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Low threshold
+global params[SWITCHES_PARAM_INDEX] = 200;  // High threshold  
+global params[OPERATOR_1_PARAM_INDEX] = 128;  // Medium crossover
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Some makeup gain
 
 // Gentle overall compression
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // High low threshold
-(int)global params[SWITCHES_PARAM_INDEX] = 180;  // High high threshold
-(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Medium crossover
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 160;  // Light makeup gain
+global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // High low threshold
+global params[SWITCHES_PARAM_INDEX] = 180;  // High high threshold
+global params[OPERATOR_1_PARAM_INDEX] = 128;  // Medium crossover
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 160;  // Light makeup gain
 ```
 
 ## Try These Changes

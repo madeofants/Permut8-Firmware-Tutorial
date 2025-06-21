@@ -58,14 +58,14 @@ global int gate_output_2 = 0        // Gate 2 state (0/1)
 global int master_rate = 11025      // Master clock rate (samples per pulse)
 
 function process()
-locals int division1, int division2, int division3, int clock_rate, int master_pulse, int gate_state, int input_sample, int output_sample
+locals division1, division2, division3, clock_rate, master_pulse, gate_state, input_sample, output_sample
 {
     loop {
         // Read division and timing parameters
-        division1 = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 4) + 1;  // 1-16 division ratio
-        division2 = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 4) + 1;  // 1-16 division ratio
-        division3 = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;  // 1-16 division ratio
-        clock_rate = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];            // 0-255 clock speed
+        division1 = (params[CLOCK_FREQ_PARAM_INDEX] >> 4) + 1;  // 1-16 division ratio
+        division2 = (params[SWITCHES_PARAM_INDEX] >> 4) + 1;  // 1-16 division ratio
+        division3 = (params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;  // 1-16 division ratio
+        clock_rate = params[OPERAND_1_HIGH_PARAM_INDEX];            // 0-255 clock speed
         
         // Calculate master clock rate from parameter
         global master_rate = 2756 + ((clock_rate * 19600) >> 8);  // ~16Hz to 480Hz
@@ -111,7 +111,7 @@ locals int division1, int division2, int division3, int clock_rate, int master_p
         }
         
         // Read input sample
-        input_sample = (int)global signal[0];
+        input_sample = signal[0];
         
         // Apply rhythmic gating based on division outputs
         gate_state = 0;
@@ -204,28 +204,28 @@ locals int division1, int division2, int division3, int clock_rate, int master_p
 
 ```impala
 // Standard musical divisions
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 16;   // Division 1 = 2
-(int)global params[SWITCHES_PARAM_INDEX] = 32;   // Division 2 = 3
-(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Division 3 = 5
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Medium clock rate
+params[CLOCK_FREQ_PARAM_INDEX] = 16;   // Division 1 = 2
+params[SWITCHES_PARAM_INDEX] = 32;   // Division 2 = 3
+params[OPERATOR_1_PARAM_INDEX] = 64;   // Division 3 = 5
+params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Medium clock rate
 
 // Fast polyrhythms
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 16;   // Division 1 = 2
-(int)global params[SWITCHES_PARAM_INDEX] = 48;   // Division 2 = 4
-(int)global params[OPERATOR_1_PARAM_INDEX] = 80;   // Division 3 = 6
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Fast clock rate
+params[CLOCK_FREQ_PARAM_INDEX] = 16;   // Division 1 = 2
+params[SWITCHES_PARAM_INDEX] = 48;   // Division 2 = 4
+params[OPERATOR_1_PARAM_INDEX] = 80;   // Division 3 = 6
+params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Fast clock rate
 
 // Slow evolution
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 112;  // Division 1 = 8
-(int)global params[SWITCHES_PARAM_INDEX] = 160;  // Division 2 = 11
-(int)global params[OPERATOR_1_PARAM_INDEX] = 208;  // Division 3 = 14
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Slow clock rate
+params[CLOCK_FREQ_PARAM_INDEX] = 112;  // Division 1 = 8
+params[SWITCHES_PARAM_INDEX] = 160;  // Division 2 = 11
+params[OPERATOR_1_PARAM_INDEX] = 208;  // Division 3 = 14
+params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Slow clock rate
 
 // Simple beat subdivision
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 16;   // Division 1 = 2
-(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Division 2 = 5
-(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Division 3 = 9
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Medium-fast clock rate
+params[CLOCK_FREQ_PARAM_INDEX] = 16;   // Division 1 = 2
+params[SWITCHES_PARAM_INDEX] = 64;   // Division 2 = 5
+params[OPERATOR_1_PARAM_INDEX] = 128;  // Division 3 = 9
+params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Medium-fast clock rate
 ```
 
 ## Understanding Clock Dividers

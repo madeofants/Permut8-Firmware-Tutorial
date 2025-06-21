@@ -30,7 +30,7 @@ global array displayLEDs[4]  // 4 separate LED displays
 ```
 
 ### 1.2 How LED Values Work
-**Each display is controlled by a single number (0-255)**:
+**Each display is controlled by a single number (0-PARAM_MAX)**:
 ```impala
 displayLEDs[0] = 0x00  // All LEDs off (binary: 00000000)
 displayLEDs[0] = 0x01  // Only first LED on (binary: 00000001)
@@ -58,18 +58,57 @@ Create `led_test.impala`:
 // LED Test - Light Up Different Patterns
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// ===== STANDARD PERMUT8 CONSTANTS =====
+
+// Parameter System Constants
+const int PARAM_MAX = 255                    // Maximum knob/parameter value (8-bit)
+const int PARAM_MIN = 0                      // Minimum knob/parameter value
+const int PARAM_MID = 128                    // Parameter midpoint for bipolar controls
+const int PARAM_SWITCH_THRESHOLD = 127       // Boolean parameter on/off threshold
+
+// Audio Sample Range Constants (12-bit signed audio)
+const int AUDIO_MAX = 2047                   // Maximum audio sample value (+12-bit)
+const int AUDIO_MIN = -2047                  // Minimum audio sample value (-12-bit)
+const int AUDIO_ZERO = 0                     // Audio silence/center value
+
+// Sample Rate Constants
+const int SAMPLE_RATE_44K1 = 44100          // Standard audio sample rate (Hz)
+const int SAMPLE_RATE_HALF = 22050          // Half sample rate (0.5 second buffer at 44.1kHz)
+const int SAMPLE_RATE_QUARTER = 11025       // Quarter sample rate (0.25 second buffer)
+
+// LED Display Constants
+const int LED_OFF = 0x00                    // All LEDs off
+const int LED_ALL_ON = 0xFF                 // All 8 LEDs on
+const int LED_SINGLE = 0x01                 // Single LED pattern
+const int LED_DOUBLE = 0x03                 // Two LED pattern
+const int LED_QUAD = 0x0F                   // Four LED pattern
+
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+// Standard global variables
+global int clock = 0
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
+global int clockFreqLimit = 132300
 
 function process()
 {
     loop {
         // Test different LED patterns
-        displayLEDs[0] = 0x01  // First LED only
-        displayLEDs[1] = 0x03  // First 2 LEDs
-        displayLEDs[2] = 0x0F  // First 4 LEDs  
-        displayLEDs[3] = 0xFF  // All 8 LEDs
+        displayLEDs[0] = LED_SINGLE  // First LED only
+        displayLEDs[1] = LED_DOUBLE  // First 2 LEDs
+        displayLEDs[2] = LED_QUAD    // First 4 LEDs  
+        displayLEDs[3] = LED_ALL_ON  // All 8 LEDs
         
         // Pass audio through unchanged
         yield()
@@ -94,10 +133,10 @@ function process()
 
 ```impala
 // Basic patterns
-displayLEDs[0] = 0x00  // All off
-displayLEDs[0] = 0x01  // Single LED (position 1)
-displayLEDs[0] = 0x80  // Single LED (position 8)
-displayLEDs[0] = 0xFF  // All on
+displayLEDs[0] = LED_OFF     // All off
+displayLEDs[0] = LED_SINGLE  // Single LED (position 1)
+displayLEDs[0] = 0x80        // Single LED (position 8)
+displayLEDs[0] = LED_ALL_ON  // All on
 
 // Bar graphs (show levels)
 displayLEDs[0] = 0x01  // 1 LED  (12.5% level)
@@ -125,9 +164,9 @@ function process()
     loop {
         // Cycle through different patterns every few seconds
         static int counter = 0
-        counter = (counter + 1) % 44100  // Change every second at 44.1kHz
+        counter = (counter + 1) % SAMPLE_RATE_44K1  // Change every second at 44.1kHz
         
-        int pattern = counter / 5512  // 8 different patterns (44100/8 ≈ 5512)
+        int pattern = counter / (SAMPLE_RATE_44K1 / 8)  // 8 different patterns
         
         if (pattern == 0) displayLEDs[0] = 0x01      // Single LED
         else if (pattern == 1) displayLEDs[0] = 0x03 // 2 LEDs
@@ -156,40 +195,74 @@ function process()
 // Parameter LED Display
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// ===== STANDARD PERMUT8 CONSTANTS =====
+
+// Parameter System Constants
+const int PARAM_MAX = 255                    // Maximum knob/parameter value (8-bit)
+const int PARAM_MIN = 0                      // Minimum knob/parameter value
+const int PARAM_MID = 128                    // Parameter midpoint for bipolar controls
+const int PARAM_SWITCH_THRESHOLD = 127       // Boolean parameter on/off threshold
+
+// Audio Sample Range Constants (12-bit signed audio)
+const int AUDIO_MAX = 2047                   // Maximum audio sample value (+12-bit)
+const int AUDIO_MIN = -2047                  // Minimum audio sample value (-12-bit)
+const int AUDIO_ZERO = 0                     // Audio silence/center value
+
+// LED Display Constants
+const int LED_OFF = 0x00                    // All LEDs off
+const int LED_ALL_ON = 0xFF                 // All 8 LEDs on
+const int LED_SINGLE = 0x01                 // Single LED pattern
+const int LED_DOUBLE = 0x03                 // Two LED pattern
+const int LED_QUAD = 0x0F                   // Four LED pattern
+
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+// Standard global variables
+global int clock = 0
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
+global int clockFreqLimit = 132300
 
 function process()
 {
     loop {
         // Read knob values
-        int knob1 = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // 0-255
-        int knob2 = (int)global params[OPERAND_2_LOW_PARAM_INDEX]  // 0-255
+        int knob1 = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // 0-PARAM_MAX
+        int knob2 = (int)global params[OPERAND_2_LOW_PARAM_INDEX]  // 0-PARAM_MAX
         
         // Convert to LED bar graphs
         int leds1 = 0
-        if (knob1 > 224) leds1 = 0xFF      // 8 LEDs (87.5%+)
-        else if (knob1 > 192) leds1 = 0x7F // 7 LEDs (75%+)
-        else if (knob1 > 160) leds1 = 0x3F // 6 LEDs (62.5%+)
-        else if (knob1 > 128) leds1 = 0x1F // 5 LEDs (50%+)
-        else if (knob1 > 96) leds1 = 0x0F  // 4 LEDs (37.5%+)
-        else if (knob1 > 64) leds1 = 0x07  // 3 LEDs (25%+)
-        else if (knob1 > 32) leds1 = 0x03  // 2 LEDs (12.5%+)
-        else if (knob1 > 0) leds1 = 0x01   // 1 LED (0%+)
-        else leds1 = 0x00                  // No LEDs
+        if (knob1 > (PARAM_MAX * 7 / 8)) leds1 = 0xFF      // 8 LEDs (87.5%+)
+        else if (knob1 > (PARAM_MAX * 6 / 8)) leds1 = 0x7F // 7 LEDs (75%+)
+        else if (knob1 > (PARAM_MAX * 5 / 8)) leds1 = 0x3F // 6 LEDs (62.5%+)
+        else if (knob1 > PARAM_MID) leds1 = 0x1F           // 5 LEDs (50%+)
+        else if (knob1 > (PARAM_MAX * 3 / 8)) leds1 = LED_QUAD  // 4 LEDs (37.5%+)
+        else if (knob1 > (PARAM_MAX / 4)) leds1 = 0x07      // 3 LEDs (25%+)
+        else if (knob1 > (PARAM_MAX / 8)) leds1 = LED_DOUBLE // 2 LEDs (12.5%+)
+        else if (knob1 > PARAM_MIN) leds1 = LED_SINGLE      // 1 LED (0%+)
+        else leds1 = LED_OFF                                // No LEDs
         
         // Same for knob 2
         int leds2 = 0
-        if (knob2 > 224) leds2 = 0xFF
-        else if (knob2 > 192) leds2 = 0x7F
-        else if (knob2 > 160) leds2 = 0x3F
-        else if (knob2 > 128) leds2 = 0x1F
-        else if (knob2 > 96) leds2 = 0x0F
-        else if (knob2 > 64) leds2 = 0x07
-        else if (knob2 > 32) leds2 = 0x03
-        else if (knob2 > 0) leds2 = 0x01
-        else leds2 = 0x00
+        if (knob2 > (PARAM_MAX * 7 / 8)) leds2 = 0xFF
+        else if (knob2 > (PARAM_MAX * 6 / 8)) leds2 = 0x7F
+        else if (knob2 > (PARAM_MAX * 5 / 8)) leds2 = 0x3F
+        else if (knob2 > PARAM_MID) leds2 = 0x1F
+        else if (knob2 > (PARAM_MAX * 3 / 8)) leds2 = LED_QUAD
+        else if (knob2 > (PARAM_MAX / 4)) leds2 = 0x07
+        else if (knob2 > (PARAM_MAX / 8)) leds2 = LED_DOUBLE
+        else if (knob2 > PARAM_MIN) leds2 = LED_SINGLE
+        else leds2 = LED_OFF
         
         // Display on LEDs
         displayLEDs[0] = leds1  // Knob 1 level
@@ -228,27 +301,27 @@ function process()
         
         // Convert audio levels to LED patterns
         int leftLEDs = 0
-        if (leftLevel > 1800) leftLEDs = 0xFF        // Very loud
-        else if (leftLevel > 1500) leftLEDs = 0x7F  // Loud
-        else if (leftLevel > 1200) leftLEDs = 0x3F  // Medium-loud
-        else if (leftLevel > 900) leftLEDs = 0x1F   // Medium
-        else if (leftLevel > 600) leftLEDs = 0x0F   // Medium-quiet
-        else if (leftLevel > 300) leftLEDs = 0x07   // Quiet
-        else if (leftLevel > 100) leftLEDs = 0x03   // Very quiet
-        else if (leftLevel > 10) leftLEDs = 0x01    // Barely audible
-        else leftLEDs = 0x00                        // Silent
+        if (leftLevel > (AUDIO_MAX * 7 / 8)) leftLEDs = LED_ALL_ON        // Very loud
+        else if (leftLevel > (AUDIO_MAX * 6 / 8)) leftLEDs = 0x7F         // Loud
+        else if (leftLevel > (AUDIO_MAX * 5 / 8)) leftLEDs = 0x3F         // Medium-loud
+        else if (leftLevel > (AUDIO_MAX * 4 / 8)) leftLEDs = 0x1F         // Medium
+        else if (leftLevel > (AUDIO_MAX * 3 / 8)) leftLEDs = LED_QUAD     // Medium-quiet
+        else if (leftLevel > (AUDIO_MAX * 2 / 8)) leftLEDs = 0x07         // Quiet
+        else if (leftLevel > (AUDIO_MAX / 8)) leftLEDs = LED_DOUBLE       // Very quiet
+        else if (leftLevel > (AUDIO_MAX / 20)) leftLEDs = LED_SINGLE      // Barely audible
+        else leftLEDs = LED_OFF                                           // Silent
         
         // Same calculation for right channel
         int rightLEDs = 0
-        if (rightLevel > 1800) rightLEDs = 0xFF
-        else if (rightLevel > 1500) rightLEDs = 0x7F
-        else if (rightLevel > 1200) rightLEDs = 0x3F
-        else if (rightLevel > 900) rightLEDs = 0x1F
-        else if (rightLevel > 600) rightLEDs = 0x0F
-        else if (rightLevel > 300) rightLEDs = 0x07
-        else if (rightLevel > 100) rightLEDs = 0x03
-        else if (rightLevel > 10) rightLEDs = 0x01
-        else rightLEDs = 0x00
+        if (rightLevel > (AUDIO_MAX * 7 / 8)) rightLEDs = LED_ALL_ON
+        else if (rightLevel > (AUDIO_MAX * 6 / 8)) rightLEDs = 0x7F
+        else if (rightLevel > (AUDIO_MAX * 5 / 8)) rightLEDs = 0x3F
+        else if (rightLevel > (AUDIO_MAX * 4 / 8)) rightLEDs = 0x1F
+        else if (rightLevel > (AUDIO_MAX * 3 / 8)) rightLEDs = LED_QUAD
+        else if (rightLevel > (AUDIO_MAX * 2 / 8)) rightLEDs = 0x07
+        else if (rightLevel > (AUDIO_MAX / 8)) rightLEDs = LED_DOUBLE
+        else if (rightLevel > (AUDIO_MAX / 20)) rightLEDs = LED_SINGLE
+        else rightLEDs = LED_OFF
         
         // Display audio levels
         displayLEDs[0] = leftLEDs   // Left channel meter
@@ -283,7 +356,7 @@ function process()
         static int position = 0
         static int counter = 0
         
-        counter = (counter + 1) % 2205  // Update every 1/20 second
+        counter = (counter + 1) % (SAMPLE_RATE_44K1 / 20)  // Update every 1/20 second
         if (counter == 0) {
             position = (position + 1) % 8  // Move to next LED position
         }
@@ -313,7 +386,7 @@ function process()
         static int direction = 1  // 1 = right, -1 = left
         static int counter = 0
         
-        counter = (counter + 1) % 1102  // Update every 1/40 second
+        counter = (counter + 1) % (SAMPLE_RATE_44K1 / 40)  // Update every 1/40 second
         if (counter == 0) {
             position = position + direction
             
@@ -351,15 +424,15 @@ function process()
 function valueToBarGraph(int value)
 returns int ledPattern
 {
-    if (value > 224) ledPattern = 0xFF
-    else if (value > 192) ledPattern = 0x7F
-    else if (value > 160) ledPattern = 0x3F
-    else if (value > 128) ledPattern = 0x1F
-    else if (value > 96) ledPattern = 0x0F
-    else if (value > 64) ledPattern = 0x07
-    else if (value > 32) ledPattern = 0x03
-    else if (value > 0) ledPattern = 0x01
-    else ledPattern = 0x00
+    if (value > (PARAM_MAX * 7 / 8)) ledPattern = LED_ALL_ON
+    else if (value > (PARAM_MAX * 6 / 8)) ledPattern = 0x7F
+    else if (value > (PARAM_MAX * 5 / 8)) ledPattern = 0x3F
+    else if (value > PARAM_MID) ledPattern = 0x1F
+    else if (value > (PARAM_MAX * 3 / 8)) ledPattern = LED_QUAD
+    else if (value > (PARAM_MAX / 4)) ledPattern = 0x07
+    else if (value > (PARAM_MAX / 8)) ledPattern = LED_DOUBLE
+    else if (value > PARAM_MIN) ledPattern = LED_SINGLE
+    else ledPattern = LED_OFF
 }
 
 // Convert 0-7 position to single LED
@@ -393,9 +466,48 @@ returns int ledPattern
 // Complete LED Showcase - All Techniques
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
+// ===== STANDARD PERMUT8 CONSTANTS =====
+
+// Parameter System Constants
+const int PARAM_MAX = 255                    // Maximum knob/parameter value (8-bit)
+const int PARAM_MIN = 0                      // Minimum knob/parameter value
+const int PARAM_MID = 128                    // Parameter midpoint for bipolar controls
+const int PARAM_SWITCH_THRESHOLD = 127       // Boolean parameter on/off threshold
+
+// Audio Sample Range Constants (12-bit signed audio)
+const int AUDIO_MAX = 2047                   // Maximum audio sample value (+12-bit)
+const int AUDIO_MIN = -2047                  // Minimum audio sample value (-12-bit)
+const int AUDIO_ZERO = 0                     // Audio silence/center value
+
+// Sample Rate Constants
+const int SAMPLE_RATE_44K1 = 44100          // Standard audio sample rate (Hz)
+const int SAMPLE_RATE_HALF = 22050          // Half sample rate (0.5 second buffer at 44.1kHz)
+const int SAMPLE_RATE_QUARTER = 11025       // Quarter sample rate (0.25 second buffer)
+
+// LED Display Constants
+const int LED_OFF = 0x00                    // All LEDs off
+const int LED_ALL_ON = 0xFF                 // All 8 LEDs on
+const int LED_SINGLE = 0x01                 // Single LED pattern
+const int LED_DOUBLE = 0x03                 // Two LED pattern
+const int LED_QUAD = 0x0F                   // Four LED pattern
+
+// Required parameter constants
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int CLOCK_FREQ_PARAM_INDEX
+const int PARAM_COUNT
+
+// Standard global variables
+global int clock = 0
 global array signal[2]
-global array params[8]
+global array params[PARAM_COUNT]
 global array displayLEDs[4]
+global int clockFreqLimit = 132300
 
 function process()
 {
@@ -407,13 +519,13 @@ function process()
         // Display 2: Audio level meter for left channel
         int leftLevel = signal[0]
         if (leftLevel < 0) leftLevel = -leftLevel
-        int scaledLevel = (leftLevel * 255) / 2047  // Scale to 0-255
+        int scaledLevel = (leftLevel * PARAM_MAX) / AUDIO_MAX  // Scale to 0-PARAM_MAX
         displayLEDs[1] = valueToBarGraph(scaledLevel)
         
         // Display 3: Moving dot based on knob 2 speed
         static int dotPosition = 0
         static int dotCounter = 0
-        int speed = 100 + (((int)global params[OPERAND_2_LOW_PARAM_INDEX] * 2000) / 255)  // Speed control from knob 2
+        int speed = 100 + (((int)global params[OPERAND_2_LOW_PARAM_INDEX] * 2000) / PARAM_MAX)  // Speed control from knob 2
         
         dotCounter = (dotCounter + 1) % speed
         if (dotCounter == 0) {
@@ -422,8 +534,8 @@ function process()
         displayLEDs[2] = positionToLED(dotPosition)
         
         // Display 4: Activity indicator (blinking when audio present)
-        int activity = (scaledLevel > 10) ? 0xFF : 0x01
-        displayLEDs[3] = blinkingPattern(activity, 2205)  // Blink every 1/20 second
+        int activity = (scaledLevel > 10) ? LED_ALL_ON : LED_SINGLE
+        displayLEDs[3] = blinkingPattern(activity, (SAMPLE_RATE_44K1 / 20))  // Blink every 1/20 second
         
         yield()
     }
@@ -458,22 +570,22 @@ function process()
 
 ```impala
 // Pattern library - copy these into your plugins
-const int LED_OFF = 0x00
-const int LED_ALL = 0xFF
-const int LED_FIRST = 0x01
-const int LED_LAST = 0x80
-const int LED_ENDS = 0x81
-const int LED_CENTER = 0x18
-const int LED_ALTERNATE1 = 0xAA
-const int LED_ALTERNATE2 = 0x55
-const int LED_BAR_1 = 0x01
-const int LED_BAR_2 = 0x03
-const int LED_BAR_3 = 0x07
-const int LED_BAR_4 = 0x0F
-const int LED_BAR_5 = 0x1F
-const int LED_BAR_6 = 0x3F
-const int LED_BAR_7 = 0x7F
-const int LED_BAR_8 = 0xFF
+const int LED_OFF = 0x00           // All LEDs off
+const int LED_ALL_ON = 0xFF        // All LEDs on
+const int LED_SINGLE = 0x01        // Single LED (position 1)
+const int LED_LAST = 0x80          // Single LED (position 8)
+const int LED_ENDS = 0x81          // End LEDs only
+const int LED_CENTER = 0x18        // Center LEDs only
+const int LED_ALTERNATE1 = 0xAA    // Alternating pattern 1
+const int LED_ALTERNATE2 = 0x55    // Alternating pattern 2
+const int LED_BAR_1 = 0x01         // 1-LED bar graph
+const int LED_BAR_2 = 0x03         // 2-LED bar graph
+const int LED_BAR_3 = 0x07         // 3-LED bar graph
+const int LED_BAR_4 = 0x0F         // 4-LED bar graph
+const int LED_BAR_5 = 0x1F         // 5-LED bar graph
+const int LED_BAR_6 = 0x3F         // 6-LED bar graph
+const int LED_BAR_7 = 0x7F         // 7-LED bar graph
+const int LED_BAR_8 = 0xFF         // 8-LED bar graph
 ```
 
 ---

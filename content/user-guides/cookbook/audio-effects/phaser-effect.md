@@ -9,10 +9,10 @@ Creates the classic phaser effect by using a simple variable filter with LFO mod
 ## Quick Reference
 
 **Essential Parameters:**
-- `(int)global params[CLOCK_FREQ_PARAM_INDEX]`: LFO rate (0-255, sweep speed)
-- `(int)global params[SWITCHES_PARAM_INDEX]`: Modulation depth (0-255, sweep range)
-- `(int)global params[OPERATOR_1_PARAM_INDEX]`: Feedback amount (0-255, intensity)
-- `(int)global params[OPERAND_1_HIGH_PARAM_INDEX]`: Dry/wet mix (0-255, blend control)
+- `params[CLOCK_FREQ_PARAM_INDEX]`: LFO rate (0-255, sweep speed)
+- `params[SWITCHES_PARAM_INDEX]`: Modulation depth (0-255, sweep range)
+- `params[OPERATOR_1_PARAM_INDEX]`: Feedback amount (0-255, intensity)
+- `params[OPERAND_1_HIGH_PARAM_INDEX]`: Dry/wet mix (0-255, blend control)
 
 **Key Concepts:** Variable filtering, LFO modulation, feedback loops, phase relationships
 
@@ -37,9 +37,11 @@ const int PARAM_COUNT
 extern native yield             // Return control to Permut8 audio engine
 
 // Standard global variables
+global int clock                 // Sample counter for timing
 global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
+global array params[PARAM_COUNT] // Parameter values (0-255)
 global array displayLEDs[4]     // LED displays
+global int clockFreqLimit        // Current clock frequency limit
 
 // All-pass phaser state
 global int lfo_phase = 0        // LFO phase accumulator
@@ -50,33 +52,14 @@ global int allpass_state4 = 0   // Fourth all-pass filter state
 global int feedback_sample = 0  // Feedback delay sample
 
 function process()
-locals int rate
-locals int depth
-locals int feedback
-locals int mix
-locals int lfo_val
-locals int coeff1
-locals int coeff2
-locals int coeff3
-locals int coeff4
-locals int input
-locals int temp1
-locals int temp2
-locals int temp3
-locals int temp4
-locals int allpass1
-locals int allpass2
-locals int allpass3
-locals int allpass4
-locals int phased_output
-locals int output
+locals int rate, int depth, int feedback, int mix, int lfo_val, int coeff1, int coeff2, int coeff3, int coeff4, int input, int temp1, int temp2, int temp3, int temp4, int allpass1, int allpass2, int allpass3, int allpass4, int phased_output, int output
 {
     loop {
         // Read parameters
-        rate = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 4) + 1;     // 1-16 LFO rate
-        depth = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 2) + 1;    // 1-64 modulation depth
-        feedback = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];            // 0-255 feedback amount
-        mix = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];                 // 0-255 dry/wet mix
+        rate = ((int)global params[CLOCK_FREQ_PARAM_INDEX] >> 4) + 1;     // 1-16 LFO rate
+        depth = ((int)global params[SWITCHES_PARAM_INDEX] >> 2) + 1;    // 1-64 modulation depth
+        feedback = (int)global params[OPERATOR_1_PARAM_INDEX];            // 0-255 feedback amount
+        mix = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];                 // 0-255 dry/wet mix
         
         input = (int)global signal[0];
         
@@ -176,16 +159,16 @@ locals int output
 
 ```impala
 // Slow, gentle phasing
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Slow rate
-(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Medium depth
-(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Light feedback
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // 50% mix
+global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Slow rate
+global params[SWITCHES_PARAM_INDEX] = 128;  // Medium depth
+global params[OPERATOR_1_PARAM_INDEX] = 64;   // Light feedback
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // 50% mix
 
 // Fast, dramatic phasing
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Fast rate
-(int)global params[SWITCHES_PARAM_INDEX] = 200;  // Deep modulation
-(int)global params[OPERATOR_1_PARAM_INDEX] = 120;  // Moderate feedback (safer than 150)
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Mostly wet
+global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Fast rate
+global params[SWITCHES_PARAM_INDEX] = 200;  // Deep modulation
+global params[OPERATOR_1_PARAM_INDEX] = 120;  // Moderate feedback (safer than 150)
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Mostly wet
 ```
 
 ## Try These Changes
