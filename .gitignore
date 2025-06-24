@@ -1,3 +1,56 @@
-# Claude Code local settings
-.claude/
+# Keep ONLY content/, *.html, and firmware/ in git
+# Everything else should be ignored
+
+# Local development archive
+local-development-archive/
+
+# Python files and cache
+*.py
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+
+# Development and planning docs
+*_PLAN.md
+*_REPORT.md
+*_PROTOCOL.md
+PHASE_*
+MAGIC_NUMBERS_*
+STANDARD_CONSTANTS_REFERENCE.md
+CLAUDE.md
+
+# Build scripts and tools
+*.sh
+*.cmd
+pre-commit-*
+
+# Archive directories
+archive/
 project-archive/
+
+# Reference materials
+docs/
+Protocols/
+
+# Old/backup files
+*-OLD.*
+*-old.*
+*-backup.*
+*-Simple.*
+
+# IDE and system files
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.tmp
+
+# Build artifacts (except current HTML)
+temp/
+tmp/
+build/
+dist/
