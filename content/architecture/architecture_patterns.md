@@ -761,4 +761,4 @@ function goodTiming() {
 4. **Monitor resource usage**: Track memory and CPU consumption
 
 ---
-*See also: [Audio Processing Reference](audio_processing_reference.md), [Core Language Reference](core_language_reference.md)*
+*See also: [Audio Processing Reference](../reference/audio_processing_reference.md), [Core Language Reference](../language/core_language_reference.md)*

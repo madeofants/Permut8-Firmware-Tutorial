@@ -74,47 +74,99 @@ locals analysis_rate, window_type, display_mode, i, real_part, imag_part, mag_sq
         if (global update_counter >= (analysis_rate * 512)) {
             global update_counter = 0;
             
-            // Simple 8-point DFT approximation (fundamental frequencies only)
-            // Frequency bin 0 (DC component)
+            // Proper 8-point DFT implementation
+            // Note: This uses simplified fixed-point twiddle factors for embedded performance
+            
+            // Frequency bin 0 (DC component) - sum all samples
             real_part = 0;
-            real_part = real_part + global input_buffer[0];
-            real_part = real_part + global input_buffer[1];
-            real_part = real_part + global input_buffer[2];
-            real_part = real_part + global input_buffer[3];
-            real_part = real_part + global input_buffer[4];
-            real_part = real_part + global input_buffer[5];
-            real_part = real_part + global input_buffer[6];
-            real_part = real_part + global input_buffer[7];
-            global magnitude[0] = (real_part >> 3);  // Average (DC)
+            for (i = 0; i < 8; i = i + 1) {
+                real_part = real_part + global input_buffer[i];
+            }
+            global magnitude[0] = real_part >> 3;  // Divide by 8
             if (global magnitude[0] < 0) global magnitude[0] = -global magnitude[0];
             
-            // Frequency bin 1 (low frequency) - simplified calculation
-            real_part = (global input_buffer[0] + global input_buffer[4]) >> 1;
-            imag_part = (global input_buffer[2] + global input_buffer[6]) >> 1;
+            // Frequency bin 1 (π/4 radians per sample)
+            // Real: cos(0), cos(π/4), cos(π/2), cos(3π/4), cos(π), cos(5π/4), cos(3π/2), cos(7π/4)
+            // Simplified: 1, 0.707, 0, -0.707, -1, -0.707, 0, 0.707 → scaled by 128
+            real_part = global input_buffer[0] * 128;           // 1.0 * 128
+            real_part = real_part + (global input_buffer[1] * 91);  // 0.707 * 128 ≈ 91
+            real_part = real_part + (global input_buffer[2] * 0);   // 0.0 * 128
+            real_part = real_part - (global input_buffer[3] * 91);  // -0.707 * 128
+            real_part = real_part - (global input_buffer[4] * 128); // -1.0 * 128
+            real_part = real_part - (global input_buffer[5] * 91);  // -0.707 * 128
+            real_part = real_part + (global input_buffer[6] * 0);   // 0.0 * 128
+            real_part = real_part + (global input_buffer[7] * 91);  // 0.707 * 128
+            real_part = real_part >> 7;  // Scale back down
             
-            // Magnitude = sqrt(real^2 + imag^2) ≈ |real| + |imag|
+            // Imaginary: -sin values: 0, -0.707, -1, -0.707, 0, 0.707, 1, 0.707
+            imag_part = global input_buffer[0] * 0;             // 0.0 * 128
+            imag_part = imag_part - (global input_buffer[1] * 91);  // -0.707 * 128
+            imag_part = imag_part - (global input_buffer[2] * 128); // -1.0 * 128
+            imag_part = imag_part - (global input_buffer[3] * 91);  // -0.707 * 128
+            imag_part = imag_part + (global input_buffer[4] * 0);   // 0.0 * 128
+            imag_part = imag_part + (global input_buffer[5] * 91);  // 0.707 * 128
+            imag_part = imag_part + (global input_buffer[6] * 128); // 1.0 * 128
+            imag_part = imag_part + (global input_buffer[7] * 91);  // 0.707 * 128
+            imag_part = imag_part >> 7;  // Scale back down
+            
+            // Magnitude = sqrt(real^2 + imag^2) ≈ |real| + 0.5*|imag| (approximation)
             if (real_part < 0) real_part = -real_part;
             if (imag_part < 0) imag_part = -imag_part;
-            global magnitude[1] = (real_part + imag_part) >> 4;
+            global magnitude[1] = real_part + (imag_part >> 1);
             
-            // Simplified calculation for remaining bins
-            global magnitude[2] = (((int)global input_buffer[0] + (int)global input_buffer[4]) >> 2);
-            if ((int)global magnitude[2] < 0) global magnitude[2] = -(int)global magnitude[2];
+            // Frequency bin 2 (π/2 radians per sample) - Nyquist/2 frequency
+            // Real: 1, 0, -1, 0, 1, 0, -1, 0
+            real_part = global input_buffer[0] - global input_buffer[2] + global input_buffer[4] - global input_buffer[6];
+            // Imaginary: 0, -1, 0, 1, 0, -1, 0, 1
+            imag_part = -global input_buffer[1] + global input_buffer[3] - global input_buffer[5] + global input_buffer[7];
+            if (real_part < 0) real_part = -real_part;
+            if (imag_part < 0) imag_part = -imag_part;
+            global magnitude[2] = real_part + (imag_part >> 1);
             
-            global magnitude[3] = (((int)global input_buffer[1] + (int)global input_buffer[5]) >> 2);
-            if ((int)global magnitude[3] < 0) global magnitude[3] = -(int)global magnitude[3];
+            // Frequency bin 3 (3π/4 radians per sample)
+            // Real: 1, -0.707, 0, 0.707, -1, 0.707, 0, -0.707
+            real_part = global input_buffer[0] * 128;
+            real_part = real_part - (global input_buffer[1] * 91);
+            real_part = real_part + (global input_buffer[2] * 0);
+            real_part = real_part + (global input_buffer[3] * 91);
+            real_part = real_part - (global input_buffer[4] * 128);
+            real_part = real_part + (global input_buffer[5] * 91);
+            real_part = real_part + (global input_buffer[6] * 0);
+            real_part = real_part - (global input_buffer[7] * 91);
+            real_part = real_part >> 7;
             
-            global magnitude[4] = (((int)global input_buffer[2] + (int)global input_buffer[6]) >> 2);
-            if ((int)global magnitude[4] < 0) global magnitude[4] = -(int)global magnitude[4];
+            // Imaginary: 0, -0.707, 1, -0.707, 0, 0.707, -1, 0.707
+            imag_part = global input_buffer[0] * 0;
+            imag_part = imag_part - (global input_buffer[1] * 91);
+            imag_part = imag_part + (global input_buffer[2] * 128);
+            imag_part = imag_part - (global input_buffer[3] * 91);
+            imag_part = imag_part + (global input_buffer[4] * 0);
+            imag_part = imag_part + (global input_buffer[5] * 91);
+            imag_part = imag_part - (global input_buffer[6] * 128);
+            imag_part = imag_part + (global input_buffer[7] * 91);
+            imag_part = imag_part >> 7;
             
-            global magnitude[5] = (((int)global input_buffer[3] + (int)global input_buffer[7]) >> 2);
-            if ((int)global magnitude[5] < 0) global magnitude[5] = -(int)global magnitude[5];
+            if (real_part < 0) real_part = -real_part;
+            if (imag_part < 0) imag_part = -imag_part;
+            global magnitude[3] = real_part + (imag_part >> 1);
             
-            global magnitude[6] = (((int)global input_buffer[0] - (int)global input_buffer[4]) >> 2);
-            if ((int)global magnitude[6] < 0) global magnitude[6] = -(int)global magnitude[6];
+            // Frequency bin 4 (π radians per sample) - Nyquist frequency
+            // Real: 1, -1, 1, -1, 1, -1, 1, -1 (alternating)
+            real_part = global input_buffer[0] - global input_buffer[1] + global input_buffer[2] - global input_buffer[3]
+                      + global input_buffer[4] - global input_buffer[5] + global input_buffer[6] - global input_buffer[7];
+            // Imaginary: 0 (all sine values are 0 at π intervals)
+            if (real_part < 0) real_part = -real_part;
+            global magnitude[4] = real_part;
             
-            global magnitude[7] = (((int)global input_buffer[1] - (int)global input_buffer[5]) >> 2);
-            if ((int)global magnitude[7] < 0) global magnitude[7] = -(int)global magnitude[7];
+            // Bins 5-7 are complex conjugates of bins 3-1, so compute magnitudes directly
+            // Bin 5 = conjugate of bin 3
+            global magnitude[5] = global magnitude[3];
+            
+            // Bin 6 = conjugate of bin 2  
+            global magnitude[6] = global magnitude[2];
+            
+            // Bin 7 = conjugate of bin 1
+            global magnitude[7] = global magnitude[1];
         }
         
         // === SPECTRAL VISUALIZATION ===

@@ -124,8 +124,8 @@ locals int left, int right, int param1, int param2
 function process() {
     loop {
         // Read mapped parameters
-        int gainParam = (int)global params[0]
-        int cutoffParam = (int)global params[1]
+        int gainParam = (int)global params[CLOCK_FREQ_PARAM_INDEX]
+        int cutoffParam = (int)global params[SWITCHES_PARAM_INDEX]
         
         // Apply parameter morphing if enabled
         if (morphingActive) {

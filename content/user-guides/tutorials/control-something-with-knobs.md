@@ -300,8 +300,8 @@ int note = noteKnob / 21  // Snaps to 12 different notes (255/21 ≈ 12)
 
 ```impala
 // Knob 1 controls base frequency, Knob 2 controls frequency modulation depth
-int baseFreq = 100 + ((params[3] * 400) / 255)       // 100-500 base
-int modDepth = (params[4] * 200) / 255                // 0-200 modulation
+int baseFreq = 100 + ((params[OPERAND_1_HIGH_PARAM_INDEX] * 400) / 255)       // 100-500 base
+int modDepth = (params[OPERAND_1_LOW_PARAM_INDEX] * 200) / 255                // 0-200 modulation
 int finalFreq = baseFreq + (modDepth * sin(phase/100)) // Vibrato effect
 ```
 
@@ -441,8 +441,8 @@ int stepped = (knobValue / 32) * 32  // 8 steps
 **Parameter Modulation:**
 ```impala
 // Use one knob to control how much another knob affects the sound
-int baseValue = params[3]
-int modAmount = params[4]
+int baseValue = params[OPERAND_1_HIGH_PARAM_INDEX]
+int modAmount = params[OPERAND_1_LOW_PARAM_INDEX]
 int finalValue = baseValue + ((someOscillator * modAmount) / 255)
 ```
 
@@ -450,10 +450,10 @@ int finalValue = baseValue + ((someOscillator * modAmount) / 255)
 ```impala
 // Remember parameter settings
 static int savedFreq = 500
-if (params[7] > 200) {  // "Save" button
+if (params[OPERAND_2_LOW_PARAM_INDEX] > 200) {  // "Save" button
     savedFreq = smoothedFrequency
 }
-if (params[7] < 50) {   // "Recall" button
+if (params[OPERAND_2_LOW_PARAM_INDEX] < 50) {   // "Recall" button
     smoothedFrequency = savedFreq
 }
 ```

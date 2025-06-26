@@ -67,10 +67,12 @@ locals int threshold, int ratio, int attack, int release, int input_level, int t
         
         // Simple envelope follower with corrected attack/release behavior
         if (input_level > global envelope) {
-            // Attack phase - follow rising signals (lower values = faster attack)
+            // Attack phase - follow rising signals (lower values = slower attack)
+            // Note: >> attack_factor means larger attack_factor = smaller step = slower response
             global envelope = global envelope + ((input_level - global envelope) >> attack_factor);
         } else {
-            // Release phase - follow falling signals (lower values = faster release)
+            // Release phase - follow falling signals (lower values = slower release)
+            // Note: >> release_factor means larger release_factor = smaller step = slower response
             global envelope = global envelope + ((input_level - global envelope) >> release_factor);
         }
         
@@ -137,8 +139,8 @@ locals int threshold, int ratio, int attack, int release, int input_level, int t
 **Parameter Control**:
 - **Control 1**: Threshold (higher = less compression)
 - **Control 2**: Ratio (higher = more compression, 2:1 to 17:1 range)  
-- **Control 3**: Attack (higher = slower attack, 1-8 speed range)
-- **Control 4**: Release (higher = slower release, 1-8 speed range)
+- **Control 3**: Attack (higher = slower attack response, 1-8 speed range)
+- **Control 4**: Release (higher = slower release response, 1-8 speed range)
 
 **LED Feedback**: Shows gain reduction, input level, threshold setting, and compression ratio.
 

@@ -265,8 +265,8 @@ Let's add a simple modification to make the volume control more interesting.
 Replace the audio processing section with:
 ```impala
 // Get volume and width from knobs
-volume = (int)global params[3] * 2;  // Volume control
-int width = (int)global params[4];   // Stereo width (0-255)
+volume = (int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 2;  // Volume control
+int width = (int)global params[OPERAND_1_LOW_PARAM_INDEX];   // Stereo width (0-255)
 
 // Get input audio
 inputL = (int)global signal[0];
@@ -343,8 +343,8 @@ function process() {
 ### **Ready for More Effects?** Based on what you just built:
 
 **Want simple, immediate effects?**
-- 📖 [Getting Audio In and Out](getting-audio-in-and-out.md) - Foundation I/O patterns (10 min)
-- 📖 [Make Your First Sound](make-your-first-sound.md) - Basic synthesis (15 min)
+- 📖 [Getting Audio In and Out](tutorials/getting-audio-in-and-out.md) - Foundation I/O patterns (10 min)
+- 📖 [Make Your First Sound](tutorials/make-your-first-sound.md) - Basic synthesis (15 min)
 - 📖 [Simple Distortion](cookbook/audio-effects/bitcrusher.md) - Audio processing (15 min)
 - 📖 [Make a Delay](cookbook/audio-effects/make-a-delay.md) - Memory-based effects (20 min)
 
@@ -354,7 +354,7 @@ function process() {
 
 **Ready for advanced effects?**
 - 📖 [Advanced Custom Delay Tutorial](tutorials/advanced-custom-delay-tutorial.md) - Memory management (45 min)
-- 📖 [Control Something with Knobs](control-something-with-knobs.md) - Parameter mapping (20 min)
+- 📖 [Control Something with Knobs](tutorials/control-something-with-knobs.md) - Parameter mapping (20 min)
 
 ### **Choose Your Path:**
 
