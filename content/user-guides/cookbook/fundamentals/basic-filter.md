@@ -49,7 +49,7 @@ Audio Input → [Custom filter algorithm with state variables] → Audio Output
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -60,76 +60,76 @@ const int SWITCHES_PARAM_INDEX
 const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global int clock                 // Sample counter for timing
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT] // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
-global int clockFreqLimit        // Current clock frequency limit
+extern native yield
 
-// Simple filter state
-global int filter_state1 = 0    // First filter state variable
-global int filter_state2 = 0    // Second filter state variable
+
+global int clock
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global int clockFreqLimit
+
+
+global int filter_state1 = 0
+global int filter_state2 = 0
 
 function process()
 locals int cutoff, int resonance, int filter_type, int mix, int input, int filter_amount, int low_pass, int high_pass, int band_pass, int filtered, int output
 {
     loop {
-        // Read parameters
-        cutoff = ((int)global params[CLOCK_FREQ_PARAM_INDEX] >> 3) + 1;    // 1-32 filter strength
-        resonance = ((int)global params[SWITCHES_PARAM_INDEX] >> 3) + 1; // 1-32 resonance amount
-        filter_type = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 6);   // 0-3 filter types
-        mix = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];                  // 0-255 dry/wet mix
+
+        cutoff = ((int)global params[CLOCK_FREQ_PARAM_INDEX] >> 3) + 1;
+        resonance = ((int)global params[SWITCHES_PARAM_INDEX] >> 3) + 1;
+        filter_type = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 6);
+        mix = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
         
         input = (int)global signal[0];
         
-        // Simple one-pole low-pass filter
+
         global filter_state1 = global filter_state1 + ((input - global filter_state1) >> cutoff);
         low_pass = global filter_state1;
         
-        // High-pass = input - low-pass
+
         high_pass = input - low_pass;
         
-        // Second filter stage for band-pass
+
         global filter_state2 = global filter_state2 + ((high_pass - global filter_state2) >> cutoff);
         band_pass = global filter_state2;
         
-        // Select filter type
+
         if (filter_type == 0) {
-            filtered = low_pass;       // Low-pass filter
+            filtered = low_pass;
         } else if (filter_type == 1) {
-            filtered = high_pass;      // High-pass filter
+            filtered = high_pass;
         } else if (filter_type == 2) {
-            filtered = band_pass;      // Band-pass filter
+            filtered = band_pass;
         } else {
-            filtered = input;          // No filtering
+            filtered = input;
         }
         
-        // Add resonance (feedback)
+
         if (resonance > 1) {
             filter_amount = (filtered * resonance) >> 5;
             filtered = filtered + filter_amount;
             
-            // Prevent resonance from getting too loud
+
             if (filtered > 2047) filtered = 2047;
             if (filtered < -2047) filtered = -2047;
         }
         
-        // Mix dry and wet signals
+
         output = ((input * (255 - mix)) + (filtered * mix)) >> 8;
         
-        // Prevent clipping
+
         if (output > 2047) output = 2047;
         if (output < -2047) output = -2047;
         
-        // Output result
+
         global signal[0] = output;
         global signal[1] = output;
         
-        // Show activity on LEDs
+
         global displayLEDs[0] = cutoff << 3;
         global displayLEDs[1] = resonance << 3;
         global displayLEDs[2] = filter_type << 6;
@@ -162,30 +162,30 @@ locals int cutoff, int resonance, int filter_type, int mix, int input, int filte
 ## Try These Settings
 
 ```impala
-// Warm low-pass
-global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium cutoff
-global params[SWITCHES_PARAM_INDEX] = 64;   // Light resonance
-global params[OPERATOR_1_PARAM_INDEX] = 32;   // Low-pass
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Mostly filtered
 
-// Bright high-pass
-global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High cutoff
-global params[SWITCHES_PARAM_INDEX] = 100;  // Medium resonance
-global params[OPERATOR_1_PARAM_INDEX] = 100;  // High-pass
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Balanced mix
+global params[CLOCK_FREQ_PARAM_INDEX] = 128;
+global params[SWITCHES_PARAM_INDEX] = 64;
+global params[OPERATOR_1_PARAM_INDEX] = 32;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;
 
-// Telephone effect
-global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Low cutoff
-global params[SWITCHES_PARAM_INDEX] = 150;  // Strong resonance
-global params[OPERATOR_1_PARAM_INDEX] = 160;  // Band-pass
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 220;  // Mostly wet
 
-// Classic synth sweep
-global params[CLOCK_FREQ_PARAM_INDEX] = 50;   // Start low
-global params[SWITCHES_PARAM_INDEX] = 200;  // High resonance
-global params[OPERATOR_1_PARAM_INDEX] = 32;   // Low-pass
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 255;  // Full wet
-// (slowly increase global params[CLOCK_FREQ_PARAM_INDEX] for sweep effect)
+global params[CLOCK_FREQ_PARAM_INDEX] = 200;
+global params[SWITCHES_PARAM_INDEX] = 100;
+global params[OPERATOR_1_PARAM_INDEX] = 100;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;
+
+
+global params[CLOCK_FREQ_PARAM_INDEX] = 100;
+global params[SWITCHES_PARAM_INDEX] = 150;
+global params[OPERATOR_1_PARAM_INDEX] = 160;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 220;
+
+
+global params[CLOCK_FREQ_PARAM_INDEX] = 50;
+global params[SWITCHES_PARAM_INDEX] = 200;
+global params[OPERATOR_1_PARAM_INDEX] = 32;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 255;
+
 ```
 
 ## Understanding Filters

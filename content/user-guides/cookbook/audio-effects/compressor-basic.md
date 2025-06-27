@@ -21,7 +21,7 @@ Automatically reduces the volume of loud signals while leaving quieter signals u
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -33,94 +33,94 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global int clock                 // Sample counter for timing
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT] // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
-global int clockFreqLimit        // Current clock frequency limit
+extern native yield
 
-// Simple compressor state
-global int envelope = 0         // Current envelope level
-global int gain_reduction = 255 // Current gain reduction (255=no reduction, 0=max reduction)
+
+global int clock
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global int clockFreqLimit
+
+
+global int envelope = 0
+global int gain_reduction = 255
 
 function process()
 locals int threshold, int ratio, int attack, int release, int input_level, int target_gain, int output, int overage, int gain_reduction_amount, int attack_factor, int release_factor, int output_left, int output_right
 {
     loop {
-        // Read parameters
-        threshold = ((int)global params[CLOCK_FREQ_PARAM_INDEX] << 2) + 256;   // 256-1276 range (within audio range)
-        ratio = ((int)global params[SWITCHES_PARAM_INDEX] >> 4) + 2;         // 2-17 ratio (reasonable compression range)
-        attack = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 5) + 1;        // 1-8 attack speed
-        release = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 5) + 1;       // 1-8 release speed
+
+        threshold = ((int)global params[CLOCK_FREQ_PARAM_INDEX] << 2) + 256;
+        ratio = ((int)global params[SWITCHES_PARAM_INDEX] >> 4) + 2;
+        attack = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 5) + 1;
+        release = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 5) + 1;
         
-        // Convert to proper envelope factors
-        attack_factor = attack & 7;                       // Limit to 0-7 for reasonable response
-        release_factor = release & 7;                     // Limit to 0-7 for reasonable response
+
+        attack_factor = attack & 7;
+        release_factor = release & 7;
         
-        // Get input level (absolute value of left channel)
+
         input_level = (int)global signal[0];
         if (input_level < 0) input_level = -input_level;
         
-        // Simple envelope follower with corrected attack/release behavior
+
         if (input_level > global envelope) {
-            // Attack phase - follow rising signals (lower values = slower attack)
-            // Note: >> attack_factor means larger attack_factor = smaller step = slower response
+
+
             global envelope = global envelope + ((input_level - global envelope) >> attack_factor);
         } else {
-            // Release phase - follow falling signals (lower values = slower release)
-            // Note: >> release_factor means larger release_factor = smaller step = slower response
+
+
             global envelope = global envelope + ((input_level - global envelope) >> release_factor);
         }
         
-        // Calculate gain reduction if above threshold
+
         if (global envelope > threshold) {
-            // Calculate how much signal exceeds threshold
+
             overage = global envelope - threshold;
             
-            // Apply compression ratio using proper division approximation
-            // For ratio N:1, reduce overage by factor of N
+
+
             gain_reduction_amount = overage - (overage / ratio);
             
-            // Calculate target gain (255=no reduction, lower=more reduction)
-            // Scale gain_reduction_amount to 0-255 range
+
+
             target_gain = 255 - ((gain_reduction_amount << 8) / overage);
-            if (target_gain < 64) target_gain = 64;  // Limit maximum compression (75% max reduction)
+            if (target_gain < 64) target_gain = 64;
         } else {
-            target_gain = 255;  // No compression below threshold
+            target_gain = 255;
         }
         
-        // Smooth gain changes with corrected attack/release logic
+
         if (target_gain < global gain_reduction) {
-            // Increasing compression (gain reduction) - use attack time
+
             global gain_reduction = global gain_reduction - ((global gain_reduction - target_gain) >> attack_factor);
         } else {
-            // Decreasing compression (gain recovery) - use release time  
+
             global gain_reduction = global gain_reduction + ((target_gain - global gain_reduction) >> release_factor);
         }
         
-        // Apply compression to both channels
+
         output_left = ((int)global signal[0] * global gain_reduction) >> 8;
         output_right = ((int)global signal[1] * global gain_reduction) >> 8;
         
-        // Prevent clipping
+
         if (output_left > 2047) output_left = 2047;
         if (output_left < -2047) output_left = -2047;
         if (output_right > 2047) output_right = 2047;
         if (output_right < -2047) output_right = -2047;
         
-        // Output compressed audio (stereo processing)
+
         global signal[0] = output_left;
         global signal[1] = output_right;
         
-        // Show compression activity on LEDs
-        global displayLEDs[0] = 255 - global gain_reduction;  // Gain reduction meter
-        global displayLEDs[1] = global envelope >> 3;         // Input level meter
-        global displayLEDs[2] = threshold >> 3;               // Threshold level
-        global displayLEDs[3] = ratio << 4;                   // Compression ratio
+
+        global displayLEDs[0] = 255 - global gain_reduction;
+        global displayLEDs[1] = global envelope >> 3;
+        global displayLEDs[2] = threshold >> 3;
+        global displayLEDs[3] = ratio << 4;
         
         yield();
     }
@@ -147,17 +147,17 @@ locals int threshold, int ratio, int attack, int release, int input_level, int t
 ## Try These Settings
 
 ```impala
-// Gentle vocal compression
-global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // High threshold
-global params[SWITCHES_PARAM_INDEX] = 64;   // 8:1 ratio
-global params[OPERATOR_1_PARAM_INDEX] = 32;   // Medium attack
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Slow release
 
-// Drum compression
-global params[CLOCK_FREQ_PARAM_INDEX] = 120;  // Lower threshold
-global params[SWITCHES_PARAM_INDEX] = 96;   // 12:1 ratio  
-global params[OPERATOR_1_PARAM_INDEX] = 8;    // Fast attack
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Medium release
+global params[CLOCK_FREQ_PARAM_INDEX] = 180;
+global params[SWITCHES_PARAM_INDEX] = 64;
+global params[OPERATOR_1_PARAM_INDEX] = 32;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;
+
+
+global params[CLOCK_FREQ_PARAM_INDEX] = 120;
+global params[SWITCHES_PARAM_INDEX] = 96;
+global params[OPERATOR_1_PARAM_INDEX] = 8;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;
 ```
 
 ## Try These Changes

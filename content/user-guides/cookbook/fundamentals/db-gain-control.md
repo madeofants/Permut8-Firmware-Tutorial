@@ -27,7 +27,7 @@ Implements studio-style dB (decibel) gain control with logarithmic response that
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -39,55 +39,55 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// dB gain control state
-global int current_gain = 2047  // Current linear gain (0-4095 range)
-global int target_gain = 2047   // Target gain for smoothing
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global int current_gain = 2047
+global int target_gain = 2047
 
 function process()
 locals int gain_param, int curve_param, int smooth_speed, int gain_step, int output_left, int output_right
 {
     loop {
-        // Read parameters
-        gain_param = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];     // 0-255 gain level
-        curve_param = (int)global (int)global params[SWITCHES_PARAM_INDEX];    // 0-255 response curve
-        smooth_speed = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;  // 1-16 smoothing rate
+
+        gain_param = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];
+        curve_param = (int)global (int)global params[SWITCHES_PARAM_INDEX];
+        smooth_speed = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;
         
-        // Calculate target gain with logarithmic curve
+
         if (gain_param == 0) {
-            // Complete mute
+
             global target_gain = 0;
         } else if (gain_param < 64) {
-            // Quiet range: -40dB to -20dB (exponential approach to silence)
-            global target_gain = (gain_param * gain_param) >> 4;  // Quadratic curve
+
+            global target_gain = (gain_param * gain_param) >> 4;
         } else if (gain_param < 192) {
-            // Normal range: -20dB to 0dB (logarithmic curve)
-            global target_gain = 256 + ((gain_param - 64) * 14);  // Linear section
+
+            global target_gain = 256 + ((gain_param - 64) * 14);
         } else {
-            // Boost range: 0dB to +6dB (gentle boost)
-            global target_gain = 2047 + ((gain_param - 192) << 5);  // Boost section
+
+            global target_gain = 2047 + ((gain_param - 192) << 5);
         }
         
-        // Apply curve shaping based on curve parameter
+
         if (curve_param < 128) {
-            // More linear response
+
             global target_gain = (global target_gain * curve_param) >> 7;
         } else {
-            // More exponential response
+
             global target_gain = (global target_gain * global target_gain) >> 11;
         }
         
-        // Limit maximum gain
+
         if (global target_gain > 4095) global target_gain = 4095;
         
-        // Smooth gain changes to prevent zipper noise
+
         if (global current_gain < global target_gain) {
             global current_gain = global current_gain + smooth_speed;
             if (global current_gain > global target_gain) global current_gain = global target_gain;
@@ -96,25 +96,25 @@ locals int gain_param, int curve_param, int smooth_speed, int gain_step, int out
             if (global current_gain < global target_gain) global current_gain = global target_gain;
         }
         
-        // Apply gain to audio signals
+
         output_left = ((int)global signal[0] * global current_gain) >> 11;
         output_right = ((int)global signal[1] * global current_gain) >> 11;
         
-        // Prevent clipping
+
         if (output_left > 2047) output_left = 2047;
         if (output_left < -2047) output_left = -2047;
         if (output_right > 2047) output_right = 2047;
         if (output_right < -2047) output_right = -2047;
         
-        // Output processed signals
+
         global signal[0] = output_left;
         global signal[1] = output_right;
         
-        // Show gain activity on LEDs
-        global displayLEDs[0] = gain_param;               // Show gain parameter
-        global displayLEDs[1] = global current_gain >> 4; // Show current gain level
-        global displayLEDs[2] = curve_param;             // Show curve setting
-        global displayLEDs[3] = smooth_speed << 4;       // Show smoothing speed
+
+        global displayLEDs[0] = gain_param;
+        global displayLEDs[1] = global current_gain >> 4;
+        global displayLEDs[2] = curve_param;
+        global displayLEDs[3] = smooth_speed << 4;
         
         yield();
     }
@@ -140,25 +140,25 @@ locals int gain_param, int curve_param, int smooth_speed, int gain_step, int out
 ## Try These Settings
 
 ```impala
-// Studio mixing level
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 192;  // Near unity gain (0dB)
-(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Balanced curve
-(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Moderate smoothing
 
-// Background music
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 80;   // Quiet level (-20dB)
-(int)global params[SWITCHES_PARAM_INDEX] = 64;   // More linear response
-(int)global params[OPERATOR_1_PARAM_INDEX] = 32;   // Faster response
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 192;
+(int)global params[SWITCHES_PARAM_INDEX] = 128;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 64;
 
-// Vocal booth monitoring
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 160;  // Moderate level (-6dB)
-(int)global params[SWITCHES_PARAM_INDEX] = 200;  // More exponential curve
-(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Smooth changes
 
-// Mastering chain
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Light boost (+2dB)
-(int)global params[SWITCHES_PARAM_INDEX] = 100;  // Professional curve
-(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Very smooth changes
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 80;
+(int)global params[SWITCHES_PARAM_INDEX] = 64;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 32;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 160;
+(int)global params[SWITCHES_PARAM_INDEX] = 200;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 128;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;
+(int)global params[SWITCHES_PARAM_INDEX] = 100;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;
 ```
 
 ## Understanding dB Control

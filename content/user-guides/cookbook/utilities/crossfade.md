@@ -27,7 +27,7 @@ Crossfading enables smooth transitions between two audio signals, eliminating cl
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -39,21 +39,21 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// Crossfade system state
-global int phase_a = 0              // Phase for oscillator A
-global int phase_b = 0              // Phase for oscillator B
-global int crossfade_position = 128  // Crossfade position (0-255)
-global int curve_type = 0           // 0=linear, 1=equal power
 
-// Equal power lookup table (scaled to 255)
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global int phase_a = 0
+global int phase_b = 0
+global int crossfade_position = 128
+global int curve_type = 0
+
+
 global array equal_power_cos[16] = {255, 252, 245, 234, 219, 200, 178, 153, 
                                    126, 98, 70, 42, 16, 0, 0, 0}
 global array equal_power_sin[16] = {0, 42, 70, 98, 126, 153, 178, 200,
@@ -63,68 +63,68 @@ function process()
 locals signal_a_level, signal_b_level, crossfade_pos, curve_select, signal_a, signal_b, gain_a, gain_b, output_a, output_b, mixed_output, table_index, input_sample
 {
     loop {
-        // Read control parameters
-        signal_a_level = params[CLOCK_FREQ_PARAM_INDEX];    // Signal A level (0-255)
-        signal_b_level = params[SWITCHES_PARAM_INDEX];    // Signal B level (0-255)
-        crossfade_pos = params[OPERATOR_1_PARAM_INDEX];     // Crossfade position (0-255)
-        curve_select = params[OPERAND_1_HIGH_PARAM_INDEX];      // Curve type (0-255)
+
+        signal_a_level = params[CLOCK_FREQ_PARAM_INDEX];
+        signal_b_level = params[SWITCHES_PARAM_INDEX];
+        crossfade_pos = params[OPERATOR_1_PARAM_INDEX];
+        curve_select = params[OPERAND_1_HIGH_PARAM_INDEX];
         
-        // Generate test signals (sine and sawtooth)
-        // Signal A: Sine wave
-        global phase_a = global phase_a + (signal_a_level + 32);  // Frequency control
+
+
+        global phase_a = global phase_a + (signal_a_level + 32);
         if (global phase_a >= 2048) global phase_a = global phase_a - 2048;
         
         if (global phase_a < 512) {
-            signal_a = (global phase_a << 2);  // Rising edge
+            signal_a = (global phase_a << 2);
         } else if (global phase_a < 1536) {
-            signal_a = 2047 - ((global phase_a - 512) << 1);  // Falling edge
+            signal_a = 2047 - ((global phase_a - 512) << 1);
         } else {
-            signal_a = -2047 + ((global phase_a - 1536) << 2);  // Rising from bottom
+            signal_a = -2047 + ((global phase_a - 1536) << 2);
         }
         
-        // Signal B: Sawtooth wave
-        global phase_b = global phase_b + (signal_b_level + 16);  // Different frequency
+
+        global phase_b = global phase_b + (signal_b_level + 16);
         if (global phase_b >= 2048) global phase_b = global phase_b - 2048;
-        signal_b = global phase_b - 1024;  // Center around zero
+        signal_b = global phase_b - 1024;
         
-        // Calculate crossfade gains based on curve type
+
         if (curve_select > 128) {
-            // Equal power crossfade using lookup table
-            table_index = crossfade_pos >> 4;  // Scale to 0-15 range
+
+            table_index = crossfade_pos >> 4;
             if (table_index > 15) table_index = 15;
             
             gain_a = global equal_power_cos[table_index];
             gain_b = global equal_power_sin[table_index];
             
         } else {
-            // Linear crossfade
-            gain_a = 255 - crossfade_pos;  // Full A at pos=0
-            gain_b = crossfade_pos;        // Full B at pos=255
+
+            gain_a = 255 - crossfade_pos;
+            gain_b = crossfade_pos;
         }
         
-        // Apply crossfade gains
-        output_a = (signal_a * gain_a) >> 8;  // Scale by gain_a
-        output_b = (signal_b * gain_b) >> 8;  // Scale by gain_b
+
+        output_a = (signal_a * gain_a) >> 8;
+        output_b = (signal_b * gain_b) >> 8;
         
-        // Mix the signals
+
         mixed_output = output_a + output_b;
         
-        // Prevent clipping
+
         if (mixed_output > 2047) mixed_output = 2047;
         if (mixed_output < -2047) mixed_output = -2047;
         
-        // Apply to audio output
+
         global signal[0] = mixed_output;
         global signal[1] = mixed_output;
         
-        // Visual feedback on LEDs
-        global displayLEDs[0] = gain_a;           // Signal A level
-        global displayLEDs[1] = gain_b;           // Signal B level
-        global displayLEDs[2] = crossfade_pos;    // Crossfade position
+
+        global displayLEDs[0] = gain_a;
+        global displayLEDs[1] = gain_b;
+        global displayLEDs[2] = crossfade_pos;
         if (curve_select > 128) {
-            global displayLEDs[3] = 255;  // Equal power mode
+            global displayLEDs[3] = 255;
         } else {
-            global displayLEDs[3] = 64;   // Linear mode
+            global displayLEDs[3] = 64;
         }
         
         yield();
@@ -152,29 +152,29 @@ locals signal_a_level, signal_b_level, crossfade_pos, curve_select, signal_a, si
 ## Try These Settings
 
 ```impala
-// Linear crossfade between different frequencies
-params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Signal A: moderate frequency
-params[SWITCHES_PARAM_INDEX] = 128;  // Signal B: higher frequency
-params[OPERATOR_1_PARAM_INDEX] = 128;  // Center position
-params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Linear curve
 
-// Equal power crossfade
-params[CLOCK_FREQ_PARAM_INDEX] = 80;   // Signal A frequency
-params[SWITCHES_PARAM_INDEX] = 120;  // Signal B frequency
-params[OPERATOR_1_PARAM_INDEX] = 200;  // Mostly signal B
-params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Equal power curve
+params[CLOCK_FREQ_PARAM_INDEX] = 64;
+params[SWITCHES_PARAM_INDEX] = 128;
+params[OPERATOR_1_PARAM_INDEX] = 128;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 64;
 
-// Smooth transition demo
-params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Signal A
-params[SWITCHES_PARAM_INDEX] = 160;  // Signal B
-params[OPERATOR_1_PARAM_INDEX] = 0;    // Start with A, manually sweep to 255
-params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Equal power
 
-// High contrast crossfade
-params[CLOCK_FREQ_PARAM_INDEX] = 32;   // Low frequency A
-params[SWITCHES_PARAM_INDEX] = 200;  // High frequency B
-params[OPERATOR_1_PARAM_INDEX] = 128;  // Center position
-params[OPERAND_1_HIGH_PARAM_INDEX] = 220;  // Equal power curve
+params[CLOCK_FREQ_PARAM_INDEX] = 80;
+params[SWITCHES_PARAM_INDEX] = 120;
+params[OPERATOR_1_PARAM_INDEX] = 200;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 200;
+
+
+params[CLOCK_FREQ_PARAM_INDEX] = 100;
+params[SWITCHES_PARAM_INDEX] = 160;
+params[OPERATOR_1_PARAM_INDEX] = 0;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 180;
+
+
+params[CLOCK_FREQ_PARAM_INDEX] = 32;
+params[SWITCHES_PARAM_INDEX] = 200;
+params[OPERATOR_1_PARAM_INDEX] = 128;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 220;
 ```
 
 ## Understanding Crossfade Curves

@@ -27,7 +27,7 @@ Generates multiple polyrhythmic outputs from a single master clock, enabling com
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -39,50 +39,50 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// Clock divider system state
-global int master_counter = 0       // Master clock sample counter
-global int division_counter_0 = 0   // Division 0 counter
-global int division_counter_1 = 0   // Division 1 counter
-global int division_counter_2 = 0   // Division 2 counter
-global int gate_output_0 = 0        // Gate 0 state (0/1)
-global int gate_output_1 = 0        // Gate 1 state (0/1)
-global int gate_output_2 = 0        // Gate 2 state (0/1)
-global int master_rate = 11025      // Master clock rate (samples per pulse)
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global int master_counter = 0
+global int division_counter_0 = 0
+global int division_counter_1 = 0
+global int division_counter_2 = 0
+global int gate_output_0 = 0
+global int gate_output_1 = 0
+global int gate_output_2 = 0
+global int master_rate = 11025
 
 function process()
 locals division1, division2, division3, clock_rate, master_pulse, gate_state, input_sample, output_sample
 {
     loop {
-        // Read division and timing parameters
-        division1 = (params[CLOCK_FREQ_PARAM_INDEX] >> 4) + 1;  // 1-16 division ratio
-        division2 = (params[SWITCHES_PARAM_INDEX] >> 4) + 1;  // 1-16 division ratio
-        division3 = (params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;  // 1-16 division ratio
-        clock_rate = params[OPERAND_1_HIGH_PARAM_INDEX];            // 0-255 clock speed
+
+        division1 = (params[CLOCK_FREQ_PARAM_INDEX] >> 4) + 1;
+        division2 = (params[SWITCHES_PARAM_INDEX] >> 4) + 1;
+        division3 = (params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;
+        clock_rate = params[OPERAND_1_HIGH_PARAM_INDEX];
         
-        // Calculate master clock rate from parameter
-        global master_rate = 2756 + ((clock_rate * 19600) >> 8);  // ~16Hz to 480Hz
+
+        global master_rate = 2756 + ((clock_rate * 19600) >> 8);
         
-        // Advance master counter
+
         global master_counter = global master_counter + 1;
         
-        // Generate master clock pulse
+
         master_pulse = 0;
         if (global master_counter >= global master_rate) {
             global master_counter = 0;
-            master_pulse = 1;  // Master clock tick
+            master_pulse = 1;
         }
         
-        // Process each clock division when master pulses
+
         if (master_pulse == 1) {
-            // Process division 0
+
             global division_counter_0 = global division_counter_0 + 1;
             if (global division_counter_0 >= division1) {
                 global division_counter_0 = 0;
@@ -91,7 +91,7 @@ locals division1, division2, division3, clock_rate, master_pulse, gate_state, in
                 global gate_output_0 = 0;
             }
             
-            // Process division 1
+
             global division_counter_1 = global division_counter_1 + 1;
             if (global division_counter_1 >= division2) {
                 global division_counter_1 = 0;
@@ -100,7 +100,7 @@ locals division1, division2, division3, clock_rate, master_pulse, gate_state, in
                 global gate_output_1 = 0;
             }
             
-            // Process division 2
+
             global division_counter_2 = global division_counter_2 + 1;
             if (global division_counter_2 >= division3) {
                 global division_counter_2 = 0;
@@ -110,68 +110,68 @@ locals division1, division2, division3, clock_rate, master_pulse, gate_state, in
             }
         }
         
-        // Read input sample
+
         input_sample = signal[0];
         
-        // Apply rhythmic gating based on division outputs
+
         gate_state = 0;
-        if (global gate_output_0 == 1) gate_state = gate_state + 1;  // Division 1
-        if (global gate_output_1 == 1) gate_state = gate_state + 2;  // Division 2
-        if (global gate_output_2 == 1) gate_state = gate_state + 4;  // Division 3
+        if (global gate_output_0 == 1) gate_state = gate_state + 1;
+        if (global gate_output_1 == 1) gate_state = gate_state + 2;
+        if (global gate_output_2 == 1) gate_state = gate_state + 4;
         
-        // Apply different effects based on which gates are active
+
         if (gate_state == 0) {
-            // No gates: pass signal through
+
             output_sample = input_sample;
             
         } else if (gate_state == 1) {
-            // Division 1 only: light filtering
+
             output_sample = input_sample - (input_sample >> 3);
             
         } else if (gate_state == 2) {
-            // Division 2 only: moderate filtering
+
             output_sample = input_sample - (input_sample >> 2);
             
         } else if (gate_state == 4) {
-            // Division 3 only: heavy filtering
+
             output_sample = input_sample - (input_sample >> 1);
             
         } else {
-            // Multiple gates: combined effect
-            output_sample = input_sample + (input_sample >> 2);  // Slight boost
+
+            output_sample = input_sample + (input_sample >> 2);
         }
         
-        // Prevent clipping
+
         if (output_sample > 2047) output_sample = 2047;
         if (output_sample < -2047) output_sample = -2047;
         
-        // Output processed signal
+
         global signal[0] = output_sample;
         global signal[1] = output_sample;
         
-        // Display clock division states on LEDs
+
         if (global gate_output_0 == 1) {
-            global displayLEDs[0] = 255;  // Division 1 active
+            global displayLEDs[0] = 255;
         } else {
-            global displayLEDs[0] = 32;   // Division 1 inactive
+            global displayLEDs[0] = 32;
         }
         
         if (global gate_output_1 == 1) {
-            global displayLEDs[1] = 255;  // Division 2 active
+            global displayLEDs[1] = 255;
         } else {
-            global displayLEDs[1] = 32;   // Division 2 inactive
+            global displayLEDs[1] = 32;
         }
         
         if (global gate_output_2 == 1) {
-            global displayLEDs[2] = 255;  // Division 3 active
+            global displayLEDs[2] = 255;
         } else {
-            global displayLEDs[2] = 32;   // Division 3 inactive
+            global displayLEDs[2] = 32;
         }
         
         if (master_pulse == 1) {
-            global displayLEDs[3] = 255;  // Master clock active
+            global displayLEDs[3] = 255;
         } else {
-            global displayLEDs[3] = 16;   // Master clock inactive
+            global displayLEDs[3] = 16;
         }
         
         yield();
@@ -203,29 +203,29 @@ locals division1, division2, division3, clock_rate, master_pulse, gate_state, in
 ## Try These Settings
 
 ```impala
-// Standard musical divisions
-params[CLOCK_FREQ_PARAM_INDEX] = 16;   // Division 1 = 2
-params[SWITCHES_PARAM_INDEX] = 32;   // Division 2 = 3
-params[OPERATOR_1_PARAM_INDEX] = 64;   // Division 3 = 5
-params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Medium clock rate
 
-// Fast polyrhythms
-params[CLOCK_FREQ_PARAM_INDEX] = 16;   // Division 1 = 2
-params[SWITCHES_PARAM_INDEX] = 48;   // Division 2 = 4
-params[OPERATOR_1_PARAM_INDEX] = 80;   // Division 3 = 6
-params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Fast clock rate
+params[CLOCK_FREQ_PARAM_INDEX] = 16;
+params[SWITCHES_PARAM_INDEX] = 32;
+params[OPERATOR_1_PARAM_INDEX] = 64;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 128;
 
-// Slow evolution
-params[CLOCK_FREQ_PARAM_INDEX] = 112;  // Division 1 = 8
-params[SWITCHES_PARAM_INDEX] = 160;  // Division 2 = 11
-params[OPERATOR_1_PARAM_INDEX] = 208;  // Division 3 = 14
-params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Slow clock rate
 
-// Simple beat subdivision
-params[CLOCK_FREQ_PARAM_INDEX] = 16;   // Division 1 = 2
-params[SWITCHES_PARAM_INDEX] = 64;   // Division 2 = 5
-params[OPERATOR_1_PARAM_INDEX] = 128;  // Division 3 = 9
-params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Medium-fast clock rate
+params[CLOCK_FREQ_PARAM_INDEX] = 16;
+params[SWITCHES_PARAM_INDEX] = 48;
+params[OPERATOR_1_PARAM_INDEX] = 80;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 200;
+
+
+params[CLOCK_FREQ_PARAM_INDEX] = 112;
+params[SWITCHES_PARAM_INDEX] = 160;
+params[OPERATOR_1_PARAM_INDEX] = 208;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 64;
+
+
+params[CLOCK_FREQ_PARAM_INDEX] = 16;
+params[SWITCHES_PARAM_INDEX] = 64;
+params[OPERATOR_1_PARAM_INDEX] = 128;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 150;
 ```
 
 ## Understanding Clock Dividers

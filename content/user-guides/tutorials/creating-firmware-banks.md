@@ -38,19 +38,19 @@ PikaCmd.exe -compile your_effect.impala
 Your firmware must include these elements:
 
 ```impala
-// Required format declaration
-const int PRAWN_FIRMWARE_PATCH_FORMAT = 2  // or 3 for advanced
 
-// Standard global layout
-global array signal[2]       // Audio I/O
-global array params[PARAM_COUNT]  // Plugin parameters  
-global array displayLEDs[4]  // LED displays
-global int clock = 0         // Clock counter
+const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required functions
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global int clock = 0
+
+
 function process() {
     loop {
-        // Main processing
+
         yield();
     }
 }
@@ -84,13 +84,13 @@ function update() {
     int mode = (int) global params[OPERATOR_1_PARAM_INDEX];
     
     switch (mode) {
-        case 1: // A0-A9 presets (light mode)
+        case 1:
             setupLightProcessing();
             break;
-        case 2: // B0-B9 presets (heavy mode)  
+        case 2:
             setupHeavyProcessing();
             break;
-        case 3: // C0-C9 presets (experimental)
+        case 3:
             setupExperimentalProcessing();
             break;
     }
@@ -151,21 +151,21 @@ Permut8BankV2: {
             Operand2High: "0x00"
             Operand2Low: "0x00"
         }
-        // Continue for A2-C9 as needed
+
     }
     Firmware: {
         Name: "your_effect"
         Config: ""
         Code: {
-            // Insert compiled .gazl content here
+
             "PRAWN_FIRMWARE_PATCH_FORMAT: ! DEFi #2"
             "signal: GLOB *2"
             "params: GLOB *PARAM_COUNT"
             "displayLEDs: GLOB *4"
             "clock: DATi #0"
-            // ... rest of GAZL assembly from your_effect.gazl
+
             "process: FUNC"
-            // ... complete firmware code
+
         }
     }
 }
@@ -219,7 +219,7 @@ Code: {
     "line 1 of GAZL assembly"
     "line 2 of GAZL assembly"
     "line 3 of GAZL assembly"
-    // ... continue for all lines
+
 }
 ```
 
@@ -245,7 +245,7 @@ Code: {
     "$sample: LOCi"
     "loop {"
     "  PEEK $sample &signal:0"
-    "  // ... processing code"
+    "
     "  POKE &signal:0 $sample"
     "  CALL ^yield %0 *1"
     "}"
@@ -376,7 +376,7 @@ Track your bank versions:
 
 ```
 Firmware: {
-    Name: "your_effect_v1_2"  // Include version
+    Name: "your_effect_v1_2"
     Config: ""
     Code: { /* assembly */ }
 }

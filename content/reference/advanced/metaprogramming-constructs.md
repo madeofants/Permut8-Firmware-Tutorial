@@ -13,7 +13,7 @@ Unlike traditional metaprogramming in higher-level languages, Permut8 metaprogra
 Create type-generic data structures and algorithms using advanced macro techniques:
 
 ```impala
-// Generic array implementation
+
 #define DECLARE_ARRAY(TYPE, NAME) \
     struct NAME##Array { \
         TYPE* data; \
@@ -46,12 +46,12 @@ Create type-generic data structures and algorithms using advanced macro techniqu
         arr->size = 0; \
     }
 
-// Usage: Create specific array types
-DECLARE_ARRAY(f32, Sample)     // Creates SampleArray type
-DECLARE_ARRAY(int, Parameter)  // Creates ParameterArray type
-DECLARE_ARRAY(bool, Gate)      // Creates GateArray type
 
-// Now use the generated types and functions
+DECLARE_ARRAY(f32, Sample)
+DECLARE_ARRAY(int, Parameter)
+DECLARE_ARRAY(bool, Gate)
+
+
 void processAudioWithArrays() {
     struct SampleArray samples;
     struct ParameterArray params;
@@ -71,7 +71,7 @@ void processAudioWithArrays() {
 Use X-macros for maintainable enumeration and dispatch:
 
 ```impala
-// Define all audio effects in one place
+
 #define AUDIO_EFFECTS_LIST \
     X(REVERB, "Reverb", processReverb, initReverb, cleanupReverb) \
     X(DELAY, "Delay", processDelay, initDelay, cleanupDelay) \
@@ -80,7 +80,7 @@ Use X-macros for maintainable enumeration and dispatch:
     X(CHORUS, "Chorus", processChorus, initChorus, cleanupChorus) \
     X(FLANGER, "Flanger", processFlanger, initFlanger, cleanupFlanger)
 
-// Generate enum
+
 #define X(id, name, process, init, cleanup) EFFECT_##id,
 enum EffectType {
     AUDIO_EFFECTS_LIST
@@ -88,14 +88,14 @@ enum EffectType {
 };
 #undef X
 
-// Generate name array
+
 #define X(id, name, process, init, cleanup) name,
 static const char* effectNames[EFFECT_COUNT] = {
     AUDIO_EFFECTS_LIST
 };
 #undef X
 
-// Generate function pointer arrays
+
 #define X(id, name, process, init, cleanup) process,
 static ProcessFunc processFunctions[EFFECT_COUNT] = {
     AUDIO_EFFECTS_LIST
@@ -114,7 +114,7 @@ static CleanupFunc cleanupFunctions[EFFECT_COUNT] = {
 };
 #undef X
 
-// Generated dispatch functions
+
 void processEffect(enum EffectType type, f32* input, f32* output, int samples) {
     if (type >= 0 && type < EFFECT_COUNT) {
         processFunctions[type](input, output, samples);
@@ -141,7 +141,7 @@ const char* getEffectName(enum EffectType type) {
 Build sophisticated macro systems for code generation:
 
 ```impala
-// Macro for creating DSP filter implementations
+
 #define DECLARE_FILTER(NAME, COEFFS, ORDER) \
     struct NAME##Filter { \
         f32 x[ORDER + 1]; \
@@ -178,7 +178,7 @@ Build sophisticated macro systems for code generation:
         return output; \
     }
 
-// Create specific filter types with coefficients
+
 DECLARE_FILTER(Lowpass, 
     {{0.2929f, 0.5858f, 0.2929f}, {1.0f, -0.0f, 0.1716f}}, 2)
 
@@ -188,7 +188,7 @@ DECLARE_FILTER(Highpass,
 DECLARE_FILTER(Bandpass,
     {{0.0176f, 0.0f, -0.0176f}, {1.0f, -1.8405f, 0.9648f}}, 2)
 
-// Usage
+
 void setupFilters() {
     struct LowpassFilter lpf;
     struct HighpassFilter hpf;
@@ -198,7 +198,7 @@ void setupFilters() {
     initHighpassFilter(&hpf);
     initBandpassFilter(&bpf);
     
-    // Process audio through filter chain
+
     f32 sample = 0.8f;
     sample = processLowpassFilter(&lpf, sample);
     sample = processHighpassFilter(&hpf, sample);
@@ -213,7 +213,7 @@ void setupFilters() {
 Implement container-like patterns with type safety:
 
 ```impala
-// Generic linked list pattern
+
 #define DECLARE_LIST(TYPE, NAME) \
     struct NAME##Node { \
         TYPE data; \
@@ -279,11 +279,11 @@ Implement container-like patterns with type safety:
         } \
     }
 
-// Create specific list types
+
 DECLARE_LIST(f32, Sample)
 DECLARE_LIST(int, Event)
 
-// Comparison functions for different types
+
 bool floatEquals(f32 a, f32 b) {
     return fabs(a - b) < 0.0001f;
 }
@@ -292,7 +292,7 @@ bool intEquals(int a, int b) {
     return a == b;
 }
 
-// Usage
+
 void useLists() {
     struct SampleList samples;
     struct EventList events;
@@ -315,7 +315,7 @@ void useLists() {
 Create function templates using macro-based approaches:
 
 ```impala
-// Generic sorting algorithm
+
 #define DECLARE_SORT(TYPE, NAME, COMPARE_FUNC) \
     void sort##NAME(TYPE* array, int size) { \
         int i; \
@@ -346,7 +346,7 @@ Create function templates using macro-based approaches:
         return -1; \
     }
 
-// Comparison functions
+
 int compareFloat(f32 a, f32 b) {
     if (a < b) return -1;
     if (a > b) return 1;
@@ -357,11 +357,11 @@ int compareInt(int a, int b) {
     return a - b;
 }
 
-// Generate sort functions for different types
+
 DECLARE_SORT(f32, Float, compareFloat)
 DECLARE_SORT(int, Int, compareInt)
 
-// Usage
+
 void sortingExample() {
     f32 samples[] = {0.8f, 0.2f, 0.9f, 0.1f, 0.5f};
     int frequencies[] = {880, 220, 440, 110, 660};
@@ -381,23 +381,23 @@ void sortingExample() {
 Implement comprehensive feature flag management:
 
 ```impala
-// Feature configuration header
+
 #ifndef PERMUT8_FEATURES_H
 #define PERMUT8_FEATURES_H
 
-// Audio processing features
+
 #define FEATURE_REVERB_ENABLED    1
 #define FEATURE_DELAY_ENABLED     1
 #define FEATURE_FILTER_ENABLED    1
-#define FEATURE_DISTORTION_ENABLED 0  // Disabled for space
+#define FEATURE_DISTORTION_ENABLED 0
 #define FEATURE_MODULATION_ENABLED 1
 
-// Hardware features
+
 #define FEATURE_MIDI_ENABLED      1
-#define FEATURE_USB_ENABLED       0  // No USB support
+#define FEATURE_USB_ENABLED       0
 #define FEATURE_SD_CARD_ENABLED   1
 
-// Debug features (only in debug builds)
+
 #ifdef DEBUG
 #define FEATURE_MEMORY_DEBUG      1
 #define FEATURE_PERFORMANCE_STATS 1
@@ -408,7 +408,7 @@ Implement comprehensive feature flag management:
 #define FEATURE_AUDIO_SCOPE       0
 #endif
 
-// Platform-specific features
+
 #ifdef PERMUT8_V2
 #define FEATURE_ENHANCED_DAC      1
 #define FEATURE_EXTRA_MEMORY      1
@@ -417,9 +417,9 @@ Implement comprehensive feature flag management:
 #define FEATURE_EXTRA_MEMORY      0
 #endif
 
-#endif // PERMUT8_FEATURES_H
+#endif
 
-// Conditional code inclusion
+
 #if FEATURE_REVERB_ENABLED
 #include "reverb.h"
 #endif
@@ -432,7 +432,7 @@ Implement comprehensive feature flag management:
 #include "memory_debug.h"
 #endif
 
-// Feature-dependent function compilation
+
 void initializeAudioEffects() {
     #if FEATURE_REVERB_ENABLED
     initReverb();
@@ -451,7 +451,7 @@ void initializeAudioEffects() {
     #endif
 }
 
-// Conditional compilation with fallbacks
+
 f32 processAudioEffect(f32 input, int effectType) {
     switch (effectType) {
         #if FEATURE_REVERB_ENABLED
@@ -470,7 +470,7 @@ f32 processAudioEffect(f32 input, int effectType) {
         #endif
         
         default:
-            return input; // Pass-through for disabled effects
+            return input;
     }
 }
 ```
@@ -480,7 +480,7 @@ f32 processAudioEffect(f32 input, int effectType) {
 Create sophisticated build configuration management:
 
 ```impala
-// Build configuration macros
+
 #define BUILD_CONFIG_PERFORMANCE  1
 #define BUILD_CONFIG_SIZE         2
 #define BUILD_CONFIG_DEBUGGING    3
@@ -489,7 +489,7 @@ Create sophisticated build configuration management:
 #define BUILD_CONFIG BUILD_CONFIG_PERFORMANCE
 #endif
 
-// Performance build configuration
+
 #if BUILD_CONFIG == BUILD_CONFIG_PERFORMANCE
     #define ENABLE_SIMD_OPTIMIZATIONS    1
     #define ENABLE_LOOP_UNROLLING        1
@@ -500,7 +500,7 @@ Create sophisticated build configuration management:
     #define DEBUG_CHECKS                 0
 #endif
 
-// Size-optimized build configuration
+
 #if BUILD_CONFIG == BUILD_CONFIG_SIZE
     #define ENABLE_SIMD_OPTIMIZATIONS    0
     #define ENABLE_LOOP_UNROLLING        0
@@ -511,7 +511,7 @@ Create sophisticated build configuration management:
     #define DEBUG_CHECKS                 0
 #endif
 
-// Debug build configuration
+
 #if BUILD_CONFIG == BUILD_CONFIG_DEBUGGING
     #define ENABLE_SIMD_OPTIMIZATIONS    0
     #define ENABLE_LOOP_UNROLLING        0
@@ -522,17 +522,17 @@ Create sophisticated build configuration management:
     #define DEBUG_CHECKS                 1
 #endif
 
-// Conditional function attributes
+
 #if ENABLE_INLINE_EXPANSION
     #define FORCE_INLINE __attribute__((always_inline)) inline
 #else
     #define FORCE_INLINE
 #endif
 
-// Configuration-dependent implementations
+
 #if ENABLE_SIMD_OPTIMIZATIONS
 FORCE_INLINE void vectorAdd(f32* a, f32* b, f32* result, int count) {
-    // SIMD implementation
+
     int i;
     for (i = 0 to count; i = i + 4) {
         __m128 va = _mm_load_ps(&a[i]);
@@ -543,7 +543,7 @@ FORCE_INLINE void vectorAdd(f32* a, f32* b, f32* result, int count) {
 }
 #else
 FORCE_INLINE void vectorAdd(f32* a, f32* b, f32* result, int count) {
-    // Scalar implementation
+
     int i;
     for (i = 0 to count) {
         result[i] = a[i] + b[i];
@@ -559,7 +559,7 @@ FORCE_INLINE void vectorAdd(f32* a, f32* b, f32* result, int count) {
 Implement flexible dispatch mechanisms using function pointers:
 
 ```impala
-// Abstract audio processor interface
+
 typedef struct AudioProcessor AudioProcessor;
 
 typedef bool (*InitFunc)(AudioProcessor* proc);
@@ -584,7 +584,7 @@ struct AudioProcessor {
     bool initialized;
 };
 
-// Generic processor operations
+
 bool initProcessor(AudioProcessor* proc) {
     if (proc->vtable->init) {
         proc->initialized = proc->vtable->init(proc);
@@ -605,13 +605,13 @@ void setParameter(AudioProcessor* proc, int param, f32 value) {
     }
 }
 
-// Specific processor implementations
+
 struct ReverbData {
     f32 roomSize;
     f32 damping;
     f32 wetLevel;
     f32 dryLevel;
-    // ... reverb-specific data
+
 };
 
 bool reverbInit(AudioProcessor* proc) {
@@ -629,7 +629,7 @@ bool reverbInit(AudioProcessor* proc) {
 
 void reverbProcess(AudioProcessor* proc, f32* input, f32* output, int samples) {
     struct ReverbData* data = (struct ReverbData*)proc->instanceData;
-    // Reverb processing implementation
+
     int i;
     for (i = 0 to samples) {
         f32 wet = processReverbAlgorithm(input[i], data);
@@ -654,18 +654,18 @@ void reverbDestroy(AudioProcessor* proc) {
     }
 }
 
-// Reverb processor vtable
+
 static const struct AudioProcessorVTable reverbVTable = {
     .init = reverbInit,
     .process = reverbProcess,
     .setParameter = reverbSetParameter,
-    .getParameter = null, // Use default implementation
+    .getParameter = null,
     .destroy = reverbDestroy,
     .name = "Reverb",
     .parameterCount = 4
 };
 
-// Processor factory
+
 AudioProcessor* createProcessor(const struct AudioProcessorVTable* vtable) {
     AudioProcessor* proc = (AudioProcessor*)allocate(sizeof(AudioProcessor));
     if (proc) {
@@ -676,13 +676,13 @@ AudioProcessor* createProcessor(const struct AudioProcessorVTable* vtable) {
     return proc;
 }
 
-// Usage
+
 void audioProcessingChain() {
     AudioProcessor* reverb = createProcessor(&reverbVTable);
     
     if (initProcessor(reverb)) {
-        setParameter(reverb, 0, 0.8f); // Room size
-        setParameter(reverb, 2, 0.4f); // Wet level
+        setParameter(reverb, 0, 0.8f);
+        setParameter(reverb, 2, 0.4f);
         
         f32 inputBuffer[BUFFER_SIZE];
         f32 outputBuffer[BUFFER_SIZE];
@@ -697,7 +697,7 @@ void audioProcessingChain() {
 Implement flexible callback mechanisms for event handling:
 
 ```impala
-// Event callback system
+
 typedef enum {
     EVENT_PARAMETER_CHANGED,
     EVENT_NOTE_ON,
@@ -723,7 +723,7 @@ struct CallbackNode {
 };
 
 struct EventDispatcher {
-    struct CallbackNode* callbacks[16]; // One list per event type
+    struct CallbackNode* callbacks[16];
     struct CallbackNode* freeNodes;
     struct CallbackNode nodePool[MAX_CALLBACKS];
     int poolIndex;
@@ -737,7 +737,7 @@ void initEventDispatcher() {
         eventDispatcher.callbacks[i] = null;
     }
     
-    // Initialize free list
+
     eventDispatcher.freeNodes = null;
     for (i = 0 to MAX_CALLBACKS) {
         eventDispatcher.nodePool[i].next = eventDispatcher.freeNodes;
@@ -770,7 +770,7 @@ void dispatchEvent(const Event* event) {
     }
 }
 
-// Example callback implementations
+
 void onParameterChanged(const Event* event, void* userData) {
     logInfo("Parameter %d changed to %f", event->param1, event->value);
     updateProcessorParameter(event->param1, event->value);
@@ -778,13 +778,13 @@ void onParameterChanged(const Event* event, void* userData) {
 
 void onNoteEvent(const Event* event, void* userData) {
     if (event->type == EVENT_NOTE_ON) {
-        startVoice(event->param1, event->value); // note, velocity
+        startVoice(event->param1, event->value);
     } else if (event->type == EVENT_NOTE_OFF) {
         stopVoice(event->param1);
     }
 }
 
-// Usage
+
 void setupEventHandling() {
     initEventDispatcher();
     
@@ -792,11 +792,11 @@ void setupEventHandling() {
     registerCallback(EVENT_NOTE_ON, onNoteEvent, null);
     registerCallback(EVENT_NOTE_OFF, onNoteEvent, null);
     
-    // Dispatch events
+
     Event paramEvent = {EVENT_PARAMETER_CHANGED, 5, 0, 0.8f, null};
     dispatchEvent(&paramEvent);
     
-    Event noteEvent = {EVENT_NOTE_ON, 60, 0, 0.9f, null}; // Middle C, velocity 0.9
+    Event noteEvent = {EVENT_NOTE_ON, 60, 0, 0.9f, null};
     dispatchEvent(&noteEvent);
 }
 ```
@@ -808,7 +808,7 @@ void setupEventHandling() {
 Implement sophisticated build-time code generation systems:
 
 ```impala
-// Generator script (would be run during build)
+
 /*
 #!/usr/bin/env python3
 
@@ -824,18 +824,18 @@ def generate_effect_processor(config):
     
     # Generate header
     header = f"""
-// Auto-generated {name} processor
-// Generated from {config['source_file']}
+
+
 
 struct {name}Data {{
 """
     
     # Generate parameter structure
     for param in params:
-        header += f"    f32 {param['name']}; // {param['description']}\n"
+        header += f"    f32 {param['name']};
     
     header += f"""
-    // Processing state
+
     f32 processingBuffer[BUFFER_SIZE];
     int stateIndex;
 }};
@@ -863,11 +863,11 @@ bool {name.lower()}Init(AudioProcessor* proc) {{
     struct {name}Data* data = (struct {name}Data*)allocate(sizeof(struct {name}Data));
     if (!data) return false;
     
-    // Initialize parameters to defaults
+
 """
     
     for i, param in enumerate(params):
-        impl += f"    data->{param['name']} = {param['default']}f; // {param['description']}\n"
+        impl += f"    data->{param['name']} = {param['default']}f;
     
     impl += f"""
     data->stateIndex = 0;
@@ -881,12 +881,12 @@ void {name.lower()}SetParameter(AudioProcessor* proc, int param, f32 value) {{
 """
     
     for i, param in enumerate(params):
-        impl += f"        case {i}: data->{param['name']} = value; break; // {param['description']}\n"
+        impl += f"        case {i}: data->{param['name']} = value; break;
     
     impl += """    }
 }
 
-// ... rest of implementation would be generated based on DSP algorithm
+
 """
     
     return header + impl
@@ -902,7 +902,7 @@ if __name__ == "__main__":
         f.write(code)
 */
 
-// Example configuration file (effects.json):
+
 /*
 {
     "name": "Chorus",
@@ -923,9 +923,9 @@ if __name__ == "__main__":
 Create a template instantiation system for common patterns:
 
 ```impala
-// Template definition file (oscillator.template)
+
 /*
-// Template parameters: TYPE, NAME, WAVE_FUNC
+
 struct %NAME%Oscillator {
     f32 frequency;
     f32 phase;
@@ -940,7 +940,7 @@ void init%NAME%Oscillator(struct %NAME%Oscillator* osc, f32 freq) {
     osc->amplitude = 1.0f;
     osc->useTable = false;
     
-    // Pre-compute wave table for efficiency
+
     int i;
     for (i = 0 to WAVE_TABLE_SIZE) {
         f32 x = (f32)i / WAVE_TABLE_SIZE * TWO_PI;
@@ -953,7 +953,7 @@ void init%NAME%Oscillator(struct %NAME%Oscillator* osc, f32 freq) {
     %TYPE% result;
     
     if (osc->useTable) {
-        // Table lookup with interpolation
+
         f32 index = (osc->phase / TWO_PI) * WAVE_TABLE_SIZE;
         int i1 = (int)index;
         int i2 = (i1 + 1) % WAVE_TABLE_SIZE;
@@ -961,11 +961,11 @@ void init%NAME%Oscillator(struct %NAME%Oscillator* osc, f32 freq) {
         
         result = osc->waveTable[i1] * (1.0f - frac) + osc->waveTable[i2] * frac;
     } else {
-        // Direct calculation
+
         result = (%TYPE%)%WAVE_FUNC%(osc->phase);
     }
     
-    // Update phase
+
     osc->phase = osc->phase + osc->frequency * PHASE_INCREMENT;
     if (osc->phase >= TWO_PI) {
         osc->phase = osc->phase - TWO_PI;
@@ -975,7 +975,7 @@ void init%NAME%Oscillator(struct %NAME%Oscillator* osc, f32 freq) {
 }
 */
 
-// Template instantiation macro
+
 #define INSTANTIATE_OSCILLATOR(TYPE, NAME, WAVE_FUNC) \
     struct NAME##Oscillator { \
         f32 frequency; \
@@ -1021,14 +1021,14 @@ void init%NAME%Oscillator(struct %NAME%Oscillator* osc, f32 freq) {
         return result * osc->amplitude; \
     }
 
-// Instantiate different oscillator types
+
 INSTANTIATE_OSCILLATOR(f32, Sine, sinf)
 INSTANTIATE_OSCILLATOR(f32, Cosine, cosf)
 INSTANTIATE_OSCILLATOR(f32, Triangle, triangleWave)
 INSTANTIATE_OSCILLATOR(f32, Sawtooth, sawtoothWave)
 INSTANTIATE_OSCILLATOR(f32, Square, squareWave)
 
-// Custom wave functions
+
 f32 triangleWave(f32 phase) {
     return 2.0f * fabs(2.0f * (phase / TWO_PI - floorf(phase / TWO_PI + 0.5f))) - 1.0f;
 }
@@ -1045,7 +1045,7 @@ f32 squareWave(f32 phase) {
     }
 }
 
-// Usage
+
 void useOscillators() {
     struct SineOscillator sine;
     struct TriangleOscillator triangle;
@@ -1062,7 +1062,7 @@ void useOscillators() {
         f32 sawtoothOutput = processSawtoothOscillator(&sawtooth);
         
         f32 mixed = (sineOutput + triangleOutput + sawtoothOutput) / 3.0f;
-        // Output mixed signal
+
     }
 }
 ```
@@ -1106,10 +1106,10 @@ generate: $(GENERATED_SOURCES) $(GENERATED_HEADERS)
 Create sophisticated build configuration systems:
 
 ```impala
-// Build configuration system
+
 #include "build_config.h"
 
-// Feature matrix compilation
+
 #ifdef BUILD_FEATURE_MATRIX
     static const bool FEATURES[MAX_FEATURES] = {
         #include "feature_matrix.inc"
@@ -1120,7 +1120,7 @@ Create sophisticated build configuration systems:
     #define FEATURE_ENABLED(id) (FEATURE_##id##_ENABLED)
 #endif
 
-// Dynamic vs static dispatch based on build config
+
 #ifdef BUILD_DYNAMIC_DISPATCH
     #define CALL_PROCESSOR(type, func, ...) \
         processorVTables[type].func(__VA_ARGS__)
@@ -1134,7 +1134,7 @@ Create sophisticated build configuration systems:
         }
 #endif
 
-// Memory allocation strategy based on build config
+
 #ifdef BUILD_STATIC_ALLOCATION
     #define ALLOCATE(size) allocateFromPool(size)
     #define DEALLOCATE(ptr) deallocateToPool(ptr)

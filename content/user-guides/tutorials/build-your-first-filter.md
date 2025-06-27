@@ -19,65 +19,65 @@ Create a new text file called `my_filter.impala` in your Permut8 Firmware Code d
 Copy this exact code into your file:
 
 ```impala
-// ===== STANDARD PERMUT8 CONSTANTS =====
 
-// Parameter System Constants
-const int PARAM_MAX = 255                    // Maximum knob/parameter value (8-bit)
-const int PARAM_MIN = 0                      // Minimum knob/parameter value
-const int PARAM_MID = 128                    // Parameter midpoint for bipolar controls
-const int PARAM_SWITCH_THRESHOLD = 127       // Boolean parameter on/off threshold
 
-// Audio Sample Range Constants (12-bit signed audio)
-const int AUDIO_MAX = 2047                   // Maximum audio sample value (+12-bit)
-const int AUDIO_MIN = -2047                  // Minimum audio sample value (-12-bit)
-const int AUDIO_ZERO = 0                     // Audio silence/center value
 
-// Sample Rate Constants
-const int SAMPLE_RATE_44K1 = 44100          // Standard audio sample rate (Hz)
-const int SAMPLE_RATE_HALF = 22050          // Half sample rate (0.5 second buffer at 44.1kHz)
-const int SAMPLE_RATE_QUARTER = 11025       // Quarter sample rate (0.25 second buffer)
+const int PARAM_MAX = 255
+const int PARAM_MIN = 0
+const int PARAM_MID = 128
+const int PARAM_SWITCH_THRESHOLD = 127
 
-// Audio Scaling Constants (16-bit ranges for phase accumulators)
-const int AUDIO_FULL_RANGE = 65536          // 16-bit full scale range (0-65535)
-const int AUDIO_HALF_RANGE = 32768          // 16-bit half scale (bipolar center)
-const int AUDIO_QUARTER_RANGE = 16384       // 16-bit quarter scale (triangle wave peaks)
 
-// Mathematical Constants
-const float PI = 3.14159265                 // Mathematical pi constant
-const float TWO_PI = 6.28318531             // 2 * pi (full circle radians)
-const float PI_OVER_2 = 1.57079633          // pi/2 (quarter circle radians)
+const int AUDIO_MAX = 2047
+const int AUDIO_MIN = -2047
+const int AUDIO_ZERO = 0
 
-// Buffer Size Constants (powers of 2 for efficiency)
-const int SMALL_BUFFER = 128                // Small buffer size
-const int MEDIUM_BUFFER = 512               // Medium buffer size  
-const int LARGE_BUFFER = 1024               // Large buffer size
-const int MAX_BUFFER = 2048                 // Maximum buffer size
 
-// Bit Manipulation Constants
-const int BITS_PER_BYTE = 8                 // Standard byte size
-const int SHIFT_DIVIDE_BY_2 = 1             // Bit shift for divide by 2
-const int SHIFT_DIVIDE_BY_4 = 2             // Bit shift for divide by 4
-const int SHIFT_DIVIDE_BY_8 = 3             // Bit shift for divide by 8
+const int SAMPLE_RATE_44K1 = 44100
+const int SAMPLE_RATE_HALF = 22050
+const int SAMPLE_RATE_QUARTER = 11025
 
-// LED Display Constants
-const int LED_OFF = 0x00                    // All LEDs off
-const int LED_ALL_ON = 0xFF                 // All 8 LEDs on
-const int LED_SINGLE = 0x01                 // Single LED pattern
-const int LED_DOUBLE = 0x03                 // Two LED pattern
-const int LED_QUAD = 0x0F                   // Four LED pattern
-const int LED_BRIGHTNESS_FULL = 255         // Full LED brightness
-const int LED_BRIGHTNESS_HALF = 127         // Half LED brightness
 
-// Musical/Timing Constants
-const int STANDARD_BPM = 120                // Standard tempo reference
-const int QUARTER_NOTE_DIVISIONS = 4        // Divisions per quarter note
-const int SEMITONES_PER_OCTAVE = 12         // Musical semitones in octave
-const float A4_FREQUENCY = 440.0            // A4 reference frequency (Hz)
+const int AUDIO_FULL_RANGE = 65536
+const int AUDIO_HALF_RANGE = 32768
+const int AUDIO_QUARTER_RANGE = 16384
 
-// My First Filter Plugin
+
+const float PI = 3.14159265
+const float TWO_PI = 6.28318531
+const float PI_OVER_2 = 1.57079633
+
+
+const int SMALL_BUFFER = 128
+const int MEDIUM_BUFFER = 512
+const int LARGE_BUFFER = 1024
+const int MAX_BUFFER = 2048
+
+
+const int BITS_PER_BYTE = 8
+const int SHIFT_DIVIDE_BY_2 = 1
+const int SHIFT_DIVIDE_BY_4 = 2
+const int SHIFT_DIVIDE_BY_8 = 3
+
+
+const int LED_OFF = 0x00
+const int LED_ALL_ON = 0xFF
+const int LED_SINGLE = 0x01
+const int LED_DOUBLE = 0x03
+const int LED_QUAD = 0x0F
+const int LED_BRIGHTNESS_FULL = 255
+const int LED_BRIGHTNESS_HALF = 127
+
+
+const int STANDARD_BPM = 120
+const int QUARTER_NOTE_DIVISIONS = 4
+const int SEMITONES_PER_OCTAVE = 12
+const float A4_FREQUENCY = 440.0
+
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -89,28 +89,28 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Standard global variables required by Permut8
+
 global int clock = 0
-global array signal[2]          // Left/Right audio samples  
-global array params[PARAM_COUNT]          // Knob values (0-255)
-global array displayLEDs[4]     // LED displays (0-255)
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
 global int clockFreqLimit = 132300
 
-// Our filter state variables
-global int lastOutput = 0       // Remember last output sample
 
-// Main processing function
+global int lastOutput = 0
+
+
 function process()
 locals int cutoffParam, int filterMix, int input, int output
 {
     loop {
-        // Audio processing goes here
+
         
-        // For now, just pass audio through unchanged
-        // signal[0] = left channel, signal[1] = right channel
-        // (we don't need to change anything - audio passes through automatically)
+
+
+
         
-        // Return control to Permut8 after processing each sample
+
         yield()
     }
 }
@@ -145,22 +145,22 @@ function process()
 locals int cutoffParam, int filterMix, int input, int output
 {
     loop {
-        // Get cutoff frequency from first knob (0-255)
+
         cutoffParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]
         
-        // Convert to filter coefficient (0-200 for stability)
+
         filterMix = (cutoffParam * 200) / 255
         
-        // Apply low-pass filter to left channel
+
         input = signal[0]
         output = ((input * filterMix) + (lastOutput * (255 - filterMix))) / 255
         
-        // Store output for next sample
+
         lastOutput = output
         
-        // Send filtered audio back
+
         signal[0] = output
-        signal[1] = output  // Use same filter for both channels
+        signal[1] = output
         
         yield()
     }
@@ -184,91 +184,91 @@ locals int cutoffParam, int filterMix, int input, int output
 Replace the `process()` function with this enhanced version:
 
 ```impala
-// ===== STANDARD PERMUT8 CONSTANTS =====
 
-// Parameter System Constants
-const int PARAM_MAX = 255                    // Maximum knob/parameter value (8-bit)
-const int PARAM_MIN = 0                      // Minimum knob/parameter value
-const int PARAM_MID = 128                    // Parameter midpoint for bipolar controls
-const int PARAM_SWITCH_THRESHOLD = 127       // Boolean parameter on/off threshold
 
-// Audio Sample Range Constants (12-bit signed audio)
-const int AUDIO_MAX = 2047                   // Maximum audio sample value (+12-bit)
-const int AUDIO_MIN = -2047                  // Minimum audio sample value (-12-bit)
-const int AUDIO_ZERO = 0                     // Audio silence/center value
 
-// Sample Rate Constants
-const int SAMPLE_RATE_44K1 = 44100          // Standard audio sample rate (Hz)
-const int SAMPLE_RATE_HALF = 22050          // Half sample rate (0.5 second buffer at 44.1kHz)
-const int SAMPLE_RATE_QUARTER = 11025       // Quarter sample rate (0.25 second buffer)
+const int PARAM_MAX = 255
+const int PARAM_MIN = 0
+const int PARAM_MID = 128
+const int PARAM_SWITCH_THRESHOLD = 127
 
-// Audio Scaling Constants (16-bit ranges for phase accumulators)
-const int AUDIO_FULL_RANGE = 65536          // 16-bit full scale range (0-65535)
-const int AUDIO_HALF_RANGE = 32768          // 16-bit half scale (bipolar center)
-const int AUDIO_QUARTER_RANGE = 16384       // 16-bit quarter scale (triangle wave peaks)
 
-// Mathematical Constants
-const float PI = 3.14159265                 // Mathematical pi constant
-const float TWO_PI = 6.28318531             // 2 * pi (full circle radians)
-const float PI_OVER_2 = 1.57079633          // pi/2 (quarter circle radians)
+const int AUDIO_MAX = 2047
+const int AUDIO_MIN = -2047
+const int AUDIO_ZERO = 0
 
-// Buffer Size Constants (powers of 2 for efficiency)
-const int SMALL_BUFFER = 128                // Small buffer size
-const int MEDIUM_BUFFER = 512               // Medium buffer size  
-const int LARGE_BUFFER = 1024               // Large buffer size
-const int MAX_BUFFER = 2048                 // Maximum buffer size
 
-// Bit Manipulation Constants
-const int BITS_PER_BYTE = 8                 // Standard byte size
-const int SHIFT_DIVIDE_BY_2 = 1             // Bit shift for divide by 2
-const int SHIFT_DIVIDE_BY_4 = 2             // Bit shift for divide by 4
-const int SHIFT_DIVIDE_BY_8 = 3             // Bit shift for divide by 8
+const int SAMPLE_RATE_44K1 = 44100
+const int SAMPLE_RATE_HALF = 22050
+const int SAMPLE_RATE_QUARTER = 11025
 
-// LED Display Constants
-const int LED_OFF = 0x00                    // All LEDs off
-const int LED_ALL_ON = 0xFF                 // All 8 LEDs on
-const int LED_SINGLE = 0x01                 // Single LED pattern
-const int LED_DOUBLE = 0x03                 // Two LED pattern
-const int LED_QUAD = 0x0F                   // Four LED pattern
-const int LED_BRIGHTNESS_FULL = 255         // Full LED brightness
-const int LED_BRIGHTNESS_HALF = 127         // Half LED brightness
 
-// Musical/Timing Constants
-const int STANDARD_BPM = 120                // Standard tempo reference
-const int QUARTER_NOTE_DIVISIONS = 4        // Divisions per quarter note
-const int SEMITONES_PER_OCTAVE = 12         // Musical semitones in octave
-const float A4_FREQUENCY = 440.0            // A4 reference frequency (Hz)
+const int AUDIO_FULL_RANGE = 65536
+const int AUDIO_HALF_RANGE = 32768
+const int AUDIO_QUARTER_RANGE = 16384
+
+
+const float PI = 3.14159265
+const float TWO_PI = 6.28318531
+const float PI_OVER_2 = 1.57079633
+
+
+const int SMALL_BUFFER = 128
+const int MEDIUM_BUFFER = 512
+const int LARGE_BUFFER = 1024
+const int MAX_BUFFER = 2048
+
+
+const int BITS_PER_BYTE = 8
+const int SHIFT_DIVIDE_BY_2 = 1
+const int SHIFT_DIVIDE_BY_4 = 2
+const int SHIFT_DIVIDE_BY_8 = 3
+
+
+const int LED_OFF = 0x00
+const int LED_ALL_ON = 0xFF
+const int LED_SINGLE = 0x01
+const int LED_DOUBLE = 0x03
+const int LED_QUAD = 0x0F
+const int LED_BRIGHTNESS_FULL = 255
+const int LED_BRIGHTNESS_HALF = 127
+
+
+const int STANDARD_BPM = 120
+const int QUARTER_NOTE_DIVISIONS = 4
+const int SEMITONES_PER_OCTAVE = 12
+const float A4_FREQUENCY = 440.0
 
 function process()
 locals int cutoffParam, int filterMix, int input, int output, int filterAmount, int ledPattern
 {
     loop {
-        // Get cutoff frequency from first knob
+
         cutoffParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]
         filterMix = (cutoffParam * 200) / 255
         
-        // Apply filter
+
         input = signal[0]
         output = ((input * filterMix) + (lastOutput * (255 - filterMix))) / 255
         lastOutput = output
         
-        // LED visualization - show filter activity
-        filterAmount = 255 - cutoffParam  // More LEDs = more filtering
+
+        filterAmount = 255 - cutoffParam
         ledPattern = 0
         
-        // Light up LEDs based on filter amount
-        if (filterAmount > 200) ledPattern = 0xFF        // All 8 LEDs
-        else if (filterAmount > 150) ledPattern = 0x7F   // 7 LEDs
-        else if (filterAmount > 100) ledPattern = 0x3F   // 6 LEDs
-        else if (filterAmount > 80) ledPattern = 0x1F    // 5 LEDs
-        else if (filterAmount > 60) ledPattern = 0x0F    // 4 LEDs
-        else if (filterAmount > 40) ledPattern = 0x07    // 3 LEDs
-        else if (filterAmount > 20) ledPattern = 0x03    // 2 LEDs
-        else if (filterAmount > 0) ledPattern = 0x01     // 1 LED
+
+        if (filterAmount > 200) ledPattern = 0xFF
+        else if (filterAmount > 150) ledPattern = 0x7F
+        else if (filterAmount > 100) ledPattern = 0x3F
+        else if (filterAmount > 80) ledPattern = 0x1F
+        else if (filterAmount > 60) ledPattern = 0x0F
+        else if (filterAmount > 40) ledPattern = 0x07
+        else if (filterAmount > 20) ledPattern = 0x03
+        else if (filterAmount > 0) ledPattern = 0x01
         
         displayLEDs[0] = ledPattern
         
-        // Send audio
+
         signal[0] = output
         signal[1] = output
         
@@ -296,7 +296,7 @@ Resonance adds a peak at the cutoff frequency by feeding some output back to the
 Add this line after the existing global variables:
 
 ```impala
-global int feedbackAmount = 0   // For resonance feedback
+global int feedbackAmount = 0
 ```
 
 ### 4.3 Enhanced Process Function with Resonance
@@ -307,26 +307,26 @@ function process()
 locals int cutoffParam, int resonanceParam, int filterMix, int resonance, int input, int output, int ledIntensity, int ledPattern
 {
     loop {
-        // Get controls from knobs
-        cutoffParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]     // Knob 1: Cutoff frequency
-        resonanceParam = (int)global params[OPERAND_1_LOW_PARAM_INDEX]  // Knob 2: Resonance amount
+
+        cutoffParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]
+        resonanceParam = (int)global params[OPERAND_1_LOW_PARAM_INDEX]
         
-        // Convert to usable values
+
         filterMix = (cutoffParam * 200) / 255
-        resonance = (resonanceParam * 150) / 255  // Limit for stability
+        resonance = (resonanceParam * 150) / 255
         
-        // Add resonance feedback to input
+
         input = signal[0] + ((lastOutput * resonance) / 255)
         
-        // Prevent runaway feedback
+
         if (input > AUDIO_MAX) input = AUDIO_MAX
         else if (input < -AUDIO_MAX) input = -AUDIO_MAX
         
-        // Apply low-pass filter
+
         output = ((input * filterMix) + (lastOutput * (255 - filterMix))) / 255
         lastOutput = output
         
-        // LED feedback - show both cutoff and resonance
+
         ledIntensity = (cutoffParam + resonanceParam) / 2
         ledPattern = 0
         
@@ -340,7 +340,7 @@ locals int cutoffParam, int resonanceParam, int filterMix, int resonance, int in
         
         displayLEDs[0] = ledPattern
         
-        // Output filtered audio
+
         signal[0] = output
         signal[1] = output
         
@@ -364,7 +364,7 @@ locals int cutoffParam, int resonanceParam, int filterMix, int resonance, int in
 Add another state variable:
 
 ```impala
-global int lastOutputR = 0      // Right channel filter memory
+global int lastOutputR = 0
 ```
 
 ### 5.2 Complete Stereo Filter
@@ -374,13 +374,13 @@ Replace `process()` one final time:
 function process()
 {
     loop {
-        // Get parameters
+
         int cutoffParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]
         int resonanceParam = (int)global params[OPERAND_1_LOW_PARAM_INDEX]
         int filterMix = (cutoffParam * 200) / 255
         int resonance = (resonanceParam * 150) / 255
         
-        // LEFT CHANNEL
+
         inputL = signal[0] + ((lastOutput * resonance) / 255)
         if (inputL > AUDIO_MAX) inputL = AUDIO_MAX
         else if (inputL < -AUDIO_MAX) inputL = -AUDIO_MAX
@@ -388,7 +388,7 @@ function process()
         outputL = ((inputL * filterMix) + (lastOutput * (255 - filterMix))) / 255
         lastOutput = outputL
         
-        // RIGHT CHANNEL  
+
         inputR = signal[1] + ((lastOutputR * resonance) / 255)
         if (inputR > AUDIO_MAX) inputR = AUDIO_MAX
         else if (inputR < -AUDIO_MAX) inputR = -AUDIO_MAX
@@ -396,12 +396,12 @@ function process()
         outputR = ((inputR * filterMix) + (lastOutputR * (255 - filterMix))) / 255
         lastOutputR = outputR
         
-        // LED feedback
+
         activity = ((outputL > 100 || outputL < -100) || 
                        (outputR > 100 || outputR < -100)) ? 0xFF : 0x01
         displayLEDs[0] = activity
         
-        // Output stereo audio
+
         signal[0] = outputL
         signal[1] = outputR
         
@@ -418,10 +418,10 @@ function process()
 Your final `my_filter.impala` should look like this:
 
 ```impala
-// My First Filter Plugin - Complete Version
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -438,34 +438,34 @@ global array params[PARAM_COUNT]
 global array displayLEDs[4]
 global int clockFreqLimit = 132300
 
-// Filter state variables
-global int lastOutput = 0       // Left channel filter memory
-global int lastOutputR = 0      // Right channel filter memory
+
+global int lastOutput = 0
+global int lastOutputR = 0
 
 function process()
 locals int cutoffParam, int resonanceParam, int filterMix, int resonance, int inputL, int outputL, int inputR, int outputR, int activity
 {
     loop {
-        // Get parameters from hardware knobs
-        cutoffParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]     // Knob 1: Cutoff frequency (0-255)
-        resonanceParam = (int)global params[OPERAND_1_LOW_PARAM_INDEX]  // Knob 2: Resonance amount (0-255)
+
+        cutoffParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]
+        resonanceParam = (int)global params[OPERAND_1_LOW_PARAM_INDEX]
         
-        // Convert to filter coefficients
-        filterMix = (cutoffParam * 200) / 255      // 0-200 range for stability
-        resonance = (resonanceParam * 150) / 255   // 0-150 range to prevent runaway
+
+        filterMix = (cutoffParam * 200) / 255
+        resonance = (resonanceParam * 150) / 255
         
-        // LEFT CHANNEL PROCESSING
+
         inputL = signal[0] + ((lastOutput * resonance) / 255)
         
-        // Prevent clipping from resonance feedback
+
         if (inputL > AUDIO_MAX) inputL = AUDIO_MAX
         else if (inputL < -AUDIO_MAX) inputL = -AUDIO_MAX
         
-        // Apply low-pass filter: mix input with previous output
+
         outputL = ((inputL * filterMix) + (lastOutput * (255 - filterMix))) / 255
         lastOutput = outputL
         
-        // RIGHT CHANNEL PROCESSING (identical but separate state)
+
         inputR = signal[1] + ((lastOutputR * resonance) / 255)
         
         if (inputR > AUDIO_MAX) inputR = AUDIO_MAX
@@ -474,12 +474,12 @@ locals int cutoffParam, int resonanceParam, int filterMix, int resonance, int in
         outputR = ((inputR * filterMix) + (lastOutputR * (255 - filterMix))) / 255
         lastOutputR = outputR
         
-        // LED feedback - show when filter is active
+
         activity = ((outputL > 100 || outputL < -100) || 
                        (outputR > 100 || outputR < -100)) ? 0xFF : 0x01
         displayLEDs[0] = activity
         
-        // Send processed audio back to Permut8
+
         signal[0] = outputL
         signal[1] = outputR
         

@@ -27,7 +27,7 @@ Provides simplified frequency domain analysis by computing basic spectral compon
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -39,92 +39,92 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// Simple spectral analysis (8-point DFT approximation)
-global array input_buffer[8]    // Time domain input buffer
-global array magnitude[8]       // Frequency domain magnitudes
-global int buffer_index = 0     // Current buffer position
-global int update_counter = 0   // Rate control for analysis
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global array input_buffer[8]
+global array magnitude[8]
+global int buffer_index = 0
+global int update_counter = 0
 
 function process()
 locals analysis_rate, window_type, display_mode, i, real_part, imag_part, mag_squared, led_pattern
 {
     loop {
-        // Read control parameters
-        analysis_rate = (params[OPERATOR_1_PARAM_INDEX] >> 6) + 1;  // 1-4 range (update rate)
-        window_type = params[SWITCHES_PARAM_INDEX] >> 6;           // 0-3 range (window type)
-        display_mode = params[OPERAND_1_HIGH_PARAM_INDEX] >> 6;          // 0-3 range (display mode)
+
+        analysis_rate = (params[OPERATOR_1_PARAM_INDEX] >> 6) + 1;
+        window_type = params[SWITCHES_PARAM_INDEX] >> 6;
+        display_mode = params[OPERAND_1_HIGH_PARAM_INDEX] >> 6;
         
-        // Read input and store in buffer
+
         global input_buffer[global buffer_index] = signal[0];
         global buffer_index = global buffer_index + 1;
         if (global buffer_index >= 8) {
             global buffer_index = 0;
         }
         
-        // Update spectral analysis at controlled rate
+
         global update_counter = global update_counter + 1;
         if (global update_counter >= (analysis_rate * 512)) {
             global update_counter = 0;
             
-            // Proper 8-point DFT implementation
-            // Note: This uses simplified fixed-point twiddle factors for embedded performance
+
+
             
-            // Frequency bin 0 (DC component) - sum all samples
+
             real_part = 0;
             for (i = 0; i < 8; i = i + 1) {
                 real_part = real_part + global input_buffer[i];
             }
-            global magnitude[0] = real_part >> 3;  // Divide by 8
+            global magnitude[0] = real_part >> 3;
             if (global magnitude[0] < 0) global magnitude[0] = -global magnitude[0];
             
-            // Frequency bin 1 (π/4 radians per sample)
-            // Real: cos(0), cos(π/4), cos(π/2), cos(3π/4), cos(π), cos(5π/4), cos(3π/2), cos(7π/4)
-            // Simplified: 1, 0.707, 0, -0.707, -1, -0.707, 0, 0.707 → scaled by 128
-            real_part = global input_buffer[0] * 128;           // 1.0 * 128
-            real_part = real_part + (global input_buffer[1] * 91);  // 0.707 * 128 ≈ 91
-            real_part = real_part + (global input_buffer[2] * 0);   // 0.0 * 128
-            real_part = real_part - (global input_buffer[3] * 91);  // -0.707 * 128
-            real_part = real_part - (global input_buffer[4] * 128); // -1.0 * 128
-            real_part = real_part - (global input_buffer[5] * 91);  // -0.707 * 128
-            real_part = real_part + (global input_buffer[6] * 0);   // 0.0 * 128
-            real_part = real_part + (global input_buffer[7] * 91);  // 0.707 * 128
-            real_part = real_part >> 7;  // Scale back down
+
+
+
+            real_part = global input_buffer[0] * 128;
+            real_part = real_part + (global input_buffer[1] * 91);
+            real_part = real_part + (global input_buffer[2] * 0);
+            real_part = real_part - (global input_buffer[3] * 91);
+            real_part = real_part - (global input_buffer[4] * 128);
+            real_part = real_part - (global input_buffer[5] * 91);
+            real_part = real_part + (global input_buffer[6] * 0);
+            real_part = real_part + (global input_buffer[7] * 91);
+            real_part = real_part >> 7;
             
-            // Imaginary: -sin values: 0, -0.707, -1, -0.707, 0, 0.707, 1, 0.707
-            imag_part = global input_buffer[0] * 0;             // 0.0 * 128
-            imag_part = imag_part - (global input_buffer[1] * 91);  // -0.707 * 128
-            imag_part = imag_part - (global input_buffer[2] * 128); // -1.0 * 128
-            imag_part = imag_part - (global input_buffer[3] * 91);  // -0.707 * 128
-            imag_part = imag_part + (global input_buffer[4] * 0);   // 0.0 * 128
-            imag_part = imag_part + (global input_buffer[5] * 91);  // 0.707 * 128
-            imag_part = imag_part + (global input_buffer[6] * 128); // 1.0 * 128
-            imag_part = imag_part + (global input_buffer[7] * 91);  // 0.707 * 128
-            imag_part = imag_part >> 7;  // Scale back down
+
+            imag_part = global input_buffer[0] * 0;
+            imag_part = imag_part - (global input_buffer[1] * 91);
+            imag_part = imag_part - (global input_buffer[2] * 128);
+            imag_part = imag_part - (global input_buffer[3] * 91);
+            imag_part = imag_part + (global input_buffer[4] * 0);
+            imag_part = imag_part + (global input_buffer[5] * 91);
+            imag_part = imag_part + (global input_buffer[6] * 128);
+            imag_part = imag_part + (global input_buffer[7] * 91);
+            imag_part = imag_part >> 7;
             
-            // Magnitude = sqrt(real^2 + imag^2) ≈ |real| + 0.5*|imag| (approximation)
+
             if (real_part < 0) real_part = -real_part;
             if (imag_part < 0) imag_part = -imag_part;
             global magnitude[1] = real_part + (imag_part >> 1);
             
-            // Frequency bin 2 (π/2 radians per sample) - Nyquist/2 frequency
-            // Real: 1, 0, -1, 0, 1, 0, -1, 0
+
+
             real_part = global input_buffer[0] - global input_buffer[2] + global input_buffer[4] - global input_buffer[6];
-            // Imaginary: 0, -1, 0, 1, 0, -1, 0, 1
+
             imag_part = -global input_buffer[1] + global input_buffer[3] - global input_buffer[5] + global input_buffer[7];
             if (real_part < 0) real_part = -real_part;
             if (imag_part < 0) imag_part = -imag_part;
             global magnitude[2] = real_part + (imag_part >> 1);
             
-            // Frequency bin 3 (3π/4 radians per sample)
-            // Real: 1, -0.707, 0, 0.707, -1, 0.707, 0, -0.707
+
+
             real_part = global input_buffer[0] * 128;
             real_part = real_part - (global input_buffer[1] * 91);
             real_part = real_part + (global input_buffer[2] * 0);
@@ -135,7 +135,7 @@ locals analysis_rate, window_type, display_mode, i, real_part, imag_part, mag_sq
             real_part = real_part - (global input_buffer[7] * 91);
             real_part = real_part >> 7;
             
-            // Imaginary: 0, -0.707, 1, -0.707, 0, 0.707, -1, 0.707
+
             imag_part = global input_buffer[0] * 0;
             imag_part = imag_part - (global input_buffer[1] * 91);
             imag_part = imag_part + (global input_buffer[2] * 128);
@@ -150,27 +150,27 @@ locals analysis_rate, window_type, display_mode, i, real_part, imag_part, mag_sq
             if (imag_part < 0) imag_part = -imag_part;
             global magnitude[3] = real_part + (imag_part >> 1);
             
-            // Frequency bin 4 (π radians per sample) - Nyquist frequency
-            // Real: 1, -1, 1, -1, 1, -1, 1, -1 (alternating)
+
+
             real_part = global input_buffer[0] - global input_buffer[1] + global input_buffer[2] - global input_buffer[3]
                       + global input_buffer[4] - global input_buffer[5] + global input_buffer[6] - global input_buffer[7];
-            // Imaginary: 0 (all sine values are 0 at π intervals)
+
             if (real_part < 0) real_part = -real_part;
             global magnitude[4] = real_part;
             
-            // Bins 5-7 are complex conjugates of bins 3-1, so compute magnitudes directly
-            // Bin 5 = conjugate of bin 3
+
+
             global magnitude[5] = global magnitude[3];
             
-            // Bin 6 = conjugate of bin 2  
+
             global magnitude[6] = global magnitude[2];
             
-            // Bin 7 = conjugate of bin 1
+
             global magnitude[7] = global magnitude[1];
         }
         
-        // === SPECTRAL VISUALIZATION ===
-        // Display frequency spectrum on LED ring 0
+
+
         led_pattern = 0;
         if (((int)global magnitude[0] >> 6) > 0) led_pattern = led_pattern | 1;
         if (((int)global magnitude[1] >> 6) > 0) led_pattern = led_pattern | 2;
@@ -182,7 +182,7 @@ locals analysis_rate, window_type, display_mode, i, real_part, imag_part, mag_sq
         if (((int)global magnitude[7] >> 6) > 0) led_pattern = led_pattern | 128;
         global displayLEDs[0] = led_pattern;
         
-        // Display dominant frequency on LED ring 1
+
         i = 0;
         if ((int)global magnitude[1] > (int)global magnitude[i]) i = 1;
         if ((int)global magnitude[2] > (int)global magnitude[i]) i = 2;
@@ -193,17 +193,17 @@ locals analysis_rate, window_type, display_mode, i, real_part, imag_part, mag_sq
         if ((int)global magnitude[7] > (int)global magnitude[i]) i = 7;
         global displayLEDs[1] = 1 << i;
         
-        // Show analysis rate on LED ring 2
+
         global displayLEDs[2] = analysis_rate << 6;
         
-        // Show update status on LED ring 3
+
         if (global update_counter < 100) {
-            global displayLEDs[3] = 255;  // Bright during analysis
+            global displayLEDs[3] = 255;
         } else {
-            global displayLEDs[3] = 64;   // Dim otherwise
+            global displayLEDs[3] = 64;
         }
         
-        // Pass audio through unchanged
+
         global signal[0] = (int)global signal[0];
         global signal[1] = (int)global signal[1];
         
@@ -241,23 +241,23 @@ Each LED on ring 0 shows the energy in one frequency bin.
 ## Try These Settings
 
 ```impala
-// Fast spectral analysis
-params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High sensitivity
-params[SWITCHES_PARAM_INDEX] = 0;    // Basic window
-params[OPERATOR_1_PARAM_INDEX] = 255;  // Fastest update rate
-params[OPERAND_1_HIGH_PARAM_INDEX] = 0;    // Standard display
 
-// Slow detailed analysis
-params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Normal sensitivity
-params[SWITCHES_PARAM_INDEX] = 64;   // Enhanced window
-params[OPERATOR_1_PARAM_INDEX] = 64;   // Slower updates
-params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Enhanced display
+params[CLOCK_FREQ_PARAM_INDEX] = 200;
+params[SWITCHES_PARAM_INDEX] = 0;
+params[OPERATOR_1_PARAM_INDEX] = 255;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 0;
 
-// Real-time monitoring
-params[CLOCK_FREQ_PARAM_INDEX] = 150;  // Good sensitivity
-params[SWITCHES_PARAM_INDEX] = 128;  // Advanced window
-params[OPERATOR_1_PARAM_INDEX] = 200;  // Fast updates
-params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Visual mode
+
+params[CLOCK_FREQ_PARAM_INDEX] = 128;
+params[SWITCHES_PARAM_INDEX] = 64;
+params[OPERATOR_1_PARAM_INDEX] = 64;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 128;
+
+
+params[CLOCK_FREQ_PARAM_INDEX] = 150;
+params[SWITCHES_PARAM_INDEX] = 128;
+params[OPERATOR_1_PARAM_INDEX] = 200;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 64;
 ```
 
 ## Understanding Spectral Analysis

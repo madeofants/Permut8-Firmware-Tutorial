@@ -55,16 +55,16 @@ We'll build a **Multi-Mode Filter Bank** with professional features:
 ### 1.3 Memory and Performance Planning
 
 ```impala
-// Memory Budget Analysis
-// Filter state: 8 variables × 2 channels = 16 variables
-// Parameter smoothing: 8 smoothers × 2 values = 16 variables
-// LFO state: 4 variables
-// LED state: 4 variables
-// Total: ~40 variables = acceptable for real-time processing
 
-// Performance Budget Analysis
-// Per sample: 1 filter + 4 parameter reads + 1 LFO update + LED update
-// Estimated: ~20 operations per sample = well within performance limits
+
+
+
+
+
+
+
+
+
 ```
 
 ---
@@ -75,56 +75,56 @@ We'll build a **Multi-Mode Filter Bank** with professional features:
 Create `multi_filter.impala`:
 
 ```impala
-// ========================================================================
-// MULTI-MODE FILTER BANK - Production Ready Firmware
-// ========================================================================
-// Author: [Your Name]
-// Version: 1.0
-// Date: [Current Date]
-// 
-// Description: Professional multi-mode filter with 4 filter types,
-//              resonance control, drive saturation, and modulation
-//
-// Architecture: Full Patch
-// CPU Usage: ~15% on typical hardware
-// Memory: ~200 bytes of globals
-// ========================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// ========================================================================
-// CONFIGURATION CONSTANTS
-// ========================================================================
 
-// Filter type constants
+
+
+
+
 const int FILTER_LOWPASS = 0
 const int FILTER_HIGHPASS = 1
 const int FILTER_BANDPASS = 2
 const int FILTER_NOTCH = 3
 
-// Parameter ranges and limits
-const int MAX_FREQUENCY = 8000      // Maximum filter frequency (Hz equivalent)
-const int MIN_FREQUENCY = 50        // Minimum filter frequency
-const int MAX_RESONANCE = 240       // Maximum resonance (limited for stability)
-const int MAX_DRIVE = 200           // Maximum drive amount
-const int SMOOTHING_FACTOR = 8      // Parameter smoothing rate
-const int PARAM_MAX = 255           // Maximum parameter value
 
-// Audio constants
-const int AUDIO_MAX = 2047          // Maximum audio level (12-bit)
-const int AUDIO_MIN = -2047         // Minimum audio level
+const int MAX_FREQUENCY = 8000
+const int MIN_FREQUENCY = 50
+const int MAX_RESONANCE = 240
+const int MAX_DRIVE = 200
+const int SMOOTHING_FACTOR = 8
+const int PARAM_MAX = 255
 
-// LFO constants  
-const int LFO_FREQUENCY_MAX = 500   // Maximum LFO rate
-const int LFO_DEPTH_MAX = 4000      // Maximum LFO modulation depth
-const int LFO_PHASE_MAX = 65536     // LFO phase accumulator maximum
-const int LFO_HALF_PHASE = 32768    // Half of LFO phase range
 
-// ========================================================================
-// GLOBAL STATE VARIABLES
-// ========================================================================
+const int AUDIO_MAX = 2047
+const int AUDIO_MIN = -2047
 
-// Required parameter constants
+
+const int LFO_FREQUENCY_MAX = 500
+const int LFO_DEPTH_MAX = 4000
+const int LFO_PHASE_MAX = 65536
+const int LFO_HALF_PHASE = 32768
+
+
+
+
+
+
 const int OPERAND_1_HIGH_PARAM_INDEX = 0
 const int OPERAND_1_LOW_PARAM_INDEX = 1
 const int OPERAND_2_LOW_PARAM_INDEX = 2
@@ -135,70 +135,70 @@ const int SWITCHES_PARAM_INDEX = 6
 const int CLOCK_FREQ_PARAM_INDEX = 7
 const int PARAM_COUNT = 8
 
-// Required Permut8 globals
+
 global array signal[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
 global clock
 global clockFreqLimit
 
-// Filter state variables (per channel)
-global filterState1L = 0        // Low-pass state left
-global filterState2L = 0        // Band-pass state left  
-global filterState1R = 0        // Low-pass state right
-global filterState2R = 0        // Band-pass state right
 
-// Parameter smoothing (reduces zipper noise)
+global filterState1L = 0
+global filterState2L = 0
+global filterState1R = 0
+global filterState2R = 0
+
+
 global smoothedFrequency = 1000
 global smoothedResonance = 0
 global smoothedDrive = 0
 global smoothedLevel = 255
 
-// LFO state for frequency modulation
+
 global lfoPhase = 0
 global lfoValue = 0
 global lfoRate = 100
 
-// Performance monitoring
+
 global processingLoad = 0
 global peakLevel = 0
 
-// ========================================================================
-// CORE FILTER ALGORITHMS
-// ========================================================================
+
+
+
 ```
 
 ### 2.2 Filter Implementation Functions
 
 ```impala
-// State Variable Filter - High Quality Multi-Mode Implementation
+
 function stateVariableFilter(input, frequency, resonance, filterType)
 returns output
 {
     locals lowpass, bandpass, highpass, notch, f, q
     
-    // Convert frequency parameter to filter coefficient
-    // Musical scaling: frequency response follows musical intervals
-    f = (frequency * frequency) / 8192  // Exponential frequency scaling
-    if (f > 8000) f = 8000              // Limit for stability
-    if (f < 10) f = 10                  // Prevent zero frequency
+
+
+    f = (frequency * frequency) / 8192
+    if (f > 8000) f = 8000
+    if (f < 10) f = 10
     
-    // Convert resonance to Q factor with stability limiting
-    q = 4096 + (resonance * 12)        // Q range: 1.0 to 4.0 approximately
-    if (q > 16384) q = 16384            // Prevent self-oscillation
+
+    q = 4096 + (resonance * 12)
+    if (q > 16384) q = 16384
     
-    // State variable filter equations
-    // This is a high-quality filter that can produce all filter types
+
+
     filterState1L = filterState1L + ((f * filterState2L) / 4096)
     filterState2L = filterState2L + ((f * (input - filterState1L - (filterState2L * q / 4096))) / 4096)
     
-    // Extract different filter responses
+
     lowpass = filterState1L
     bandpass = filterState2L  
     highpass = input - lowpass - bandpass
     notch = input - bandpass
     
-    // Select output based on filter type
+
     if (filterType == FILTER_LOWPASS) {
         output = lowpass
     } else if (filterType == FILTER_HIGHPASS) {
@@ -212,14 +212,14 @@ returns output
     return output
 }
 
-// Stereo filter processing with independent state
+
 function stateVariableFilterStereo(inputL, inputR, frequency, resonance, filterType)
 returns outputL, outputR
 {
     locals f, q, lowpassL, bandpassL, highpassL, notchL
     locals lowpassR, bandpassR, highpassR, notchR
     
-    // Same coefficient calculation
+
     f = (frequency * frequency) / 8192
     if (f > 8000) f = 8000
     if (f < 10) f = 10
@@ -227,7 +227,7 @@ returns outputL, outputR
     q = 4096 + (resonance * 12)
     if (q > 16384) q = 16384
     
-    // LEFT CHANNEL
+
     filterState1L = filterState1L + ((f * filterState2L) / 4096)
     filterState2L = filterState2L + ((f * (inputL - filterState1L - (filterState2L * q / 4096))) / 4096)
     
@@ -236,7 +236,7 @@ returns outputL, outputR
     highpassL = inputL - lowpassL - bandpassL
     notchL = inputL - bandpassL
     
-    // RIGHT CHANNEL
+
     filterState1R = filterState1R + ((f * filterState2R) / 4096)
     filterState2R = filterState2R + ((f * (inputR - filterState1R - (filterState2R * q / 4096))) / 4096)
     
@@ -245,7 +245,7 @@ returns outputL, outputR
     highpassR = inputR - lowpassR - bandpassR
     notchR = inputR - bandpassR
     
-    // Select outputs based on filter type
+
     if (filterType == FILTER_LOWPASS) {
         outputL = lowpassL
         outputR = lowpassR
@@ -261,21 +261,21 @@ returns outputL, outputR
     }
 }
 
-// ========================================================================
-// PARAMETER PROCESSING AND SMOOTHING
-// ========================================================================
+
+
+
 
 function smoothParameter(currentValue, targetValue, smoothingRate)
 returns smoothedValue
 {
     locals difference, change
     
-    // Exponential smoothing to prevent zipper noise
-    // Higher smoothingRate = faster response
+
+
     difference = targetValue - currentValue
     change = difference / smoothingRate
     
-    // Ensure some minimum change to prevent sticking
+
     if (difference > 0 && change == 0) change = 1
     else if (difference < 0 && change == 0) change = -1
     
@@ -287,42 +287,42 @@ function updateParameterSmoothing() {
     locals frequencyParam, resonanceParam, driveParam, levelParam
     locals targetFrequency, targetResonance, targetDrive, targetLevel
     
-    // Read raw parameter values
-    frequencyParam = params[OPERAND_1_HIGH_PARAM_INDEX]      // Knob 1: Filter frequency
-    resonanceParam = params[OPERAND_1_LOW_PARAM_INDEX]      // Knob 2: Resonance
-    driveParam = params[OPERAND_2_HIGH_PARAM_INDEX]          // Knob 3: Drive amount  
-    levelParam = params[OPERAND_2_LOW_PARAM_INDEX]          // Knob 4: Output level
+
+    frequencyParam = params[OPERAND_1_HIGH_PARAM_INDEX]
+    resonanceParam = params[OPERAND_1_LOW_PARAM_INDEX]
+    driveParam = params[OPERAND_2_HIGH_PARAM_INDEX]
+    levelParam = params[OPERAND_2_LOW_PARAM_INDEX]
     
-    // Map parameters to useful ranges with musical scaling
+
     targetFrequency = MIN_FREQUENCY + ((frequencyParam * (MAX_FREQUENCY - MIN_FREQUENCY)) / PARAM_MAX)
     targetResonance = (resonanceParam * MAX_RESONANCE) / PARAM_MAX
     targetDrive = (driveParam * MAX_DRIVE) / PARAM_MAX
-    targetLevel = levelParam  // 0-PARAM_MAX range is fine for level
+    targetLevel = levelParam
     
-    // Apply smoothing to prevent parameter zipper noise
+
     smoothedFrequency = smoothParameter(smoothedFrequency, targetFrequency, SMOOTHING_FACTOR)
     smoothedResonance = smoothParameter(smoothedResonance, targetResonance, SMOOTHING_FACTOR)
     smoothedDrive = smoothParameter(smoothedDrive, targetDrive, SMOOTHING_FACTOR)
     smoothedLevel = smoothParameter(smoothedLevel, targetLevel, SMOOTHING_FACTOR)
 }
 
-// ========================================================================
-// MODULATION AND LFO
-// ========================================================================
+
+
+
 
 function updateLFO() {
-    // Simple triangle wave LFO for frequency modulation
+
     lfoPhase = (lfoPhase + lfoRate) % LFO_PHASE_MAX
     
-    // Generate triangle wave from phase
+
     if (lfoPhase < LFO_HALF_PHASE) {
-        lfoValue = (lfoPhase * 2) - LFO_HALF_PHASE  // Rising edge
+        lfoValue = (lfoPhase * 2) - LFO_HALF_PHASE
     } else {
-        lfoValue = LFO_HALF_PHASE - ((lfoPhase - LFO_HALF_PHASE) * 2)  // Falling edge
+        lfoValue = LFO_HALF_PHASE - ((lfoPhase - LFO_HALF_PHASE) * 2)
     }
     
-    // Scale LFO to modulation amount (subtle modulation)
-    lfoValue = lfoValue / 16  // Reduce depth for musical modulation
+
+    lfoValue = lfoValue / 16
 }
 
 function applyFrequencyModulation(baseFrequency)
@@ -330,41 +330,41 @@ returns modulatedFrequency
 {
     locals modulation
     
-    // Apply LFO modulation to frequency
+
     modulation = (lfoValue * LFO_DEPTH_MAX) / LFO_HALF_PHASE
     modulatedFrequency = baseFrequency + modulation
     
-    // Keep frequency in valid range
+
     if (modulatedFrequency > MAX_FREQUENCY) modulatedFrequency = MAX_FREQUENCY
     else if (modulatedFrequency < MIN_FREQUENCY) modulatedFrequency = MIN_FREQUENCY
 }
 
-// ========================================================================
-// AUDIO PROCESSING FUNCTIONS
-// ========================================================================
+
+
+
 
 function applySaturation(input, driveAmount)
 returns output
 {
     locals driven
     
-    // Soft saturation/tube-style drive
+
     if (driveAmount == 0) {
-        output = input  // No saturation
+        output = input
     } else {
-        // Scale input by drive amount
+
         driven = (input * (PARAM_MAX + 1 + driveAmount)) / (PARAM_MAX + 1)
         
-        // Soft clipping curve
+
         if (driven > 1500) {
-            output = 1500 + ((driven - 1500) / 3)  // Soft clip positive
+            output = 1500 + ((driven - 1500) / 3)
         } else if (driven < -1500) {
-            output = -1500 + ((driven + 1500) / 3)  // Soft clip negative
+            output = -1500 + ((driven + 1500) / 3)
         } else {
-            output = driven  // Linear region
+            output = driven
         }
         
-        // Final hard clipping safety
+
         if (output > AUDIO_MAX) output = AUDIO_MAX
         else if (output < AUDIO_MIN) output = AUDIO_MIN
     }
@@ -377,41 +377,41 @@ returns output
 {
     output = (input * level) / PARAM_MAX
     
-    // Final safety clipping
+
     if (output > AUDIO_MAX) output = AUDIO_MAX
     else if (output < AUDIO_MIN) output = AUDIO_MIN
 }
 
-// ========================================================================
-// LED FEEDBACK AND USER INTERFACE
-// ========================================================================
+
+
+
 
 function updateLEDDisplay() {
     locals frequencyLED, filterType, activityMask
     
-    // LED 1: Filter frequency visualization
+
     frequencyLED = (smoothedFrequency - MIN_FREQUENCY) * PARAM_MAX / (MAX_FREQUENCY - MIN_FREQUENCY)
     displayLEDs[0] = frequencyLED
     
-    // LED 2: Resonance amount
+
     displayLEDs[1] = (smoothedResonance * PARAM_MAX) / MAX_RESONANCE
     
-    // LED 3: Drive amount
+
     displayLEDs[2] = (smoothedDrive * PARAM_MAX) / MAX_DRIVE
     
-    // LED 4: Filter type and activity indicator
-    filterType = params[SWITCHES_PARAM_INDEX] / 64  // 0-3 filter types
+
+    filterType = params[SWITCHES_PARAM_INDEX] / 64
     activityMask = 0
     
-    // Base pattern shows filter type
-    if (filterType == FILTER_LOWPASS) activityMask = 0x0F      // Lower 4 LEDs
-    else if (filterType == FILTER_HIGHPASS) activityMask = 0xF0  // Upper 4 LEDs
-    else if (filterType == FILTER_BANDPASS) activityMask = 0x3C  // Middle 4 LEDs  
-    else activityMask = 0x99  // Alternating pattern for notch
+
+    if (filterType == FILTER_LOWPASS) activityMask = 0x0F
+    else if (filterType == FILTER_HIGHPASS) activityMask = 0xF0
+    else if (filterType == FILTER_BANDPASS) activityMask = 0x3C
+    else activityMask = 0x99
     
-    // Add activity flashing
+
     if (peakLevel > 500) {
-        activityMask = PARAM_MAX  // All LEDs when signal is strong
+        activityMask = PARAM_MAX
     }
     
     displayLEDs[3] = activityMask
@@ -420,21 +420,21 @@ function updateLEDDisplay() {
 function updatePerformanceMonitoring() {
     locals currentLevel
     
-    // Simple performance monitoring
+
     processingLoad = (processingLoad + 1) % 1000
     
-    // Track peak levels for LED feedback
-    currentLevel = (signal[0] > 0) ? signal[0] : -signal[0]  // Absolute value
+
+    currentLevel = (signal[0] > 0) ? signal[0] : -signal[0]
     if (currentLevel > peakLevel) {
         peakLevel = currentLevel
     } else {
-        peakLevel = peakLevel - (peakLevel / 32)  // Slow decay
+        peakLevel = peakLevel - (peakLevel / 32)
     }
 }
 
-// ========================================================================
-// MAIN PROCESSING FUNCTION
-// ========================================================================
+
+
+
 
 function process() {
     loop {
@@ -442,60 +442,60 @@ function process() {
         locals drivenLeft, drivenRight, filteredLeft, filteredRight
         locals outputLeft, outputRight
         
-        // ====================================================================
-        // PARAMETER UPDATES (every sample for smooth response)
-        // ====================================================================
+
+
+
         updateParameterSmoothing()
         updateLFO()
         
-        // ====================================================================
-        // AUDIO INPUT
-        // ====================================================================
+
+
+
         inputLeft = signal[0]
         inputRight = signal[1]
         
-        // ====================================================================
-        // PARAMETER MAPPING
-        // ====================================================================
+
+
+
         
-        // Get filter type from switches (params[SWITCHES_PARAM_INDEX])
-        filterType = params[SWITCHES_PARAM_INDEX] / 64  // Maps 0-PARAM_MAX to 0-3
+
+        filterType = params[SWITCHES_PARAM_INDEX] / 64
         
-        // Apply frequency modulation
+
         modulatedFrequency = applyFrequencyModulation(smoothedFrequency)
         
-        // ====================================================================
-        // AUDIO PROCESSING CHAIN
-        // ====================================================================
+
+
+
         
-        // Step 1: Apply saturation/drive (pre-filter distortion)
+
         drivenLeft = applySaturation(inputLeft, smoothedDrive)
         drivenRight = applySaturation(inputRight, smoothedDrive)
         
-        // Step 2: Apply filtering
+
         stateVariableFilterStereo(drivenLeft, drivenRight, modulatedFrequency, 
                                  smoothedResonance, filterType)
         returns filteredLeft, filteredRight
         
-        // Step 3: Apply output level control
+
         outputLeft = applyOutputLevel(filteredLeft, smoothedLevel)
         outputRight = applyOutputLevel(filteredRight, smoothedLevel)
         
-        // ====================================================================
-        // AUDIO OUTPUT
-        // ====================================================================
+
+
+
         signal[0] = outputLeft
         signal[1] = outputRight
         
-        // ====================================================================
-        // USER INTERFACE UPDATES
-        // ====================================================================
+
+
+
         updateLEDDisplay()
         updatePerformanceMonitoring()
         
-        // ====================================================================
-        // REAL-TIME YIELD
-        // ====================================================================
+
+
+
         yield()
     }
 }
@@ -526,12 +526,12 @@ function process() {
 
 **Extreme Parameter Testing:**
 ```impala
-// Test these combinations for stability:
-// 1. Maximum resonance + minimum frequency
-// 2. Maximum drive + maximum resonance  
-// 3. All parameters at maximum
-// 4. Rapid parameter changes
-// 5. Extended runtime (10+ minutes)
+
+
+
+
+
+
 ```
 
 ### 3.4 Audio Quality Validation
@@ -552,10 +552,10 @@ function process() {
 
 **Code Optimization Opportunities:**
 ```impala
-// Original: Multiple divisions per sample
+
 coeff = (frequency * frequency) / 8192
 
-// Optimized: Pre-calculate when parameter changes
+
 static lastFrequency = -1
 static coefficient = 0
 if (frequency != lastFrequency) {
@@ -568,9 +568,9 @@ if (frequency != lastFrequency) {
 
 **Reduce Memory Usage:**
 ```impala
-// Combine related variables
-global filterStateL = 0    // Combine state1L and state2L into array
-global filterStateR = 0    // if memory is constrained
+
+global filterStateL = 0
+global filterStateR = 0
 ```
 
 ### 4.3 User Experience Enhancements
@@ -580,11 +580,11 @@ global filterStateR = 0    // if memory is constrained
 function advancedLEDDisplay() {
     locals freqBand, pattern, i
     
-    // Spectrum analyzer style frequency display
-    freqBand = smoothedFrequency / 1000  // 0-8 bands
+
+    freqBand = smoothedFrequency / 1000
     pattern = 0
     for (i = 0 to freqBand) {
-        pattern = pattern | (1 << i)  // Progressive bar
+        pattern = pattern | (1 << i)
     }
     displayLEDs[0] = pattern
 }
@@ -656,13 +656,13 @@ FUTURE ENHANCEMENTS:
 
 **Regular Maintenance:**
 ```impala
-// Version check structure for future updates
+
 const int FIRMWARE_VERSION_MAJOR = 1
 const int FIRMWARE_VERSION_MINOR = 0
 
-// Performance monitoring for optimization
-// function getPerformanceStats() - for future diagnostics
-// function validateAudioQuality() - for automated testing
+
+
+
 ```
 
 ---

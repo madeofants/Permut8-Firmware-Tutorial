@@ -8,7 +8,7 @@ Design firmware that works seamlessly with external preset management systems, a
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -20,30 +20,30 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// Preset state management
-global array preset_(int)global params[OPERAND_1_LOW_PARAM_INDEX]   // Stored parameter values
-global int preset_led_state = 0 // Stored LED state
-global int preset_mode = 0      // Stored internal mode
-global int smooth_counter = 0   // Parameter smoothing counter
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global array preset_(int)global params[OPERAND_1_LOW_PARAM_INDEX]
+global int preset_led_state = 0
+global int preset_mode = 0
+global int smooth_counter = 0
 
 ```
 
 ## Preset Recall Implementation
 
 ```impala
-// Smooth parameter transitions to avoid clicks
+
 function recall_preset()
 locals int i, int target, int current, int diff
 {
-    // Smooth parameter transitions
+
     i = 0;
     loop {
         if (i >= 4) break;
@@ -52,16 +52,16 @@ locals int i, int target, int current, int diff
         current = (int)global params[i];
         diff = target - current;
         
-        // Gradual transition over 64 samples
+
         global params[i] = current + (diff >> 6);
         
         i = i + 1;
     }
     
-    // Update LED state
+
     global displayLEDs[0] = global preset_led_state;
     
-    // Restore internal mode
+
     global preset_mode = global preset_mode;
 }
 ```
@@ -69,61 +69,61 @@ locals int i, int target, int current, int diff
 ## External Integration Points
 
 ```impala
-// Standard MIDI CC mapping for presets
+
 function handle_preset_change()
 locals int cc_num, int value
 {
-    // Read CC number from parameter 4
+
     cc_num = (int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX];
-    // Read CC value from parameter 5
+
     value = (int)global (int)global params[OPERATOR_2_PARAM_INDEX];
     
     if (cc_num == 0) {
-        global (int)global params[CLOCK_FREQ_PARAM_INDEX] = value << 3;  // CC0 -> param 0
+        global (int)global params[CLOCK_FREQ_PARAM_INDEX] = value << 3;
     } else if (cc_num == 1) {
-        global (int)global params[SWITCHES_PARAM_INDEX] = value << 3;  // CC1 -> param 1
+        global (int)global params[SWITCHES_PARAM_INDEX] = value << 3;
     } else if (cc_num == 2) {
-        global (int)global params[OPERATOR_1_PARAM_INDEX] = value << 3;  // CC2 -> param 2
+        global (int)global params[OPERATOR_1_PARAM_INDEX] = value << 3;
     } else if (cc_num == 3) {
-        global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] = value << 3;  // CC3 -> param 3
+        global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] = value << 3;
     }
 }
 
-// Program change handling
+
 function handle_program_change()
 locals int program_num
 {
     program_num = (int)global (int)global params[OPERAND_2_HIGH_PARAM_INDEX];
-    if (program_num < 4) {  // Support 4 presets
+    if (program_num < 4) {
         recall_preset();
     }
 }
 
-// Complete preset system with audio processing
+
 function process()
 locals int input_sample, int output_sample, int mix_level
 {
     loop {
-        // Handle external preset commands
+
         handle_preset_change();
         handle_program_change();
         
-        // Process audio with current parameters
+
         input_sample = (int)global signal[0];
         
-        // Apply basic processing using preset-controlled parameters
-        mix_level = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];  // Main control
+
+        mix_level = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];
         output_sample = (input_sample * mix_level) >> 8;
         
-        // Prevent clipping
+
         if (output_sample > 2047) output_sample = 2047;
         if (output_sample < -2047) output_sample = -2047;
         
-        // Output processed signal
+
         global signal[0] = output_sample;
         global signal[1] = output_sample;
         
-        // Show activity on LEDs
+
         global displayLEDs[1] = mix_level;
         global displayLEDs[2] = global preset_mode << 6;
         global displayLEDs[3] = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];

@@ -53,28 +53,28 @@ Once root cause is confirmed:
 For complex systems, use binary search to isolate problematic code sections:
 
 ```impala
-// Original complex function
+
 float complexProcess(float input) {
-    float stage1 = preprocessInput(input);      // Comment out stages
-    float stage2 = applyFilter(stage1);         // to isolate issues
+    float stage1 = preprocessInput(input);
+    float stage2 = applyFilter(stage1);
     float stage3 = addEffects(stage2);
     float stage4 = normalizeOutput(stage3);
     return stage4;
 }
 
-// Test with progressive enabling
+
 float debugProcess(float input) {
     float result = input;
     
-    // Enable stages one by one
+
     result = preprocessInput(result);
-    // logValue("After preprocess", result);     // Add logging
+
     
-    // result = applyFilter(result);             // Comment out
-    // logValue("After filter", result);
+
+
     
-    // result = addEffects(result);              // Comment out  
-    // logValue("After effects", result);
+
+
     
     return result;
 }
@@ -84,22 +84,22 @@ float debugProcess(float input) {
 Create the simplest possible test case that reproduces the issue:
 
 ```impala
-// Complex failing scenario
+
 void complexScenario() {
     initializeFullSystem();
     loadPreset("ComplexPatch");
     setParameter(PARAM_FREQUENCY, 440.0f);
     setParameter(PARAM_RESONANCE, 0.8f);
     setParameter(PARAM_MODULATION, 0.5f);
-    processAudioBuffer(complexBuffer);        // Fails here
+    processAudioBuffer(complexBuffer);
 }
 
-// Minimal reproduction
+
 void minimalTest() {
-    // Strip to absolute minimum
+
     float testInput = 0.5f;
     float result = problematicFunction(testInput);
-    // Does this single call fail?
+
 }
 ```
 
@@ -107,12 +107,12 @@ void minimalTest() {
 Test individual components in isolation before testing integration:
 
 ```impala
-// Test filter component alone
+
 void testFilterIsolation() {
     Filter filter;
     filter.setFrequency(1000.0f);
     
-    // Test with known inputs
+
     float testInputs[] = {0.0f, 0.5f, 1.0f, -1.0f};
     
     int i;
@@ -132,23 +132,23 @@ Implement multiple logging levels for different debugging phases:
 
 ```impala
 enum LogLevel {
-    LOG_ERROR = 0,    // Always enabled
-    LOG_WARNING = 1,  // Enable for problem investigation
-    LOG_INFO = 2,     // Enable for general debugging
-    LOG_DEBUG = 3,    // Enable for detailed analysis
-    LOG_TRACE = 4     // Enable only for specific issues
+    LOG_ERROR = 0,
+    LOG_WARNING = 1,
+    LOG_INFO = 2,
+    LOG_DEBUG = 3,
+    LOG_TRACE = 4
 };
 
 int currentLogLevel = LOG_WARNING;
 
 void logMessage(LogLevel level, const char* function, const char* message, float value) {
     if (level <= currentLogLevel) {
-        // Output format: [LEVEL] function: message = value
-        // Implementation depends on your output method
+
+
     }
 }
 
-// Usage throughout code
+
 void processFilter(float input) {
     logMessage(LOG_TRACE, "processFilter", "input", input);
     
@@ -167,23 +167,23 @@ void processFilter(float input) {
 Minimize logging overhead in real-time code:
 
 ```impala
-// Fast logging using compile-time switches
+
 #define DEBUG_ENABLED 1
 #define TRACE_ENABLED 0
 
 #if DEBUG_ENABLED
     #define DEBUG_LOG(msg, val) quickLog(msg, val)
 #else
-    #define DEBUG_LOG(msg, val) // No-op in release
+    #define DEBUG_LOG(msg, val)
 #endif
 
 #if TRACE_ENABLED
     #define TRACE_LOG(msg, val) quickLog(msg, val)
 #else
-    #define TRACE_LOG(msg, val) // No-op unless specifically debugging
+    #define TRACE_LOG(msg, val)
 #endif
 
-// Circular buffer logging for minimal overhead
+
 struct LogEntry {
     int timestamp;
     int messageId;
@@ -219,13 +219,13 @@ int stateIndex = 0;
 void captureState(const char* label) {
     SystemState* state = &capturedStates[stateIndex];
     
-    // Capture current parameter values
+
     int i;
     for (i = 0 to MAX_PARAMS) {
         state->parameters[i] = params[i];
     }
     
-    // Capture signal levels
+
     for (i = 0 to 8) {
         state->signalLevels[i] = signal[i];
     }
@@ -239,11 +239,11 @@ void captureState(const char* label) {
     logMessage(LOG_INFO, "captureState", label, stateIndex);
 }
 
-// Usage at critical points
+
 void processAudio() {
     captureState("before_processing");
     
-    // ... processing code ...
+
     
     if (errorDetected) {
         captureState("error_detected");
@@ -272,7 +272,7 @@ void processParameter(int paramIndex, float value) {
     params[paramIndex] = value;
 }
 
-// Range checking assertions
+
 void setFilterFrequency(float frequency) {
     ASSERT(frequency > 20.0f, "frequency_too_low");
     ASSERT(frequency < 20000.0f, "frequency_too_high");
@@ -280,7 +280,7 @@ void setFilterFrequency(float frequency) {
     filterFreq = frequency;
 }
 
-// Memory access assertions
+
 float getSignalValue(int index) {
     ASSERT(index >= 0 && index < SIGNAL_BUFFER_SIZE, "signal_index_out_of_bounds");
     return signal[index];
@@ -292,27 +292,27 @@ Verify system invariants at strategic points:
 
 ```impala
 void checkAudioInvariants() {
-    // Signal levels should never exceed valid range
+
     int i;
     for (i = 0 to 8) {
         ASSERT(signal[i] >= -2048.0f && signal[i] <= 2047.0f, "signal_out_of_range");
     }
     
-    // Parameters should always be normalized
+
     for (i = 0 to MAX_PARAMS) {
         ASSERT(params[i] >= 0.0f && params[i] <= 1.0f, "param_not_normalized");
     }
     
-    // Memory usage should be within bounds
+
     int memUsage = getMemoryUsage();
     ASSERT(memUsage < MAX_MEMORY, "memory_usage_exceeded");
 }
 
-// Call invariant checks at frame boundaries
+
 void processFrame() {
     checkAudioInvariants();
     
-    // ... frame processing ...
+
     
     checkAudioInvariants();
 }
@@ -342,7 +342,7 @@ void logMemoryAccess(void* addr, int size, const char* func) {
     accessIndex = (accessIndex + 1) % 1000;
 }
 
-// Track array accesses
+
 float getBufferValue(float* buffer, int index) {
     logMemoryAccess(&buffer[index], sizeof(float), __FUNCTION__);
     return buffer[index];
@@ -365,7 +365,7 @@ void initProtectedBuffer(ProtectedBuffer* buf) {
     buf->startCanary = CANARY_VALUE;
     buf->endCanary = CANARY_VALUE;
     
-    // Initialize data
+
     int i;
     for (i = 0 to BUFFER_SIZE) {
         buf->data[i] = 0.0f;
@@ -394,7 +394,7 @@ Monitor stack usage to prevent overflows:
 int maxStackUsage = 0;
 
 void checkStackUsage() {
-    // Platform-specific stack pointer reading
+
     int currentStack = getCurrentStackPointer();
     int stackBase = getStackBase();
     int usage = stackBase - currentStack;
@@ -409,7 +409,7 @@ void checkStackUsage() {
     }
 }
 
-// Call at function entry for stack-heavy functions
+
 void recursiveFunction(int depth) {
     checkStackUsage();
     
@@ -427,30 +427,30 @@ void recursiveFunction(int depth) {
 Use test signals to measure timing with oscilloscopes:
 
 ```impala
-// GPIO pin control for oscilloscope triggers
+
 void setDebugPin(int pinNumber, bool state) {
-    // Platform-specific GPIO control
-    // Use this to create scope triggers
+
+
 }
 
 void measureProcessingLatency() {
-    setDebugPin(DEBUG_PIN_1, true);    // Scope trigger start
+    setDebugPin(DEBUG_PIN_1, true);
     
-    // Critical processing section
+
     float result = complexProcessing(inputSample);
     
-    setDebugPin(DEBUG_PIN_1, false);   // Scope trigger end
+    setDebugPin(DEBUG_PIN_1, false);
     
-    // Measure time between rising and falling edges on scope
+
 }
 
-// Measure function call overhead
+
 void profileFunctionCall() {
     setDebugPin(DEBUG_PIN_2, true);
     expensiveFunction();
     setDebugPin(DEBUG_PIN_2, false);
     
-    // Scope shows function execution time
+
 }
 ```
 
@@ -458,20 +458,20 @@ void profileFunctionCall() {
 Route internal signals to analog outputs for oscilloscope analysis:
 
 ```impala
-// Route internal audio signals to debug outputs
+
 void routeSignalToDebugOutput(float internalSignal, int debugChannel) {
-    // Scale internal signal (-2047 to 2047) to DAC range
+
     int dacValue = (int)((internalSignal + 2047.0f) * (4095.0f / 4094.0f));
     
-    // Clamp to valid DAC range
+
     if (dacValue < 0) dacValue = 0;
     if (dacValue > 4095) dacValue = 4095;
     
-    // Output to debug DAC channel
+
     setDebugDACValue(debugChannel, dacValue);
 }
 
-// Debug complex signal processing
+
 void debugFilterResponse() {
     float testFrequencies[] = {100.0f, 440.0f, 1000.0f, 4000.0f};
     
@@ -480,11 +480,11 @@ void debugFilterResponse() {
         float testSine = generateSine(testFrequencies[i]);
         float filteredSignal = applyFilter(testSine);
         
-        // Route to scope channels
-        routeSignalToDebugOutput(testSine, 0);          // Input
-        routeSignalToDebugOutput(filteredSignal, 1);    // Output
+
+        routeSignalToDebugOutput(testSine, 0);
+        routeSignalToDebugOutput(filteredSignal, 1);
         
-        // Scope shows frequency response
+
     }
 }
 ```
@@ -495,7 +495,7 @@ void debugFilterResponse() {
 Use logic analyzers to debug digital control signals:
 
 ```impala
-// State machine debugging with logic analyzer
+
 enum ProcessingState {
     STATE_IDLE = 0,
     STATE_PROCESSING = 1,
@@ -508,24 +508,24 @@ ProcessingState currentState = STATE_IDLE;
 void setState(ProcessingState newState) {
     currentState = newState;
     
-    // Output state on debug pins for logic analyzer
+
     setDebugPin(STATE_PIN_0, (newState & 1) != 0);
     setDebugPin(STATE_PIN_1, (newState & 2) != 0);
     
     logMessage(LOG_DEBUG, "setState", "new_state", newState);
 }
 
-// Timing relationship analysis
+
 void debugTimingRelationships() {
-    setDebugPin(CLOCK_PIN, true);       // Main clock edge
-    setDebugPin(PROCESS_PIN, true);     // Processing active
+    setDebugPin(CLOCK_PIN, true);
+    setDebugPin(PROCESS_PIN, true);
     
     processAudioSample();
     
-    setDebugPin(PROCESS_PIN, false);    // Processing complete
-    setDebugPin(CLOCK_PIN, false);      // Clock cycle end
+    setDebugPin(PROCESS_PIN, false);
+    setDebugPin(CLOCK_PIN, false);
     
-    // Logic analyzer shows timing relationships
+
 }
 ```
 
@@ -533,22 +533,22 @@ void debugTimingRelationships() {
 Debug communication protocols with logic analyzers:
 
 ```impala
-// SPI communication debugging
+
 void debugSPITransaction(int address, int data) {
-    setDebugPin(SPI_START_PIN, true);   // Transaction start marker
+    setDebugPin(SPI_START_PIN, true);
     
-    // SPI transaction (platform-specific)
+
     spiBeginTransaction();
-    spiTransfer(address);               // Address phase
-    setDebugPin(SPI_ADDR_PIN, true);    // Address sent marker
+    spiTransfer(address);
+    setDebugPin(SPI_ADDR_PIN, true);
     
-    spiTransfer(data);                  // Data phase
-    setDebugPin(SPI_DATA_PIN, true);    // Data sent marker
+    spiTransfer(data);
+    setDebugPin(SPI_DATA_PIN, true);
     
     spiEndTransaction();
-    setDebugPin(SPI_START_PIN, false);  // Transaction complete
+    setDebugPin(SPI_START_PIN, false);
     
-    // Logic analyzer decodes full protocol
+
 }
 ```
 
@@ -584,7 +584,7 @@ void endPerformanceMeasurement() {
     perfCounter.totalCycles = perfCounter.totalCycles + cycles;
     perfCounter.frameCount = perfCounter.frameCount + 1;
     
-    // Calculate CPU load percentage
+
     float cpuLoad = (cycles * 100.0f) / MAX_CYCLES_PER_FRAME;
     
     if (cpuLoad > 80.0f) {
@@ -592,11 +592,11 @@ void endPerformanceMeasurement() {
     }
 }
 
-// Usage in main processing loop
+
 void processAudioFrame() {
     startPerformanceMeasurement();
     
-    // Main audio processing
+
     int i;
     for (i = 0 to FRAME_SIZE) {
         signal[i] = processAudioSample(signal[i]);
@@ -629,7 +629,7 @@ int findOrCreateProfile(const char* functionName) {
         }
     }
     
-    // Create new profile
+
     if (profileCount < MAX_FUNCTIONS) {
         profiles[profileCount].name = functionName;
         profiles[profileCount].callCount = 0;
@@ -639,7 +639,7 @@ int findOrCreateProfile(const char* functionName) {
         return profileCount++;
     }
     
-    return -1;  // Profile table full
+    return -1;
 }
 
 void profileFunction(const char* functionName, int cycles) {
@@ -658,11 +658,11 @@ void profileFunction(const char* functionName, int cycles) {
     }
 }
 
-// Macro for easy function profiling
+
 #define PROFILE_FUNCTION_START() int startCycles = getCurrentCycles()
 #define PROFILE_FUNCTION_END(name) profileFunction(name, getCurrentCycles() - startCycles)
 
-// Usage example
+
 float expensiveFilter(float input) {
     PROFILE_FUNCTION_START();
     
@@ -698,7 +698,7 @@ void analyzeMemoryAccess(void* address, int size) {
             cacheStats.randomAccesses++;
         }
         
-        // Check for cache line boundary crossing
+
         int currentLine = (int)address / CACHE_LINE_SIZE;
         int lastLine = (int)cacheStats.lastAddress / CACHE_LINE_SIZE;
         
@@ -710,9 +710,9 @@ void analyzeMemoryAccess(void* address, int size) {
     cacheStats.lastAddress = address;
 }
 
-// Cache-aware data access
+
 void processSamplesOptimized(float* samples, int count) {
-    // Sequential access pattern
+
     int i;
     for (i = 0 to count) {
         analyzeMemoryAccess(&samples[i], sizeof(float));
@@ -772,7 +772,7 @@ void debugFree(void* ptr) {
     free(ptr);
 }
 
-// Macro for instrumented allocation
+
 #define MALLOC(size) debugMalloc(size, __FUNCTION__)
 #define FREE(ptr) debugFree(ptr)
 ```
@@ -786,11 +786,11 @@ Implement comprehensive error classification:
 
 ```impala
 enum ErrorSeverity {
-    ERROR_CRITICAL = 0,    // System must halt
-    ERROR_MAJOR = 1,       // Feature disabled, system continues
-    ERROR_MINOR = 2,       // Degraded operation
-    ERROR_WARNING = 3,     // Potential future problem
-    ERROR_INFO = 4         // Informational only
+    ERROR_CRITICAL = 0,
+    ERROR_MAJOR = 1,
+    ERROR_MINOR = 2,
+    ERROR_WARNING = 3,
+    ERROR_INFO = 4
 };
 
 struct ErrorRecord {
@@ -817,7 +817,7 @@ void reportError(ErrorSeverity severity, int code, const char* description,
     
     errorIndex = (errorIndex + 1) % ERROR_HISTORY_SIZE;
     
-    // Take appropriate action based on severity
+
     switch (severity) {
         case ERROR_CRITICAL:
             handleCriticalError(code);
@@ -829,7 +829,7 @@ void reportError(ErrorSeverity severity, int code, const char* description,
             setDegradedMode(code);
             break;
         default:
-            // Log only
+
             break;
     }
 }
@@ -854,25 +854,25 @@ void setOperationMode(OperationMode mode) {
     
     switch (mode) {
         case MODE_SAFE:
-            // Disable non-essential features
+
             disableAdvancedEffects();
             reduceProcessingComplexity();
             break;
             
         case MODE_MINIMAL:
-            // Basic functionality only
+
             disableAllEffects();
             useSimpleProcessing();
             break;
             
         case MODE_BYPASS:
-            // Pass-through only
+
             enableBypassMode();
             break;
     }
 }
 
-// Adaptive processing based on system health
+
 float processWithFallback(float input) {
     switch (currentMode) {
         case MODE_FULL_FEATURED:
@@ -886,11 +886,11 @@ float processWithFallback(float input) {
             
         case MODE_BYPASS:
         default:
-            return input;  // Pass-through
+            return input;
     }
 }
 
-// Monitor system health and adjust mode
+
 void monitorSystemHealth() {
     float cpuLoad = getCurrentCpuLoad();
     int errorCount = getRecentErrorCount();
@@ -902,7 +902,7 @@ void monitorSystemHealth() {
             setOperationMode(MODE_MINIMAL);
         }
     } else if (cpuLoad < 70.0f && errorCount < 2) {
-        // Gradually restore full functionality
+
         if (currentMode == MODE_MINIMAL) {
             setOperationMode(MODE_SAFE);
         } else if (currentMode == MODE_SAFE) {
@@ -932,7 +932,7 @@ int currentCheckpoint = 0;
 void createCheckpoint() {
     SystemCheckpoint* cp = &checkpoints[currentCheckpoint];
     
-    // Save current system state
+
     int i;
     for (i = 0 to MAX_PARAMS) {
         cp->parameters[i] = params[i];
@@ -952,7 +952,7 @@ void createCheckpoint() {
 }
 
 void restoreFromCheckpoint() {
-    // Find most recent valid checkpoint
+
     int searchIndex = currentCheckpoint;
     SystemCheckpoint* cp = NULL;
     
@@ -966,7 +966,7 @@ void restoreFromCheckpoint() {
     }
     
     if (cp) {
-        // Restore system state
+
         int i;
         for (i = 0 to MAX_PARAMS) {
             params[i] = cp->parameters[i];
@@ -985,7 +985,7 @@ void restoreFromCheckpoint() {
     }
 }
 
-// Automatic checkpointing
+
 void processFrameWithCheckpointing() {
     static int framesSinceCheckpoint = 0;
     
@@ -1062,24 +1062,24 @@ void assertTrue(const char* testName, bool condition, const char* errorMsg) {
     }
 }
 
-// Test filter functionality
+
 void testFilterBasics() {
     Filter filter;
     filter.setFrequency(1000.0f);
     filter.setResonance(0.5f);
     
-    // Test DC blocking
+
     float dcInput = 1.0f;
     float dcOutput = filter.process(dcInput);
     assertTrue("DC_blocking", dcOutput < 0.1f, "Filter should block DC");
     
-    // Test frequency response
+
     float sineInput = generateSine(1000.0f);
     float sineOutput = filter.process(sineInput);
     assertTrue("Sine_processing", sineOutput != 0.0f, "Filter should process sine waves");
     
-    // Test parameter ranges
-    filter.setFrequency(-100.0f);  // Invalid frequency
+
+    filter.setFrequency(-100.0f);
     assertEqual("Invalid_frequency_handling", 20.0f, filter.getFrequency(), 1.0f);
 }
 
@@ -1091,7 +1091,7 @@ void runAllTests() {
     testSignalProcessing();
     testMemoryManagement();
     
-    // Report results
+
     int passedTests = 0;
     int i;
     for (i = 0 to testCount) {
@@ -1113,11 +1113,11 @@ Test component interactions systematically:
 
 ```impala
 void testParameterToFilterIntegration() {
-    // Test parameter changes affect filter behavior
-    setParameter(PARAM_FILTER_FREQ, 0.0f);  // Min frequency
+
+    setParameter(PARAM_FILTER_FREQ, 0.0f);
     float lowFreqResponse = measureFilterResponse(100.0f);
     
-    setParameter(PARAM_FILTER_FREQ, 1.0f);  // Max frequency
+    setParameter(PARAM_FILTER_FREQ, 1.0f);
     float highFreqResponse = measureFilterResponse(100.0f);
     
     assertTrue("Parameter_affects_filter", 
@@ -1126,7 +1126,7 @@ void testParameterToFilterIntegration() {
 }
 
 void testMIDISyncIntegration() {
-    // Test MIDI clock affects timing
+
     int tempoA = 120;
     int tempoB = 140;
     
@@ -1142,7 +1142,7 @@ void testMIDISyncIntegration() {
 }
 
 void testModulationIntegration() {
-    // Test modulation sources affect targets
+
     setModulationSource(MOD_SOURCE_LFO, 0.0f);
     setModulationTarget(MOD_TARGET_FILTER_FREQ);
     setModulationAmount(1.0f);
@@ -1167,12 +1167,12 @@ Test system behavior under extreme conditions:
 void stressTestCPULoad() {
     logMessage(LOG_INFO, "stressTestCPULoad", "starting_stress_test", 0);
     
-    // Gradually increase processing complexity
+
     int complexity;
     for (complexity = 1 to 11) {
         setProcessingComplexity(complexity);
         
-        // Run for several seconds
+
         int frame;
         for (frame = 0 to 1000) {
             processAudioFrame();
@@ -1192,7 +1192,7 @@ void stressTestCPULoad() {
 void stressTestMemoryUsage() {
     int initialMemory = getMemoryUsage();
     
-    // Allocate progressively larger buffers
+
     void* allocations[100];
     int allocationCount = 0;
     
@@ -1214,7 +1214,7 @@ void stressTestMemoryUsage() {
         }
     }
     
-    // Free all allocations
+
     int i;
     for (i = 0 to allocationCount) {
         FREE(allocations[i]);
@@ -1225,7 +1225,7 @@ void stressTestMemoryUsage() {
 }
 
 void stressTestParameterChanges() {
-    // Rapid parameter changes
+
     int iteration;
     for (iteration = 0 to 10000) {
         int paramIndex = iteration % MAX_PARAMS;
@@ -1233,11 +1233,11 @@ void stressTestParameterChanges() {
         
         setParameter(paramIndex, paramValue);
         
-        // Process one audio sample
+
         float testSample = 0.5f;
         float result = processAudioSample(testSample);
         
-        // Verify output is valid
+
         assertTrue("Rapid_param_changes_stable",
                    result >= -2048.0f && result <= 2047.0f,
                    "Output should remain in valid range");
@@ -1282,17 +1282,17 @@ void createBugReport(const char* title, const char* description, ErrorSeverity s
     report.reporter = getCurrentUser();
     report.timestamp = getCurrentTime();
     
-    // Capture current system state
+
     captureSystemState(&report.systemState);
     
-    // Format and output bug report
+
     logMessage(LOG_ERROR, "createBugReport", "new_bug_report", report.bugId);
     
-    // Store for developer access
+
     storeBugReport(&report);
 }
 
-// Usage when bug is discovered
+
 void reportFilterCrashBug() {
     createBugReport(
         "Filter crashes with high resonance",
@@ -1329,14 +1329,14 @@ void startDebugSession(const char* objective, const char* debugger) {
     
     logMessage(LOG_INFO, "startDebugSession", "session_started", currentSession.sessionId);
     
-    // Initialize debugging environment
+
     enableDetailedLogging();
     clearPerformanceCounters();
     createCheckpoint();
 }
 
 void documentFinding(const char* finding) {
-    // Append to findings text
+
     appendToSessionLog(&currentSession, finding);
     logMessage(LOG_INFO, "documentFinding", "finding_recorded", 0);
 }
@@ -1346,7 +1346,7 @@ void endDebugSession(const char* solution, bool resolved) {
     currentSession.solutionText = solution;
     currentSession.resolved = resolved;
     
-    // Generate session report
+
     generateSessionReport(&currentSession);
     
     if (resolved) {
@@ -1355,7 +1355,7 @@ void endDebugSession(const char* solution, bool resolved) {
         logMessage(LOG_INFO, "endDebugSession", "session_completed", 0);
     }
     
-    // Restore normal logging level
+
     restoreNormalLogging();
 }
 ```
@@ -1422,13 +1422,13 @@ struct ReproductionCase {
 };
 
 void defineReproductionCase(const char* caseId, const char* description) {
-    // Create new reproduction case
+
     ReproductionCase testCase;
     testCase.caseId = caseId;
     testCase.description = description;
     testCase.actionCount = 0;
     
-    // Capture initial system state
+
     captureParameterState(&testCase.initialState);
     
     logMessage(LOG_INFO, "defineReproductionCase", "case_created", 0);
@@ -1447,10 +1447,10 @@ void addTestAction(ReproductionCase* testCase, TestActionType type, float value)
 bool executeReproductionCase(ReproductionCase* testCase) {
     logMessage(LOG_INFO, "executeReproductionCase", "starting_case", 0);
     
-    // Restore initial state
+
     restoreParameterState(&testCase->initialState);
     
-    // Execute all actions
+
     int i;
     for (i = 0 to testCase->actionCount) {
         TestAction* action = &testCase->actions[i];
@@ -1470,7 +1470,7 @@ bool executeReproductionCase(ReproductionCase* testCase) {
         logMessage(LOG_DEBUG, "executeReproductionCase", "action_executed", i);
     }
     
-    // Check if expected result occurred
+
     bool reproduced = checkExpectedResult(testCase->expectedResult);
     
     if (reproduced) {

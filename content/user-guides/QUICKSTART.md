@@ -71,7 +71,7 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 extern native yield
 
-// Parameter index constants (required for parameter access)
+
 const int CLOCK_FREQ_PARAM_INDEX
 const int SWITCHES_PARAM_INDEX
 const int OPERATOR_1_PARAM_INDEX
@@ -82,7 +82,7 @@ const int OPERAND_2_HIGH_PARAM_INDEX
 const int OPERAND_2_LOW_PARAM_INDEX
 const int PARAM_COUNT
 
-// Custom interface labels
+
 readonly array panelTextRows[8] = {
     "",
     "",
@@ -102,45 +102,45 @@ function process()
 locals int volume, int inputL, int inputR, int outputL, int outputR
 {
     loop {
-        // Get volume from knob (0-255) and convert to gain (0-512 for 2x boost)
-        volume = (int)global params[OPERAND_2_HIGH_PARAM_INDEX] * 2;  // 0-510 range
+
+        volume = (int)global params[OPERAND_2_HIGH_PARAM_INDEX] * 2;
         
-        // Get input audio
+
         inputL = (int)global signal[0];
         inputR = (int)global signal[1];
         
-        // Apply volume control
+
         outputL = (inputL * volume) / 255;
         outputR = (inputR * volume) / 255;
         
-        // Prevent clipping
+
         if (outputL > 2047) outputL = 2047;
         if (outputL < -2047) outputL = -2047;
         if (outputR > 2047) outputR = 2047;
         if (outputR < -2047) outputR = -2047;
         
-        // Output the processed audio
+
         global signal[0] = outputL;
         global signal[1] = outputR;
         
-        // Visual feedback - show volume level
-        global displayLEDs[0] = volume >> 1;  // Volume indicator
+
+        global displayLEDs[0] = volume >> 1;
         
-        // Left channel activity
+
         if (outputL > 1000) {
             global displayLEDs[1] = 0xFF;
         } else {
             global displayLEDs[1] = 0x00;
         }
         
-        // Right channel activity
+
         if (outputR > 1000) {
             global displayLEDs[2] = 0xFF;
         } else {
             global displayLEDs[2] = 0x00;
         }
         
-        // Boost indicator
+
         if (volume > 200) {
             global displayLEDs[3] = 0xFF;
         } else {
@@ -190,8 +190,11 @@ PikaCmd.exe -compile volume_control.impala
 
 **Step 3a: Clean the GAZL File**
 1. **Open `volume_control.gazl`** in a text editor
-2. **Remove any comment lines** starting with `;`
-3. **Keep only the assembly code**
+2. **Remove these specific lines that cause "Invalid mnemonic" errors:**
+   - Header: `; Compiled with Impala version 1.0`
+   - Separators: `;-----------------------------------------------------------------------------`
+   - Inline comments: Any line containing `;` followed by your original Impala code
+3. **Keep only the pure assembly instructions** - no lines starting with `;`
 
 **Step 3b: Create the Bank File**
 Create `volume_control.p8bank`:
@@ -264,26 +267,26 @@ Let's add a simple modification to make the volume control more interesting.
 ### 1. Add Stereo Width Control
 Replace the audio processing section with:
 ```impala
-// Get volume and width from knobs
-volume = (int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 2;  // Volume control
-int width = (int)global params[OPERAND_1_LOW_PARAM_INDEX];   // Stereo width (0-255)
 
-// Get input audio
+volume = (int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 2;
+int width = (int)global params[OPERAND_1_LOW_PARAM_INDEX];
+
+
 inputL = (int)global signal[0];
 inputR = (int)global signal[1];
 
-// Apply volume control
+
 outputL = (inputL * volume) / 255;
 outputR = (inputR * volume) / 255;
 
-// Apply stereo width effect
-int mono = (outputL + outputR) / 2;  // Mono sum
-int side = (outputL - outputR) / 2;  // Stereo difference
 
-// Adjust stereo width
+int mono = (outputL + outputR) / 2;
+int side = (outputL - outputR) / 2;
+
+
 side = (side * width) / 255;
 
-// Reconstruct stereo
+
 outputL = mono + side;
 outputR = mono - side;
 ```
@@ -326,11 +329,11 @@ Now you have both volume AND stereo width control!
 ```impala
 function process() {
     loop {
-        // 1. Read parameters from knobs
-        // 2. Get input audio samples
-        // 3. Process the audio
-        // 4. Output the result
-        // 5. Update visual feedback
+
+
+
+
+
         yield();
     }
 }

@@ -26,23 +26,23 @@ Every Impala firmware follows this basic structure:
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 /* ------ Global Variables ------ */
-global array signal[2]              // Full patches only
-global array positions[2]           // Mod patches only  
-global array params[PARAM_COUNT]    // Always available
-global array displayLEDs[4]         // Always available
+global array signal[2]
+global array positions[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
 
 /* ------ Global State ------ */
 global int myVariable = 0
 global array myBuffer[1024]
 
 /* ------ Required Functions ------ */
-function process()                   // Full patches
-function operate1(int a) returns int processed  // Mod patches
+function process()
+function operate1(int a) returns int processed
 
 /* ------ Optional Functions ------ */
-function init()                     // Called once at load
-function reset()                    // Called on reset
-function update()                   // Called on parameter change
+function init()
+function reset()
+function update()
 ```
 
 ## Data Types
@@ -56,47 +56,47 @@ function update()                   // Called on parameter change
 
 ### Arrays
 ```impala
-// Fixed-size arrays only
-array buffer[1024]              // Local array
-global array delayLine[8192]    // Global array
-readonly array table[256]       // Read-only array
 
-// Array access
-buffer[0] = 123;               // Set element
-int value = buffer[0];         // Get element
+array buffer[1024]
+global array delayLine[8192]
+readonly array table[256]
+
+
+buffer[0] = 123;
+int value = buffer[0];
 ```
 
 ### Type Casting
 ```impala
-int x = (int) global params[0];         // Cast to int
-float f = itof(x);                      // int to float
-int i = ftoi(f);                        // float to int
-pointer p = &buffer[0];                 // Address of array element
+int x = (int) global params[0];
+float f = itof(x);
+int i = ftoi(f);
+pointer p = &buffer[0];
 ```
 
 ## Constants and Variables
 
 ### Constants
 ```impala
-const int BUFFER_SIZE = 1024            // Integer constant
-const float PI = 3.14159265             // Float constant
-const int FALSE = 0                     // Boolean constant
-const int TRUE = 1                      // Boolean constant
+const int BUFFER_SIZE = 1024
+const float PI = 3.14159265
+const int FALSE = 0
+const int TRUE = 1
 ```
 
 ### Variable Declarations
 ```impala
-// Local variables
+
 int sampleCount
 float delayTime = 0.5
 array tempBuffer[64]
 
-// Global variables (accessible across functions)
+
 global int position = 0
 global array circularBuffer[2048]
 global float mixLevel
 
-// Read-only global data
+
 readonly array sineTable[1024] = { /* data */ }
 readonly int maxDelay = 8000
 ```
@@ -105,63 +105,63 @@ readonly int maxDelay = 8000
 
 ### Arithmetic Operators
 ```impala
-int a = 10 + 5;        // Addition
-int b = 10 - 5;        // Subtraction  
-int c = 10 * 5;        // Multiplication
-int d = 10 / 5;        // Division
-int e = 10 % 3;        // Modulo
+int a = 10 + 5;
+int b = 10 - 5;
+int c = 10 * 5;
+int d = 10 / 5;
+int e = 10 % 3;
 ```
 
 ### Bitwise Operators
 ```impala
-int a = 0xFF & 0x0F;   // Bitwise AND
-int b = 0xFF | 0x0F;   // Bitwise OR
-int c = 0xFF ^ 0x0F;   // Bitwise XOR
-int d = ~0xFF;         // Bitwise NOT
-int e = 0xFF << 2;     // Left shift
-int f = 0xFF >> 2;     // Right shift
+int a = 0xFF & 0x0F;
+int b = 0xFF | 0x0F;
+int c = 0xFF ^ 0x0F;
+int d = ~0xFF;
+int e = 0xFF << 2;
+int f = 0xFF >> 2;
 ```
 
 ### Comparison Operators
 ```impala
-if (a == b) { }        // Equal
-if (a != b) { }        // Not equal
-if (a < b) { }         // Less than
-if (a <= b) { }        // Less than or equal
-if (a > b) { }         // Greater than
-if (a >= b) { }        // Greater than or equal
+if (a == b) { }
+if (a != b) { }
+if (a < b) { }
+if (a <= b) { }
+if (a > b) { }
+if (a >= b) { }
 ```
 
 ### Logical Operators
 ```impala
-if (a && b) { }        // Logical AND
-if (a || b) { }        // Logical OR  
-if (!a) { }            // Logical NOT
+if (a && b) { }
+if (a || b) { }
+if (!a) { }
 ```
 
 ## Control Flow
 
 ### Conditional Statements
 ```impala
-// Basic if statement
+
 if (condition) {
-    // statements
+
 }
 
-// If-else
+
 if (condition) {
-    // statements
+
 } else {
-    // statements
+
 }
 
-// If-else-if chain
+
 if (condition1) {
-    // statements
+
 } else if (condition2) {
-    // statements
+
 } else {
-    // statements
+
 }
 ```
 
@@ -169,27 +169,27 @@ if (condition1) {
 
 #### For Loops
 ```impala
-// Inclusive range (0, 1, 2, ..., n)
+
 for (i = 0 to n) {
-    // loop body
+
 }
 
-// With step (manual implementation)
+
 for (i = 0; i < n; i = i + 2) {
-    // loop body  
+
 }
 ```
 
 #### While Loops
 ```impala
 while (condition) {
-    // loop body
+
 }
 
-// Example
+
 int i = 0;
 while (i < 10) {
-    // process
+
     i = i + 1;
 }
 ```
@@ -197,8 +197,8 @@ while (i < 10) {
 #### Infinite Loops
 ```impala
 loop {
-    // Main processing loop
-    // MUST include yield() for real-time processing
+
+
     yield();
 }
 ```
@@ -207,24 +207,24 @@ loop {
 
 ### Function Declaration
 ```impala
-// Basic function
+
 function myFunction() {
-    // function body
+
 }
 
-// Function with parameters
+
 function processSignal(int gain, float frequency) {
-    // function body
+
 }
 
-// Function with return value
+
 function calculateGain(int input) 
 returns int output
 {
     output = input * 2;
 }
 
-// Function with local variables
+
 function complexFunction(int param)
 returns float result
 locals int temp, array workspace[256]
@@ -240,10 +240,10 @@ locals int temp, array workspace[256]
 ```impala
 function process() {
     loop {
-        // Process global signal[0] and signal[1]
-        // Audio range: -2047 to 2047 (12-bit)
+
+
         
-        yield();  // REQUIRED - return control to host
+        yield();
     }
 }
 ```
@@ -254,8 +254,8 @@ function operate1(int a)
 returns int processed
 {
     if ((int) global params[OPERATOR_1_PARAM_INDEX] == OPERATOR_1_MUL) {
-        // Process global positions[0] and positions[1]
-        // Return 1 if handled, 0 to pass through
+
+
         processed = 1;
     } else {
         processed = 0;
@@ -265,26 +265,26 @@ returns int processed
 function operate2(int a)
 returns int processed
 {
-    // Similar to operate1 for second operator
-    processed = 0;  // Pass through by default
+
+    processed = 0;
 }
 ```
 
 ### Optional Callback Functions
 ```impala
 function init() {
-    // Called once when firmware loads
-    // Initialize lookup tables, state, etc.
+
+
 }
 
 function reset() {
-    // Called on reset button or DAW reset
-    // Clear delays, reset state
+
+
 }
 
 function update() {
-    // Called when parameters change
-    // Recalculate derived values
+
+
 }
 ```
 
@@ -292,61 +292,61 @@ function update() {
 
 ### Audio Processing
 ```impala
-// Memory operations (delay lines)
+
 read(int offset, int frameCount, pointer buffer)
 write(int offset, int frameCount, pointer buffer)
 
-// Control flow
-yield()                 // Return control to host (required in loops)
-abort()                 // Kill firmware, restore normal operation
+
+yield()
+abort()
 ```
 
 ### Debug Functions
 ```impala
-trace(pointer string)   // Output debug string to console
+trace(pointer string)
 ```
 
 ### Math Functions
 ```impala
-// Basic math (from source examples)
-float cos(float x)      // Cosine (if available)
-float sin(float x)      // Sine (if available)
-float abs(float x)      // Absolute value
-float floor(float x)    // Floor function
+
+float cos(float x)
+float sin(float x)
+float abs(float x)
+float floor(float x)
 ```
 
 ## Global Variables and APIs
 
 ### Always Available
 ```impala
-global array params[PARAM_COUNT]        // Parameter values (0-255)
-global array displayLEDs[4]            // LED displays (8-bit masks)
-global int clock                       // Sample counter (0-65535)
-global int instance                    // Unique plugin instance ID
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global int clock
+global int instance
 ```
 
 ### Full Patches Only
 ```impala
-global array signal[2]                 // Audio I/O: [left, right]
-                                       // Range: -2047 to 2047 (12-bit)
+global array signal[2]
+
 ```
 
 ### Mod Patches Only
 ```impala
-global array positions[2]              // Memory positions: [left, right]
-                                       // Range: 0x00000 to 0xFFFFF (20-bit fixed point)
+global array positions[2]
+
 ```
 
 ### Parameter Access
 ```impala
-// Use predefined constants (externally defined)
+
 int knob1 = (int) global params[OPERAND_1_HIGH_PARAM_INDEX];
 int knob2 = (int) global params[OPERAND_1_LOW_PARAM_INDEX];
 int switches = (int) global params[SWITCHES_PARAM_INDEX];
 
-// Switch testing
+
 if ((int) global params[SWITCHES_PARAM_INDEX] & SWITCHES_SYNC_MASK) {
-    // Sync is enabled
+
 }
 ```
 
@@ -354,28 +354,28 @@ if ((int) global params[SWITCHES_PARAM_INDEX] & SWITCHES_SYNC_MASK) {
 
 ### Static Allocation Only
 ```impala
-// All memory must be declared at compile time
-global array largeBuffer[16384]    // Global storage
-array tempBuffer[64]               // Local storage (function scope)
 
-// NO dynamic allocation - these don't exist:
-// malloc(), free(), new, delete
+global array largeBuffer[16384]
+array tempBuffer[64]
+
+
+
 ```
 
 ### Memory Access Patterns
 ```impala
-// Safe array access
+
 array buffer[1024];
 int index = 0;
 if (index >= 0 && index < 1024) {
-    buffer[index] = value;  // Safe
+    buffer[index] = value;
 }
 
-// Circular buffer pattern
+
 global int writePos = 0;
 global array circularBuffer[1024];
 
-writePos = (writePos + 1) % 1024;   // Wrap around
+writePos = (writePos + 1) % 1024;
 circularBuffer[writePos] = newValue;
 ```
 
@@ -385,21 +385,21 @@ circularBuffer[writePos] = newValue;
 ```impala
 function process() {
     loop {
-        // Process one sample or small batch
+
         
-        yield();  // REQUIRED - return control regularly
+        yield();
     }
 }
 ```
 
 ### Performance Guidelines
 ```impala
-// Prefer integer operations for speed
+
 int sample = (int) global signal[0];
-sample = sample >> 1;  // Fast divide by 2
+sample = sample >> 1;
 global signal[0] = sample;
 
-// Use lookup tables for expensive calculations
+
 readonly array expTable[256] = { /* precomputed values */ };
 int result = expTable[input & 0xFF];
 ```
@@ -408,37 +408,37 @@ int result = expTable[input & 0xFF];
 
 ### Parameter Scaling
 ```impala
-// Map 0-255 parameter to useful range
-int bits = ((int) global params[OPERAND_1_HIGH_PARAM_INDEX] >> 5) + 1;  // 1-8
-float gain = itof((int) global params[OPERAND_1_HIGH_PARAM_INDEX]) / 255.0;  // 0.0-1.0
-int delay = (int) global params[OPERAND_1_HIGH_PARAM_INDEX] << 3;  // 0-2040
+
+int bits = ((int) global params[OPERAND_1_HIGH_PARAM_INDEX] >> 5) + 1;
+float gain = itof((int) global params[OPERAND_1_HIGH_PARAM_INDEX]) / 255.0;
+int delay = (int) global params[OPERAND_1_HIGH_PARAM_INDEX] << 3;
 ```
 
 ### Audio Range Clamping
 ```impala
-// Ensure audio stays in valid range
+
 if (sample > 2047) sample = 2047;
 else if (sample < -2047) sample = -2047;
 ```
 
 ### LED Display
 ```impala
-// Set LED patterns (8-bit mask, bit 0 = leftmost LED)
-global displayLEDs[0] = 0x01;           // Single LED left
-global displayLEDs[0] = 0x80;           // Single LED right  
-global displayLEDs[0] = 0xFF;           // All LEDs on
-global displayLEDs[0] = 1 << position;  // Variable position
+
+global displayLEDs[0] = 0x01;
+global displayLEDs[0] = 0x80;
+global displayLEDs[0] = 0xFF;
+global displayLEDs[0] = 1 << position;
 ```
 
 ### Delay Line Access
 ```impala
-// Read/write delay memory
-array buffer[2];  // Stereo pair
 
-// Write current sample to delay line
+array buffer[2];
+
+
 write(global clock, 1, global signal);
 
-// Read delayed sample
+
 read(global clock - delayTime, 1, buffer);
 int delayedLeft = buffer[0];
 int delayedRight = buffer[1];
@@ -446,7 +446,7 @@ int delayedRight = buffer[1];
 
 ## Comments
 ```impala
-// Single line comment
+
 
 /*
    Multi-line comment
@@ -470,14 +470,14 @@ All configuration must be done with `const` declarations and conditional compila
 
 ## Error Handling
 ```impala
-// No exceptions - use return values and defensive programming
+
 function safeDivide(int a, int b)
 returns int result
 {
     if (b != 0) {
         result = a / b;
     } else {
-        result = 0;  // Safe default
+        result = 0;
         trace("Division by zero avoided");
     }
 }
@@ -490,26 +490,26 @@ returns int result
 */
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-global array signal[2]              // Audio I/O
-global array params[PARAM_COUNT]    // Parameters
-global array displayLEDs[4]        // LED displays
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
 
 function process() {
     loop {
-        // Get bit depth from first knob (1-12 bits)
+
         int bits = ((int) global params[OPERAND_1_HIGH_PARAM_INDEX] >> 4) + 1;
         
-        // Create bit mask for quantization
+
         int mask = 0xFFF0 << (12 - bits);
         
-        // Apply bit crushing to both channels
+
         global signal[0] = (int) global signal[0] & mask;
         global signal[1] = (int) global signal[1] & mask;
         
-        // Show bit depth on LEDs
+
         global displayLEDs[0] = (1 << bits) - 1;
         
-        yield();  // Return control to host
+        yield();
     }
 }
 ```

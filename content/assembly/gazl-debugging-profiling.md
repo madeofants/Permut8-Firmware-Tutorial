@@ -87,7 +87,7 @@ process_audio:  FUNC
 The primary debugging mechanism for GAZL is the built-in trace system:
 
 ```impala
-// Impala side: Enable tracing
+
 function enableDebugTracing() {
     if (DEBUG) {
         trace("Debug mode enabled");
@@ -135,12 +135,12 @@ debug_processing:   FUNC
 Monitor GAZL execution through systematic trace analysis:
 
 ```impala
-// Comprehensive trace analysis
+
 function traceAudioProcessingState() {
     if (DEBUG) {
         trace("=== Audio Processing State ===");
         
-        // Trace parameter values
+
         trace("Operator 1: ");
         trace(intToString(global params[OPERATOR_1_PARAM_INDEX], 10, 1, buffer));
         
@@ -150,7 +150,7 @@ function traceAudioProcessingState() {
         trace("Current clock: ");
         trace(intToString(global clock, 16, 4, buffer));
         
-        // Trace signal levels
+
         trace("Left signal: ");
         trace(intToString(global signal[0], 10, 1, buffer));
         
@@ -245,7 +245,7 @@ safe_array_read:    FUNC
 Debug seamlessly across Impala-GAZL boundaries with coordinated tracing:
 
 ```impala
-// Impala debugging integration
+
 function debugAudioProcessing() {
     if (DEBUG) {
         trace("=== Impala: Starting Audio Processing ===");
@@ -253,7 +253,7 @@ function debugAudioProcessing() {
         trace("Calling GAZL process function...");
     }
     
-    // Call GAZL processing
+
     process();
     
     if (DEBUG) {

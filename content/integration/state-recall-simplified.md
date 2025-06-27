@@ -8,7 +8,7 @@ Implement state management that allows external systems to save, recall, and syn
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -20,32 +20,32 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// State management globals
-global array saved_params[PARAM_COUNT]    // Saved parameter values
-global int saved_mode = 0       // Saved processing mode
-global int current_mode = 0     // Current processing mode
-global array param_targets[8]   // Target values for smooth transitions
-global array param_steps[8]     // Step sizes for smooth transitions
-global int smooth_active = 0    // Smoothing in progress flag
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global array saved_params[PARAM_COUNT]
+global int saved_mode = 0
+global int current_mode = 0
+global array param_targets[8]
+global array param_steps[8]
+global int smooth_active = 0
 
 ```
 
 ## State Capture & Restoration
 
 ```impala
-// Capture current state
+
 function save_current_state()
 locals int i
 {
-    // Save all parameters
+
     i = 0;
     loop {
         if (i >= 8) break;
@@ -53,41 +53,41 @@ locals int i
         i = i + 1;
     }
     
-    // Save current mode
+
     global saved_mode = global current_mode;
     
-    // Visual feedback
-    global displayLEDs[0] = 255;  // Save confirmation
+
+    global displayLEDs[0] = 255;
 }
 
-// Restore saved state with smoothing
+
 function restore_saved_state()
 locals int i
 {
-    // Set up smooth parameter transitions
+
     i = 0;
     loop {
         if (i >= 8) break;
         global param_targets[i] = global saved_params[i];
-        global param_steps[i] = (global param_targets[i] - (int)global params[i]) >> 5;  // Smooth over 32 samples
+        global param_steps[i] = (global param_targets[i] - (int)global params[i]) >> 5;
         i = i + 1;
     }
     
-    // Restore mode
+
     global current_mode = global saved_mode;
     global smooth_active = 1;
     
-    // Visual feedback
-    global displayLEDs[1] = 255;  // Restore confirmation
+
+    global displayLEDs[1] = 255;
 }
 
-// Update smooth parameter transitions
+
 function update_smooth_transitions()
 locals int i, int current, int target, int step
 {
     if (global smooth_active == 0) return;
     
-    global smooth_active = 0;  // Reset flag, set to 1 if any parameter still smoothing
+    global smooth_active = 0;
     
     i = 0;
     loop {
@@ -98,7 +98,7 @@ locals int i, int current, int target, int step
         step = global param_steps[i];
         
         if (current != target) {
-            // Continue smoothing
+
             if (step > 0 && current < target) {
                 current = current + step;
                 if (current > target) current = target;
@@ -108,7 +108,7 @@ locals int i, int current, int target, int step
             }
             
             global params[i] = current;
-            global smooth_active = 1;  // Still smoothing
+            global smooth_active = 1;
         }
         
         i = i + 1;
@@ -119,29 +119,29 @@ locals int i, int current, int target, int step
 ## External Control Interface
 
 ```impala
-// Simple state commands via parameter inputs
+
 function handle_state_commands()
 locals int save_trigger, int restore_trigger, int param_set_mode
 {
-    // Read command triggers from higher parameter slots
-    save_trigger = (int)global (int)global params[OPERAND_2_HIGH_PARAM_INDEX];      // Save state when > 127
-    restore_trigger = (int)global (int)global params[OPERAND_2_LOW_PARAM_INDEX];   // Restore state when > 127
+
+    save_trigger = (int)global (int)global params[OPERAND_2_HIGH_PARAM_INDEX];
+    restore_trigger = (int)global (int)global params[OPERAND_2_LOW_PARAM_INDEX];
     
-    // Save state command
+
     if (save_trigger > 127) {
         save_current_state();
     }
     
-    // Restore state command
+
     if (restore_trigger > 127) {
         restore_saved_state();
     }
     
-    // Direct parameter setting mode ((int)global params[OPERATOR_2_PARAM_INDEX] selects which param to set)
+
     param_set_mode = (int)global (int)global params[OPERATOR_2_PARAM_INDEX];
     if (param_set_mode < 8) {
-        // Set specific parameter via external control
-        // Value comes from (int)global params[OPERAND_1_LOW_PARAM_INDEX]
+
+
         global params[param_set_mode] = (int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX];
     }
 }
@@ -150,20 +150,20 @@ locals int save_trigger, int restore_trigger, int param_set_mode
 ## Multiple State Snapshots
 
 ```impala
-// Support for 4 state snapshots
-global array snapshot_params[32]  // 4 snapshots × 8 parameters
-global array snapshot_modes[4]    // Mode for each snapshot
-global int current_snapshot = 0   // Currently selected snapshot
+
+global array snapshot_params[32]
+global array snapshot_modes[4]
+global int current_snapshot = 0
 
 function save_to_snapshot()
 locals int slot, int base_index, int i
 {
-    slot = ((int)global (int)global params[OPERATOR_2_PARAM_INDEX] >> 6);  // 0-3 from parameter bits
+    slot = ((int)global (int)global params[OPERATOR_2_PARAM_INDEX] >> 6);
     if (slot >= 4) return;
     
     base_index = slot * 8;
     
-    // Save parameters to snapshot
+
     i = 0;
     loop {
         if (i >= 8) break;
@@ -171,23 +171,23 @@ locals int slot, int base_index, int i
         i = i + 1;
     }
     
-    // Save mode
+
     global snapshot_modes[slot] = global current_mode;
     global current_snapshot = slot;
     
-    // Visual feedback - show snapshot number
+
     global displayLEDs[2] = slot << 6;
 }
 
 function recall_from_snapshot()
 locals int slot, int base_index, int i
 {
-    slot = ((int)global (int)global params[OPERATOR_2_PARAM_INDEX] >> 6);  // 0-3 from parameter bits
+    slot = ((int)global (int)global params[OPERATOR_2_PARAM_INDEX] >> 6);
     if (slot >= 4) return;
     
     base_index = slot * 8;
     
-    // Set up smooth transitions to snapshot values
+
     i = 0;
     loop {
         if (i >= 8) break;
@@ -196,12 +196,12 @@ locals int slot, int base_index, int i
         i = i + 1;
     }
     
-    // Restore mode
+
     global current_mode = global snapshot_modes[slot];
     global current_snapshot = slot;
     global smooth_active = 1;
     
-    // Visual feedback
+
     global displayLEDs[3] = slot << 6;
 }
 ```
@@ -213,48 +213,48 @@ function process()
 locals int input_sample, int output_sample, int mix_level, int mode_processing
 {
     loop {
-        // Handle external state commands
+
         handle_state_commands();
         
-        // Update smooth parameter transitions
+
         update_smooth_transitions();
         
-        // Process audio based on current mode
+
         input_sample = (int)global signal[0];
         mix_level = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];
         
         if (global current_mode == 0) {
-            // Mode 0: Clean pass-through
+
             output_sample = input_sample;
             
         } else if (global current_mode == 1) {
-            // Mode 1: Simple gain control
+
             output_sample = (input_sample * mix_level) >> 8;
             
         } else if (global current_mode == 2) {
-            // Mode 2: Basic distortion
+
             mode_processing = input_sample + (input_sample >> 2);
             output_sample = (mode_processing * mix_level) >> 8;
             
         } else {
-            // Mode 3: Bit reduction
+
             mode_processing = (input_sample >> 2) << 2;
             output_sample = (mode_processing * mix_level) >> 8;
         }
         
-        // Prevent clipping
+
         if (output_sample > 2047) output_sample = 2047;
         if (output_sample < -2047) output_sample = -2047;
         
-        // Output processed signal
+
         global signal[0] = output_sample;
         global signal[1] = output_sample;
         
-        // Show state activity on LEDs
-        global displayLEDs[0] = mix_level;                    // Main parameter
-        global displayLEDs[1] = global current_mode << 6;    // Current mode
-        global displayLEDs[2] = global current_snapshot << 6; // Active snapshot
-        // Smoothing indicator
+
+        global displayLEDs[0] = mix_level;
+        global displayLEDs[1] = global current_mode << 6;
+        global displayLEDs[2] = global current_snapshot << 6;
+
         if (global smooth_active) {
             global displayLEDs[3] = 255;
         } else {
@@ -269,7 +269,7 @@ locals int input_sample, int output_sample, int mix_level, int mode_processing
 ## State Validation & Safety
 
 ```impala
-// Validate parameter ranges for safety
+
 function validate_and_fix_state()
 locals int i, int param_value
 {
@@ -279,7 +279,7 @@ locals int i, int param_value
         
         param_value = (int)global params[i];
         
-        // Clamp to valid range
+
         if (param_value < 0) {
             global params[i] = 0;
         } else if (param_value > 255) {
@@ -289,29 +289,29 @@ locals int i, int param_value
         i = i + 1;
     }
     
-    // Validate mode
+
     if (global current_mode < 0) global current_mode = 0;
     if (global current_mode > 3) global current_mode = 0;
 }
 
-// Create safe default state
+
 function reset_to_safe_defaults()
 locals int i
 {
-    // Reset all parameters to safe values
+
     i = 0;
     loop {
         if (i >= 8) break;
-        global params[i] = 128;  // Middle values
+        global params[i] = 128;
         i = i + 1;
     }
     
-    // Reset mode and state
+
     global current_mode = 0;
     global current_snapshot = 0;
     global smooth_active = 0;
     
-    // Clear all snapshots
+
     i = 0;
     loop {
         if (i >= 32) break;
@@ -319,8 +319,8 @@ locals int i
         i = i + 1;
     }
     
-    // Visual feedback
-    global displayLEDs[0] = 128;  // Default indicator
+
+    global displayLEDs[0] = 128;
 }
 ```
 

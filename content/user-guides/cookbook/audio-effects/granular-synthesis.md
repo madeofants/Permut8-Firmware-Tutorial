@@ -21,7 +21,7 @@ Creates granular synthesis by capturing audio into a buffer and playing back sma
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -33,114 +33,114 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
-extern native read              // Read from delay line memory
-extern native write             // Write to delay line memory
 
-// Standard global variables
-global int clock = 0            // Sample counter for timing
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT] // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
-global int clockFreqLimit = 132300 // Current clock frequency limit
+extern native yield
+extern native read
+extern native write
 
-// Simple granular state
-global array temp_buffer[2]     // Temporary buffer for memory operations
-global int write_pos = 0        // Current write position
-global int grain_pos = 0        // Current grain read position
-global int grain_counter = 0    // Current position within grain
-global int grain_trigger = 0    // Timer for grain triggering
-const int BUFFER_SIZE = 2048    // Circular buffer size for granular processing
+
+global int clock = 0
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global int clockFreqLimit = 132300
+
+
+global array temp_buffer[2]
+global int write_pos = 0
+global int grain_pos = 0
+global int grain_counter = 0
+global int grain_trigger = 0
+const int BUFFER_SIZE = 2048
 
 function process()
 locals int grain_size, int position, int trigger_rate, int mix, int grain_sample_l, int grain_sample_r, int output_l, int output_r, int envelope, int half_size, int read_pos, int offset
 {
     loop {
-        // Read parameters
-        grain_size = ((int)global params[CLOCK_FREQ_PARAM_INDEX] >> 2) + 20;  // 20-83 samples
-        position = (int)global params[SWITCHES_PARAM_INDEX];                // 0-255 position
-        trigger_rate = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 3) + 1; // 1-32 rate
-        mix = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];                     // 0-255 mix
+
+        grain_size = ((int)global params[CLOCK_FREQ_PARAM_INDEX] >> 2) + 20;
+        position = (int)global params[SWITCHES_PARAM_INDEX];
+        trigger_rate = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 3) + 1;
+        mix = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
         
-        // Safety bounds for grain size
+
         if (grain_size > 100) grain_size = 100;
         if (grain_size < 20) grain_size = 20;
         
-        // Write current input to buffer (left channel)
+
         global temp_buffer[0] = global signal[0];
         write(global write_pos, 1, global temp_buffer);
         
-        // Write current input to buffer (right channel at offset)
+
         global temp_buffer[0] = global signal[1];
         write(global write_pos + BUFFER_SIZE, 1, global temp_buffer);
         
-        // Trigger new grain?
+
         global grain_trigger = global grain_trigger + 1;
         if (global grain_trigger >= trigger_rate) {
             global grain_trigger = 0;
             
-            // Calculate grain start position based on parameter with safety bounds
+
             offset = ((position * (BUFFER_SIZE >> 2)) >> 8) + grain_size;
             global grain_pos = (global write_pos - offset + BUFFER_SIZE) % BUFFER_SIZE;
             global grain_counter = 0;
         }
         
-        // Generate grain output
+
         if (global grain_counter < grain_size) {
-            // Calculate safe read position with circular buffer wrapping
+
             read_pos = (global grain_pos + global grain_counter) % BUFFER_SIZE;
             
-            // Read grain sample from buffer (left channel)
+
             read(read_pos, 1, global temp_buffer);
             grain_sample_l = (int)global temp_buffer[0];
             
-            // Read grain sample from buffer (right channel)
+
             read(read_pos + BUFFER_SIZE, 1, global temp_buffer);
             grain_sample_r = (int)global temp_buffer[0];
             
-            // Simple envelope (triangle window for smooth edges)
+
             half_size = grain_size >> 1;
-            if (half_size == 0) half_size = 1;  // Prevent division by zero
+            if (half_size == 0) half_size = 1;
             
             if (global grain_counter < half_size) {
-                // Attack half: ramp up (0-255 range)
+
                 envelope = (global grain_counter * 255) / half_size;
             } else {
-                // Release half: ramp down (0-255 range)
+
                 envelope = ((grain_size - global grain_counter) * 255) / half_size;
             }
             
-            // Apply envelope to grain samples
+
             grain_sample_l = (grain_sample_l * envelope) >> 8;
             grain_sample_r = (grain_sample_r * envelope) >> 8;
             global grain_counter = global grain_counter + 1;
         } else {
-            grain_sample_l = 0;  // No grain playing
+            grain_sample_l = 0;
             grain_sample_r = 0;
         }
         
-        // Mix dry and wet signals (stereo processing)
+
         output_l = ((int)global signal[0] * (255 - mix) + grain_sample_l * mix) >> 8;
         output_r = ((int)global signal[1] * (255 - mix) + grain_sample_r * mix) >> 8;
         
-        // Prevent clipping
+
         if (output_l > 2047) output_l = 2047;
         if (output_l < -2047) output_l = -2047;
         if (output_r > 2047) output_r = 2047;
         if (output_r < -2047) output_r = -2047;
         
-        // Output stereo result
+
         global signal[0] = output_l;
         global signal[1] = output_r;
         
-        // Show activity on LEDs with proper scaling
-        global displayLEDs[0] = (grain_size - 20) << 2;    // Grain size (offset and scaled)
-        global displayLEDs[1] = (global grain_counter << 8) / grain_size;  // Grain progress (0-255)
-        global displayLEDs[2] = position;                   // Position parameter
-        global displayLEDs[3] = (mix >> 2);                 // Mix level
+
+        global displayLEDs[0] = (grain_size - 20) << 2;
+        global displayLEDs[1] = (global grain_counter << 8) / grain_size;
+        global displayLEDs[2] = position;
+        global displayLEDs[3] = (mix >> 2);
         
-        // Update write position with circular buffer wrapping
+
         global write_pos = (global write_pos + 1) % BUFFER_SIZE;
         
         yield();
@@ -170,17 +170,17 @@ locals int grain_size, int position, int trigger_rate, int mix, int grain_sample
 ## Try These Settings
 
 ```impala
-// Smooth texture
-global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Large grains
-global params[SWITCHES_PARAM_INDEX] = 64;   // Slight delay
-global params[OPERATOR_1_PARAM_INDEX] = 128;  // Medium rate
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // 50% mix
 
-// Glitchy texture
-global params[CLOCK_FREQ_PARAM_INDEX] = 50;   // Small grains
-global params[SWITCHES_PARAM_INDEX] = 200;  // Distant position
-global params[OPERATOR_1_PARAM_INDEX] = 32;   // Fast triggers
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Mostly wet
+global params[CLOCK_FREQ_PARAM_INDEX] = 200;
+global params[SWITCHES_PARAM_INDEX] = 64;
+global params[OPERATOR_1_PARAM_INDEX] = 128;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;
+
+
+global params[CLOCK_FREQ_PARAM_INDEX] = 50;
+global params[SWITCHES_PARAM_INDEX] = 200;
+global params[OPERATOR_1_PARAM_INDEX] = 32;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;
 ```
 
 ## Try These Changes

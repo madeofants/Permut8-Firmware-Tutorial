@@ -2,7 +2,7 @@
 
 ## Required Parameter Constants
 ```impala
-// Standard parameter index constants used throughout all examples
+
 const int OPERAND_1_HIGH_PARAM_INDEX = 0
 const int OPERAND_1_LOW_PARAM_INDEX = 1
 const int OPERAND_2_LOW_PARAM_INDEX = 2
@@ -32,10 +32,10 @@ Learn how to thoroughly test your Permut8 plugins to ensure they work correctly 
 We'll create a multi-mode delay plugin that we can test thoroughly:
 
 ```impala
-// Multi-Mode Delay - Complete Test Subject
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX = 0
 const int OPERAND_1_LOW_PARAM_INDEX = 1
 const int OPERAND_2_LOW_PARAM_INDEX = 2
@@ -46,85 +46,85 @@ const int SWITCHES_PARAM_INDEX = 6
 const int CLOCK_FREQ_PARAM_INDEX = 7
 const int PARAM_COUNT = 8
 
-// Standard global variables
+
 global array signal[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
 global clock = 0
 global clockFreqLimit = 0
 
-// Plugin-specific globals
+
 global array delayBufferL[2000]
 global array delayBufferR[2000]
 global delayIndex = 0
 global maxDelay = 1999
 
-// Function with required native declaration
+
 extern native yield
 
 function process()
 locals delayTimeParam, feedbackParam, mixParam, modeParam, delayTime, feedback, wetLevel, dryLevel, mode, readPos, delayedL, delayedR, temp, reversePos, outputL, outputR, newSampleL, newSampleR
 {
     loop {
-        // Parameters
-        delayTimeParam = global params[OPERAND_2_HIGH_PARAM_INDEX]      // Delay time (0-255)
-        feedbackParam = global params[OPERAND_2_LOW_PARAM_INDEX]       // Feedback amount (0-255)
-        mixParam = global params[OPERAND_1_HIGH_PARAM_INDEX]            // Dry/wet mix (0-255)
-        modeParam = global params[OPERAND_1_LOW_PARAM_INDEX]           // Delay mode (0-255)
+
+        delayTimeParam = global params[OPERAND_2_HIGH_PARAM_INDEX]
+        feedbackParam = global params[OPERAND_2_LOW_PARAM_INDEX]
+        mixParam = global params[OPERAND_1_HIGH_PARAM_INDEX]
+        modeParam = global params[OPERAND_1_LOW_PARAM_INDEX]
         
-        // Scale parameters
+
         delayTime = 10 + ((delayTimeParam * (global maxDelay - 10)) / 255)
-        feedback = (feedbackParam * 200) / 255  // Max 78% feedback
+        feedback = (feedbackParam * 200) / 255
         wetLevel = mixParam
         dryLevel = 255 - mixParam
         
-        // Determine delay mode
-        mode = modeParam / 64  // 0, 1, 2, 3 modes
+
+        mode = modeParam / 64
         
-        // Calculate read position
+
         readPos = (global delayIndex - delayTime + 2000) % 2000
         
-        // Read delayed samples
+
         delayedL = global delayBufferL[readPos]
         delayedR = global delayBufferR[readPos]
         
-        // Apply mode-specific processing
+
         if (mode == 0) {
-            // Normal delay
-            // No additional processing
+
+
         } else if (mode == 1) {
-            // Ping-pong (swap L/R on feedback)
+
             temp = delayedL
             delayedL = delayedR
             delayedR = temp
         } else if (mode == 2) {
-            // Tape delay (add saturation)
+
             if (delayedL > 1500) delayedL = 1500 + ((delayedL - 1500) / 3)
             else if (delayedL < -1500) delayedL = -1500 + ((delayedL + 1500) / 3)
             if (delayedR > 1500) delayedR = 1500 + ((delayedR - 1500) / 3)
             else if (delayedR < -1500) delayedR = -1500 + ((delayedR + 1500) / 3)
         } else {
-            // Reverse delay (read backwards)
+
             reversePos = (global delayIndex + delayTime) % 2000
             delayedL = global delayBufferL[reversePos]
             delayedR = global delayBufferR[reversePos]
         }
         
-        // Mix dry and wet
+
         outputL = ((global signal[0] * dryLevel) + (delayedL * wetLevel)) / 255
         outputR = ((global signal[1] * dryLevel) + (delayedR * wetLevel)) / 255
         
-        // Clipping protection
+
         if (outputL > 2047) outputL = 2047
         else if (outputL < -2047) outputL = -2047
         if (outputR > 2047) outputR = 2047
         else if (outputR < -2047) outputR = -2047
         
-        // Store new samples with feedback
+
         newSampleL = global signal[0] + ((delayedL * feedback) / 255)
         newSampleR = global signal[1] + ((delayedR * feedback) / 255)
         
-        // Feedback clipping
+
         if (newSampleL > 2047) newSampleL = 2047
         else if (newSampleL < -2047) newSampleL = -2047
         if (newSampleR > 2047) newSampleR = 2047
@@ -133,16 +133,16 @@ locals delayTimeParam, feedbackParam, mixParam, modeParam, delayTime, feedback, 
         global delayBufferL[global delayIndex] = newSampleL
         global delayBufferR[global delayIndex] = newSampleR
         
-        // LED feedback
+
         global displayLEDs[0] = delayTimeParam
         global displayLEDs[1] = feedbackParam  
         global displayLEDs[2] = mixParam
         global displayLEDs[3] = (1 << mode)
         
-        // Update delay position
+
         global delayIndex = (global delayIndex + 1) % 2000
         
-        // Output
+
         global signal[0] = outputL
         global signal[1] = outputR
         

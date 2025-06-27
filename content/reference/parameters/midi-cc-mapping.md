@@ -27,7 +27,7 @@ Demonstrates parameter automation and external control concepts that can be appl
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -39,41 +39,41 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// Parameter automation state
-global int control_value = 128     // Current control value
-global int target_param = 0        // Which parameter to control
-global int curve_type = 0          // Response curve type
-global int scale_factor = 128      // Control scale factor
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global int control_value = 128
+global int target_param = 0
+global int curve_type = 0
+global int scale_factor = 128
 
 function process()
 locals int control_input, int param_select, int curve_select, int scale_input, int scaled_value, int output_value, int cutoff_freq, int resonance, int input_sample, int filtered_sample, int output_sample
 {
     loop {
-        // Read automation control inputs
-        control_input = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];     // 0-255 control source
-        param_select = (int)global (int)global params[SWITCHES_PARAM_INDEX] >> 5; // 0-7 parameter selection  
-        curve_select = (int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 6; // 0-3 curve types
-        scale_input = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];       // 0-255 scale factor
+
+        control_input = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];
+        param_select = (int)global (int)global params[SWITCHES_PARAM_INDEX] >> 5;
+        curve_select = (int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 6;
+        scale_input = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
         
-        // Apply response curve to control input
+
         if (curve_select == 0) {
-            // Linear response
+
             scaled_value = control_input;
             
         } else if (curve_select == 1) {
-            // Exponential response (squared)
+
             scaled_value = (control_input * control_input) >> 8;
             
         } else if (curve_select == 2) {
-            // Logarithmic response (square root approximation)
+
             if (control_input < 16) {
                 scaled_value = control_input << 2;
             } else if (control_input < 64) {
@@ -83,62 +83,62 @@ locals int control_input, int param_select, int curve_select, int scale_input, i
             }
             
         } else {
-            // Inverted linear response
+
             scaled_value = 255 - control_input;
         }
         
-        // Apply scale factor
+
         output_value = (scaled_value * scale_input) >> 8;
         
-        // Map to target parameters based on selection
+
         if (param_select == 0) {
-            // Control filter cutoff
-            cutoff_freq = 200 + ((output_value * 1800) >> 8);  // 200-2000 Hz
-            resonance = 512;  // Fixed resonance
+
+            cutoff_freq = 200 + ((output_value * 1800) >> 8);
+            resonance = 512;
             
         } else if (param_select == 1) {
-            // Control filter resonance
-            cutoff_freq = 1000;  // Fixed cutoff
-            resonance = 256 + ((output_value * 1280) >> 8);    // 256-1536
+
+            cutoff_freq = 1000;
+            resonance = 256 + ((output_value * 1280) >> 8);
             
         } else if (param_select == 2) {
-            // Control both cutoff and resonance together
+
             cutoff_freq = 200 + ((output_value * 1800) >> 8);
-            resonance = 256 + ((output_value * 640) >> 8);     // 256-896
+            resonance = 256 + ((output_value * 640) >> 8);
             
         } else {
-            // Default: moderate settings
+
             cutoff_freq = 1000;
             resonance = 512;
         }
         
-        // Read input sample
+
         input_sample = (int)global signal[0];
         
-        // Apply simple filter using automated parameters
+
         filtered_sample = cutoff_freq + 
             (((input_sample - cutoff_freq) * resonance) >> 11);
         
-        // Limit filter output
+
         if (filtered_sample > 2047) filtered_sample = 2047;
         if (filtered_sample < -2047) filtered_sample = -2047;
         
-        // Apply volume control based on automation
+
         output_sample = (filtered_sample * (128 + (output_value >> 1))) >> 8;
         
-        // Prevent clipping
+
         if (output_sample > 2047) output_sample = 2047;
         if (output_sample < -2047) output_sample = -2047;
         
-        // Output processed signal
+
         global signal[0] = output_sample;
         global signal[1] = output_sample;
         
-        // Display automation state on LEDs
-        global displayLEDs[0] = control_input;          // Control source value
-        global displayLEDs[1] = param_select << 5;      // Parameter selection
-        global displayLEDs[2] = curve_select << 6;      // Curve type
-        global displayLEDs[3] = output_value;           // Final automated value
+
+        global displayLEDs[0] = control_input;
+        global displayLEDs[1] = param_select << 5;
+        global displayLEDs[2] = curve_select << 6;
+        global displayLEDs[3] = output_value;
         
         yield();
     }
@@ -169,29 +169,29 @@ locals int control_input, int param_select, int curve_select, int scale_input, i
 ## Try These Settings
 
 ```impala
-// Linear cutoff control
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // High control value
-(int)global params[SWITCHES_PARAM_INDEX] = 0;    // Control cutoff
-(int)global params[OPERATOR_1_PARAM_INDEX] = 0;    // Linear curve
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // High sensitivity
 
-// Exponential resonance control
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Medium control value
-(int)global params[SWITCHES_PARAM_INDEX] = 32;   // Control resonance
-(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Exponential curve
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Medium sensitivity
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 180;
+(int)global params[SWITCHES_PARAM_INDEX] = 0;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 0;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;
 
-// Combined control with log curve
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 150;  // Control value
-(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Combined control
-(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Logarithmic curve
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Lower sensitivity
 
-// Inverted control
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High input
-(int)global params[SWITCHES_PARAM_INDEX] = 96;   // Any parameter
-(int)global params[OPERATOR_1_PARAM_INDEX] = 192;  // Inverted curve
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 255;  // Maximum sensitivity
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;
+(int)global params[SWITCHES_PARAM_INDEX] = 32;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 64;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 150;
+(int)global params[SWITCHES_PARAM_INDEX] = 64;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 128;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 100;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;
+(int)global params[SWITCHES_PARAM_INDEX] = 96;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 192;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 255;
 ```
 
 ## Understanding Parameter Automation

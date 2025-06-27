@@ -26,7 +26,7 @@ Shows how to read knob values from parameters and convert them to useful ranges 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -38,87 +38,87 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
+
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
 
 function process()
 locals int knob1, int knob2, int knob3, int knob4, int gain_level, int cutoff_freq, int steps, int mix_amount, int input_sample, int processed_sample, int output_sample
 {
     loop {
-        // Read all knob values (always 0-255 from hardware)
-        knob1 = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];    // First knob
-        knob2 = (int)global (int)global params[SWITCHES_PARAM_INDEX];    // Second knob
-        knob3 = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];    // Third knob
-        knob4 = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];    // Fourth knob
+
+        knob1 = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];
+        knob2 = (int)global (int)global params[SWITCHES_PARAM_INDEX];
+        knob3 = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];
+        knob4 = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
         
-        // === PARAMETER SCALING EXAMPLES ===
+
         
-        // Linear scaling: knob1 to gain (0-2047 range)
-        gain_level = (knob1 << 3);        // 0-255 → 0-2040
+
+        gain_level = (knob1 << 3);
         
-        // Frequency range: knob2 to cutoff (200-2000 Hz)
-        cutoff_freq = 200 + ((knob2 * 1800) >> 8);  // 200-2000 range
+
+        cutoff_freq = 200 + ((knob2 * 1800) >> 8);
         
-        // Stepped values: knob3 to 8 discrete steps
-        steps = knob3 >> 5;               // Divide by 32 → 0-7 steps
+
+        steps = knob3 >> 5;
         
-        // Percentage: knob4 to mix amount (0-100%)
-        mix_amount = (knob4 * 100) >> 8;  // 0-100 percentage
+
+        mix_amount = (knob4 * 100) >> 8;
         
-        // === AUDIO PROCESSING USING SCALED PARAMETERS ===
+
         
-        // Read input sample
+
         input_sample = (int)global signal[0];
         
-        // Apply gain from knob1
+
         processed_sample = (input_sample * gain_level) >> 11;
         
-        // Simple tone control based on knob2 cutoff frequency
+
         if (cutoff_freq > 1000) {
-            // High cutoff: brighten signal
+
             processed_sample = processed_sample + (processed_sample >> 3);
         } else {
-            // Low cutoff: darken signal  
+
             processed_sample = processed_sample - (processed_sample >> 3);
         }
         
-        // Apply stepped processing based on knob3
+
         if (steps > 4) {
-            // High steps: add distortion
+
             if (processed_sample > 1024) processed_sample = 1024;
             if (processed_sample < -1024) processed_sample = -1024;
         }
         
-        // Mix dry/wet based on knob4
+
         output_sample = ((input_sample * (100 - mix_amount)) + 
                         (processed_sample * mix_amount)) / 100;
         
-        // Prevent clipping
+
         if (output_sample > 2047) output_sample = 2047;
         if (output_sample < -2047) output_sample = -2047;
         
-        // Output to both channels
+
         global signal[0] = output_sample;
         global signal[1] = output_sample;
         
-        // === VISUAL FEEDBACK ON LEDS ===
+
         
-        // Show knob1 level (0-255 directly)
+
         global displayLEDs[0] = knob1;
         
-        // Show knob2 as frequency indicator (scaled for LED)
-        global displayLEDs[1] = cutoff_freq >> 3;    // Scale down for LED
+
+        global displayLEDs[1] = cutoff_freq >> 3;
         
-        // Show knob3 steps as binary pattern
-        global displayLEDs[2] = 1 << steps;          // Light up LED position
+
+        global displayLEDs[2] = 1 << steps;
         
-        // Show knob4 mix percentage
-        global displayLEDs[3] = (mix_amount << 2) + 50;  // Scale for visibility
+
+        global displayLEDs[3] = (mix_amount << 2) + 50;
         
         yield();
     }
@@ -145,29 +145,29 @@ locals int knob1, int knob2, int knob3, int knob4, int gain_level, int cutoff_fr
 ## Try These Settings
 
 ```impala
-// Clean signal
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium gain
-(int)global params[SWITCHES_PARAM_INDEX] = 200;  // High cutoff (bright)
-(int)global params[OPERATOR_1_PARAM_INDEX] = 0;    // Minimum steps (clean)
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 50;   // Light mix
 
-// Distorted sound
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High gain
-(int)global params[SWITCHES_PARAM_INDEX] = 80;   // Low cutoff (dark)
-(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // High steps (distortion)
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Heavy mix
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;
+(int)global params[SWITCHES_PARAM_INDEX] = 200;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 0;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 50;
 
-// Subtle processing
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Low gain
-(int)global params[SWITCHES_PARAM_INDEX] = 150;  // Medium cutoff
-(int)global params[OPERATOR_1_PARAM_INDEX] = 100;  // Medium steps
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 80;   // Moderate mix
 
-// Extreme effect
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 255;  // Maximum gain
-(int)global params[SWITCHES_PARAM_INDEX] = 255;  // Maximum cutoff
-(int)global params[OPERATOR_1_PARAM_INDEX] = 255;  // Maximum steps
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 255;  // Full wet
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;
+(int)global params[SWITCHES_PARAM_INDEX] = 80;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;
+(int)global params[SWITCHES_PARAM_INDEX] = 150;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 100;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 80;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 255;
+(int)global params[SWITCHES_PARAM_INDEX] = 255;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 255;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 255;
 ```
 
 ## Understanding Parameter Reading

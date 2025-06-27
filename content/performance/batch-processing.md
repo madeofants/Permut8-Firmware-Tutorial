@@ -22,7 +22,7 @@ Batch processing is a fundamental optimization technique for DSP firmware that p
 
 ### Before: Single-Sample Processing
 ```impala
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -33,13 +33,13 @@ const int SWITCHES_PARAM_INDEX
 const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
-// Inefficient: processes one sample at a time
+
 function process() {
     int i = 0;
     loop {
         if (i >= BLOCK_SIZE) break;
-        // SAFETY: Ensure array bounds are respected
-        if (i >= 0 && i < 2) {  // signal array has 2 elements [left, right]
+
+        if (i >= 0 && i < 2) {
             signal[i] = applySaturation(signal[i]);
         }
         i = i + 1;
@@ -60,7 +60,7 @@ function applySaturation(float sample) returns float result {
 
 ### After: Batch Processing
 ```impala
-// Efficient: processes 4 samples per iteration
+
 function processBatch() {
     int i = 0;
     loop {
@@ -77,8 +77,8 @@ function applySaturationBatch(int start_index, int count) {
         int idx = start_index + j;
         if (idx >= BLOCK_SIZE) break;
         
-        // SAFETY: Validate array bounds before access
-        if (idx >= 0 && idx < 2) {  // signal array bounds check
+
+        if (idx >= 0 && idx < 2) {
             if (signal[idx] > 2000) {
                 signal[idx] = 2000;
             } else if (signal[idx] < -2000) {
@@ -94,28 +94,28 @@ function applySaturationBatch(int start_index, int count) {
 
 ### Unrolled Batch Processing
 ```impala
-// Hand-optimized batch with loop unrolling
+
 function processBiquadBatch(array input, array output, array coeffs, array state, int count) {
     float a1 = coeffs[0]; float a2 = coeffs[1];
     float b0 = coeffs[2]; float b1 = coeffs[3]; float b2 = coeffs[4];
     
-    // Process 4 samples per iteration
+
     int i = 0;
     loop {
         if (i >= count) break;
         
-        // Sample 1
+
         float y = b0 * input[i] + b1 * state[0] + b2 * state[1] 
                   - a1 * state[2] - a2 * state[3];
         output[i] = y;
         
-        // Sample 2
+
         float y2 = b0 * input[i+1] + b1 * y + b2 * state[0] 
                    - a1 * y - a2 * state[2];
         output[i+1] = y2;
         
-        // Sample 3-4 continue pattern...
-        // Update state for next iteration
+
+
         state[1] = state[0]; state[0] = y2;
         state[3] = state[2]; state[2] = y;
         
@@ -126,7 +126,7 @@ function processBiquadBatch(array input, array output, array coeffs, array state
 
 ### Memory-Efficient Batch Pattern
 ```impala
-// Processes samples in-place to maximize cache efficiency
+
 function operate1() {
     int batch_size = 8;
     
@@ -141,26 +141,26 @@ function operate1() {
             end = BUFFER_SIZE;
         }
         
-        // Load batch into local variables for better register allocation
+
         array temp[8];
         int i = 0;
         loop {
             if (i >= (end - start)) break;
-            // SAFETY: Validate both source and destination bounds
+
             if (i >= 0 && i < 8 && (start + i) >= 0 && (start + i) < 2) {
                 temp[i] = signal[start + i];
             }
             i = i + 1;
         }
         
-        // Process batch
+
         applyEffect(temp, end - start);
         
-        // Store back
+
         i = 0;
         loop {
             if (i >= (end - start)) break;
-            // SAFETY: Validate both source and destination bounds
+
             if (i >= 0 && i < 8 && (start + i) >= 0 && (start + i) < 2) {
                 signal[start + i] = temp[i];
             }
@@ -175,12 +175,12 @@ function operate1() {
 ## Real-World Example: Delay Line Batch Processing
 
 ```impala
-// Efficient batch delay processing
+
 function operate2() {
-    float delay_samples = (int)global params[CLOCK_FREQ_PARAM_INDEX] * 0.1; // 0-100ms delay
-    float feedback = (int)global params[SWITCHES_PARAM_INDEX] * 0.01;     // 0-100% feedback
+    float delay_samples = (int)global params[CLOCK_FREQ_PARAM_INDEX] * 0.1;
+    float feedback = (int)global params[SWITCHES_PARAM_INDEX] * 0.01;
     
-    // Process in batches of 16 for optimal cache usage
+
     int i = 0;
     loop {
         if (i >= BLOCK_SIZE) break;
@@ -196,8 +196,8 @@ function processBatchDelay(int start_idx, int count, float delay, float fb) {
         int idx = start_idx + j;
         if (idx >= BLOCK_SIZE) break;
         
-        // SAFETY: Validate signal array bounds before access
-        if (idx >= 0 && idx < 2) {  // signal array bounds check
+
+        if (idx >= 0 && idx < 2) {
             float delayed = read(delay);
             float output = signal[idx] + delayed * fb;
             write(output);
@@ -216,23 +216,23 @@ Batch processing performance optimizations must never compromise memory safety. 
 
 **Required Safety Pattern:**
 ```impala
-// SAFE: Always check bounds before array access
+
 if (index >= 0 && index < ARRAY_SIZE) {
     array[index] = value;
 } else {
-    // Handle error gracefully - don't ignore bounds violations
+
     trace("Array bounds violation prevented");
 }
 ```
 
 **Common Safety Mistakes:**
 ```impala
-// DANGEROUS: No bounds checking
+
 for (i = 0 to batch_size) {
-    buffer[i] = process(buffer[i]);  // Could overflow if batch_size > buffer length
+    buffer[i] = process(buffer[i]);
 }
 
-// SAFE: Proper bounds validation
+
 for (i = 0 to min(batch_size, BUFFER_MAX_SIZE)) {
     if (i >= 0 && i < BUFFER_SIZE) {
         buffer[i] = process(buffer[i]);

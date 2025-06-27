@@ -96,13 +96,13 @@ With the interpreter now running the correct script, the final step was to provi
 
 ```pika
 if ($1 == 'compile') {
-    // ...
-    source = load($2); // Loads 'ringmod_code.impala'
-    // ...
-    if (exists(@$3)) { // Checks for the output file argument
-        save($3, collected); // Saves to 'ringmod_code.gazl'
+
+    source = load($2);
+
+    if (exists(@$3)) {
+        save($3, collected);
     }
-    //...
+
 }
 ```
 
@@ -299,7 +299,7 @@ ls -la PikaCmd.exe impala.pika
 
 #### VS Code Integration
 ```json
-// .vscode/tasks.json
+
 {
     "version": "2.0.0",
     "tasks": [

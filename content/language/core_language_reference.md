@@ -17,7 +17,7 @@ Impala is a C-like language that compiles to GAZL assembly. If you know C, you k
 
 ### Full Patch (Audio Processing)
 ```impala
-const int PRAWN_FIRMWARE_PATCH_FORMAT = 2  // Required!
+const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 ## Firmware Format Versions
 
@@ -43,40 +43,40 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 3
 ## Standard Global Layout (Bank-Compatible)
 
 ```impala
-// MUST match this exact pattern for bank compatibility
-global array signal[2]       // Audio I/O [left, right]
-global array params[PARAM_COUNT]  // Plugin parameters  
-global array displayLEDs[4]  // LED displays
-global int clock = 0         // Clock counter
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global int clock = 0
 
 function process() {
-    loop {  // Infinite processing loop
-        // Process global signal[0] and signal[1]
-        // Audio range: -2047 to 2047 (12-bit)
+    loop {
+
+
         
-        yield();  // Return control to Permut8
+        yield();
     }
 }
 ```
 
 ### Mod Patch (Operator Replacement)
 ```impala
-const int PRAWN_FIRMWARE_PATCH_FORMAT = 2  // Required!
+const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-global array positions[2]   // Memory positions: [left, right]
-global array params[PARAM_COUNT]   // Parameters array
-global array displayLEDs[4]        // LED displays
+global array positions[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
 
 function operate1(int a)
 returns int processed
 {
-    // Check if we should handle this operator
+
     if ((int) global params[OPERATOR_1_PARAM_INDEX] == OPERATOR_1_MUL) {
-        // Modify global positions[0] and positions[1]
-        // Positions: 0x00000 to 0xFFFFF (20-bit with 4 frac bits)
-        processed = 1;  // Return 1 if handled, 0 to pass through
+
+
+        processed = 1;
     } else {
-        processed = 0;  // Pass to default handler
+        processed = 0;
     }
 }
 ```
@@ -106,43 +106,43 @@ returns int processed
 Access knob/switch values via `global params[]`:
 
 ```impala
-// Parameter indices (externally defined constants)
-const int CLOCK_FREQ_PARAM_INDEX       // Clock rate
-const int SWITCHES_PARAM_INDEX         // Switch states (bitmask)
-const int OPERATOR_1_PARAM_INDEX       // Operator 1 selection
-const int OPERAND_1_HIGH_PARAM_INDEX   // First knob (top)
-const int OPERAND_1_LOW_PARAM_INDEX    // Second knob
-const int OPERATOR_2_PARAM_INDEX       // Operator 2 selection
-const int OPERAND_2_HIGH_PARAM_INDEX   // Third knob
-const int OPERAND_2_LOW_PARAM_INDEX    // Fourth knob (bottom)
-const int PARAM_COUNT                  // Total parameter count
 
-// Operator constants (externally defined)
-const int OPERATOR_1_NOP               // No operation
-const int OPERATOR_1_AND               // Bitwise AND
-const int OPERATOR_1_MUL               // Multiply
-const int OPERATOR_1_OSC               // Oscillator
-const int OPERATOR_1_RND               // Random
+const int CLOCK_FREQ_PARAM_INDEX
+const int SWITCHES_PARAM_INDEX
+const int OPERATOR_1_PARAM_INDEX
+const int OPERAND_1_HIGH_PARAM_INDEX
+const int OPERAND_1_LOW_PARAM_INDEX
+const int OPERATOR_2_PARAM_INDEX
+const int OPERAND_2_HIGH_PARAM_INDEX
+const int OPERAND_2_LOW_PARAM_INDEX
+const int PARAM_COUNT
 
-const int OPERATOR_2_NOP               // No operation
-const int OPERATOR_2_OR                // Bitwise OR
-const int OPERATOR_2_XOR               // Bitwise XOR
-const int OPERATOR_2_MSK               // Mask
-const int OPERATOR_2_SUB               // Subtract
+
+const int OPERATOR_1_NOP
+const int OPERATOR_1_AND
+const int OPERATOR_1_MUL
+const int OPERATOR_1_OSC
+const int OPERATOR_1_RND
+
+const int OPERATOR_2_NOP
+const int OPERATOR_2_OR
+const int OPERATOR_2_XOR
+const int OPERATOR_2_MSK
+const int OPERATOR_2_SUB
 ```
 
 ### Switch Bitmasks
 ```impala
-// Switch bitmasks (externally defined constants)
-const int SWITCHES_SYNC_MASK           // Tempo sync enabled
-const int SWITCHES_TRIPLET_MASK        // Triplet timing
-const int SWITCHES_DOTTED_MASK         // Dotted timing
-const int SWITCHES_WRITE_PROTECT_MASK  // Write protection
-const int SWITCHES_REVERSE_MASK        // Reverse playback
 
-// Example usage:
+const int SWITCHES_SYNC_MASK
+const int SWITCHES_TRIPLET_MASK
+const int SWITCHES_DOTTED_MASK
+const int SWITCHES_WRITE_PROTECT_MASK
+const int SWITCHES_REVERSE_MASK
+
+
 if ((int) global params[SWITCHES_PARAM_INDEX] & SWITCHES_SYNC_MASK) {
-    // Sync is ON
+
 }
 ```
 
@@ -152,7 +152,7 @@ Based on Beatrick and FooBar official firmware implementations:
 
 ### Parameter Update Mask (Critical Pattern)
 ```impala
-// Official pattern for parameter change detection
+
 const int updateMask = (
     (1 << OPERATOR_1_PARAM_INDEX) |
     (1 << OPERAND_1_HIGH_PARAM_INDEX) |
@@ -165,28 +165,28 @@ const int updateMask = (
 
 ### Bit Manipulation for High/Low Parameters
 ```impala
-// Official pattern for combining high/low bytes
+
 function readParameterPair(int highIndex, int lowIndex)
 returns int combined
 {
     int high = (int) global params[highIndex];
     int low = (int) global params[lowIndex];
-    combined = (high << 8) | low;  // 16-bit value
+    combined = (high << 8) | low;
 }
 ```
 
 ### Parameter Reading in update() Function
 ```impala
-// Official pattern for parameter processing
+
 function update() {
-    // Read operator selection
+
     int operator1 = (int) global params[OPERATOR_1_PARAM_INDEX];
     
-    // Read operand values
+
     int operand1 = readParameterPair(OPERAND_1_HIGH_PARAM_INDEX, 
                                      OPERAND_1_LOW_PARAM_INDEX);
     
-    // Process parameter changes...
+
 }
 ```
 
@@ -207,11 +207,11 @@ function update() {
 
 ### Native Functions
 ```impala
-yield()         // Return control (use in process loop)
-abort()         // Kill firmware, restore normal operation
-trace(string)   // Debug output (console/DebugView)
-read(offset, count, buffer)   // Read from delay memory
-write(offset, count, buffer)  // Write to delay memory
+yield()
+abort()
+trace(string)
+read(offset, count, buffer)
+write(offset, count, buffer)
 ```
 
 ## Data Types
@@ -224,18 +224,18 @@ write(offset, count, buffer)  // Write to delay memory
 
 ### Type Casting
 ```impala
-int x = (int) global params[3];     // Always cast params[]
-float f = itof(x);                  // int to float
-int i = ftoi(f);                    // float to int
+int x = (int) global params[3];
+float f = itof(x);
+int i = ftoi(f);
 ```
 
 ## Control Flow
 
 ### Loops
 ```impala
-loop { }                // Infinite loop (use yield()!)
-for (i = 0 to n) { }    // Inclusive: 0,1,2,...,n
-while (x < 10) { }      // Standard while
+loop { }
+for (i = 0 to n) { }
+while (x < 10) { }
 ```
 
 ### Conditionals
@@ -250,26 +250,26 @@ else { }
 LEDs are 8-bit values (0-255) where each bit lights one LED:
 
 ```impala
-global displayLEDs[0] = 0x01;  // Single LED (leftmost)
-global displayLEDs[0] = 0x80;  // Single LED (rightmost)
-global displayLEDs[0] = 0xFF;  // All LEDs on
-global displayLEDs[0] = 0x0F;  // Left 4 LEDs
-global displayLEDs[0] = 1 << position;  // Variable position
+global displayLEDs[0] = 0x01;
+global displayLEDs[0] = 0x80;
+global displayLEDs[0] = 0xFF;
+global displayLEDs[0] = 0x0F;
+global displayLEDs[0] = 1 << position;
 ```
 
 ## Common Patterns
 
 ### Parameter Scaling
 ```impala
-// Map 0-255 to useful range
-int depth = (int) global params[OPERAND_1_HIGH_PARAM_INDEX] >> 2;      // 0-63
-int bits = ((int) global params[OPERAND_1_HIGH_PARAM_INDEX] >> 5) + 1; // 1-8
-float mix = itof((int) global params[OPERAND_1_HIGH_PARAM_INDEX]) / 255.0; // 0.0-1.0
+
+int depth = (int) global params[OPERAND_1_HIGH_PARAM_INDEX] >> 2;
+int bits = ((int) global params[OPERAND_1_HIGH_PARAM_INDEX] >> 5) + 1;
+float mix = itof((int) global params[OPERAND_1_HIGH_PARAM_INDEX]) / 255.0;
 ```
 
 ### Safe Audio Processing
 ```impala
-// Clamp to valid range
+
 if (sample > 2047) sample = 2047;
 else if (sample < -2047) sample = -2047;
 ```
@@ -277,8 +277,8 @@ else if (sample < -2047) sample = -2047;
 ### Memory Access (Delays)
 ```impala
 array buffer[2];
-read(global clock - 1000, 1, buffer);  // Read 1000 samples ago
-// buffer[0] = left, buffer[1] = right
+read(global clock - 1000, 1, buffer);
+
 ```
 
 ## Quick Debugging
@@ -292,7 +292,7 @@ trace(buf);
 
 ### Test Mode
 ```impala
-if (DEBUG) {  // Defined when loading in debug mode
+if (DEBUG) {
     trace("Debug mode active");
 }
 ```
@@ -303,9 +303,9 @@ if (DEBUG) {  // Defined when loading in debug mode
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-global array signal[2]              // Audio I/O
-global array params[PARAM_COUNT]    // Parameters
-global array displayLEDs[4]        // LED displays
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
 
 function process() {
     loop {
@@ -322,9 +322,9 @@ function process() {
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-global array positions[2]           // Memory positions 
-global array params[PARAM_COUNT]    // Parameters
-global array displayLEDs[4]        // LED displays
+global array positions[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
 
 function operate1(int a)
 returns int r
@@ -333,9 +333,9 @@ returns int r
         int shift = (int) global params[OPERAND_1_HIGH_PARAM_INDEX] << 8;
         global positions[0] = (int) global positions[0] + shift;
         global positions[1] = (int) global positions[1] + shift;
-        r = 1;  // Handled
+        r = 1;
     } else {
-        r = 0;  // Pass through
+        r = 0;
     }
 }
 ```
@@ -350,27 +350,27 @@ For firmware that works with .p8bank deployment:
 
 #### Standard Global Layout (Required)
 ```impala
-// MUST match this exact pattern for bank compatibility
-global array signal[2]       // Audio I/O [left, right]
-global array params[PARAM_COUNT]  // Plugin parameters  
-global array displayLEDs[4]  // LED displays
-global int clock = 0         // Clock counter
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global int clock = 0
 ```
 
 #### Required Function Structure
 ```impala
-// Bank-compatible firmware MUST implement:
+
 function reset() {
-    // Initialize state, clear delays
+
 }
 
 function update() {
-    // Handle parameter changes using official patterns
+
 }
 
 function process() {
     loop {
-        // Main processing with yield()
+
         yield();
     }
 }
@@ -378,16 +378,16 @@ function process() {
 
 #### Preset Integration Patterns
 ```impala
-// Design firmware for multiple presets
+
 function update() {
-    // Read current operator settings
+
     int mode = (int) global params[OPERATOR_1_PARAM_INDEX];
     
-    // Different behaviors for different presets
+
     switch (mode) {
         case 1: setupLightMode(); break;
         case 2: setupHeavyMode(); break;
-        // Allow A0-C9 presets to change behavior
+
     }
 }
 ```

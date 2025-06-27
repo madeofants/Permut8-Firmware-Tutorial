@@ -8,10 +8,10 @@ Implement MIDI clock synchronization for tempo-locked effects, ensuring sample-a
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Required parameter constants
+extern native yield
+
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -22,72 +22,72 @@ const int SWITCHES_PARAM_INDEX
 const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
 
-// MIDI clock state management
-global int midi_running = 0     // Clock running state
-global int clock_counter = 0    // Current clock tick count
-global int samples_per_clock = 1024  // Samples between MIDI clock ticks (24 per beat)
-global int sample_counter = 0   // Sample counter within current clock
-global int current_tempo = 120  // Current tempo in BPM
-global int clock_received = 0   // Flag for received clock tick
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global int midi_running = 0
+global int clock_counter = 0
+global int samples_per_clock = 1024
+global int sample_counter = 0
+global int current_tempo = 120
+global int clock_received = 0
 ```
 
 ### MIDI Clock Processing
 
 ```impala
-// Process MIDI clock messages from parameter inputs
+
 function process_midi_clock()
 locals int midi_message, int start_message, int stop_message, int clock_tick
 {
-    // Read MIDI messages from parameters
-    midi_message = (int)global params[OPERAND_1_LOW_PARAM_INDEX];   // MIDI status byte
-    start_message = (int)global params[OPERATOR_2_PARAM_INDEX];  // Start/stop commands
-    clock_tick = (int)global params[OPERAND_2_HIGH_PARAM_INDEX];     // Clock tick input
+
+    midi_message = (int)global params[OPERAND_1_LOW_PARAM_INDEX];
+    start_message = (int)global params[OPERATOR_2_PARAM_INDEX];
+    clock_tick = (int)global params[OPERAND_2_HIGH_PARAM_INDEX];
     
-    // Handle MIDI Start (FA)
-    if (start_message == 250) {  // 0xFA
+
+    if (start_message == 250) {
         global midi_running = 1;
         global clock_counter = 0;
         global sample_counter = 0;
         reset_synced_effects();
     }
     
-    // Handle MIDI Stop (FC)
-    if (start_message == 252) {  // 0xFC
+
+    if (start_message == 252) {
         global midi_running = 0;
     }
     
-    // Handle MIDI Clock (F8) - 24 per quarter note
-    if (clock_tick == 248) {  // 0xF8
+
+    if (clock_tick == 248) {
         global clock_received = 1;
         global clock_counter = global clock_counter + 1;
-        global sample_counter = 0;  // Reset for precise timing
+        global sample_counter = 0;
         update_tempo_estimation();
     }
 }
 
-// Reset synchronized effects on start
+
 function reset_synced_effects()
 {
-    // Reset any tempo-locked effect state here
+
     global clock_counter = 0;
     global sample_counter = 0;
     
-    // Visual feedback
-    global displayLEDs[0] = 255;  // Start indicator
+
+    global displayLEDs[0] = 255;
 }
 
-// Simple tempo estimation
+
 function update_tempo_estimation()
 {
-    // Update samples per clock based on simple calculation
-    // At 120 BPM: 24 clocks per beat, 2 beats per second = 48 clocks/sec
-    // At 44.1kHz: 44100/48 = 919 samples per clock
-    // This is simplified - real implementation would measure actual timing
+
+
+
+
     global samples_per_clock = 44100 / ((global current_tempo * 24) / 60);
 }
 ```
@@ -95,16 +95,16 @@ function update_tempo_estimation()
 ## Clock Prediction and Timing
 
 ```impala
-// Predict timing between MIDI clocks for smooth operation
+
 function update_clock_prediction()
 locals int clock_phase_256
 {
     if (global midi_running == 0) return;
     
-    // Update sample counter
+
     global sample_counter = global sample_counter + 1;
     
-    // Calculate phase between MIDI clocks (0-255 for easier math)
+
     if (global samples_per_clock > 0) {
         clock_phase_256 = (global sample_counter * 256) / global samples_per_clock;
         if (clock_phase_256 > 255) clock_phase_256 = 255;
@@ -112,18 +112,18 @@ locals int clock_phase_256
         clock_phase_256 = 0;
     }
     
-    // Reset if we've passed expected clock time
+
     if (global sample_counter >= global samples_per_clock) {
         if (global clock_received == 0) {
-            // Clock is late - adjust timing slightly
+
             global samples_per_clock = global samples_per_clock + 1;
         }
         global sample_counter = 0;
         global clock_received = 0;
     }
     
-    // Store phase for use by synced effects
-    global displayLEDs[3] = clock_phase_256;  // Visual phase indicator
+
+    global displayLEDs[3] = clock_phase_256;
 }
 ```
 
@@ -132,34 +132,34 @@ locals int clock_phase_256
 ### Beat-Locked Delay
 
 ```impala
-// Delay synchronized to MIDI clock divisions
-global int delay_buffer[4096]   // Simple delay buffer
-global int delay_write_pos = 0  // Write position in buffer
-global int delay_time = 1024    // Current delay time in samples
+
+global int delay_buffer[4096]
+global int delay_write_pos = 0
+global int delay_time = 1024
 
 function synced_delay()
 locals int division, int clocks_per_note, int samples_per_note, int target_delay
 locals int input, int delayed, int feedback, int output
 {
-    // Read delay division setting from parameter
-    division = (int)global params[SWITCHES_PARAM_INDEX] >> 6;  // 0-3 from top 2 bits
+
+    division = (int)global params[SWITCHES_PARAM_INDEX] >> 6;
     
-    // Division settings: 1/4, 1/8, 1/16, 1/32 notes
+
     if (division == 0) {
-        clocks_per_note = 24;      // Quarter note
+        clocks_per_note = 24;
     } else if (division == 1) {
-        clocks_per_note = 12;      // Eighth note
+        clocks_per_note = 12;
     } else if (division == 2) {
-        clocks_per_note = 6;       // Sixteenth note
+        clocks_per_note = 6;
     } else {
-        clocks_per_note = 3;       // Thirty-second note
+        clocks_per_note = 3;
     }
     
-    // Calculate delay time in samples
+
     samples_per_note = global samples_per_clock * clocks_per_note;
-    if (samples_per_note > 4000) samples_per_note = 4000;  // Limit to buffer size
+    if (samples_per_note > 4000) samples_per_note = 4000;
     
-    // Smooth delay time changes
+
     target_delay = samples_per_note;
     if (global delay_time < target_delay) {
         global delay_time = global delay_time + 1;
@@ -167,24 +167,24 @@ locals int input, int delayed, int feedback, int output
         global delay_time = global delay_time - 1;
     }
     
-    // Process delay
+
     input = (int)global signal[0];
-    feedback = (int)global params[OPERATOR_1_PARAM_INDEX];  // Feedback amount
+    feedback = (int)global params[OPERATOR_1_PARAM_INDEX];
     
-    // Read from delay buffer
+
     delayed = global delay_buffer[global delay_write_pos];
     
-    // Write to delay buffer with feedback
+
     global delay_buffer[global delay_write_pos] = input + ((delayed * feedback) >> 8);
     
-    // Advance write position
+
     global delay_write_pos = global delay_write_pos + 1;
     if (global delay_write_pos >= global delay_time) {
         global delay_write_pos = 0;
     }
     
-    // Mix delayed signal with input
-    output = input + ((delayed * (int)global params[OPERAND_1_HIGH_PARAM_INDEX]) >> 8);  // Wet level
+
+    output = input + ((delayed * (int)global params[OPERAND_1_HIGH_PARAM_INDEX]) >> 8);
     
     return output;
 }
@@ -193,49 +193,49 @@ locals int input, int delayed, int feedback, int output
 ### Tempo-Locked LFO
 
 ```impala
-// LFO synchronized to MIDI clock
-global int lfo_phase = 0        // LFO phase accumulator
-global int lfo_rate_division = 24  // MIDI clocks per LFO cycle
+
+global int lfo_phase = 0
+global int lfo_rate_division = 24
 
 function generate_synced_lfo()
 locals int lfo_division, int clocks_per_cycle, int phase_increment, int lfo_output
 {
-    // Read LFO rate from parameter
-    lfo_division = (int)global params[OPERAND_2_LOW_PARAM_INDEX] >> 5;  // 0-7 divisions
+
+    lfo_division = (int)global params[OPERAND_2_LOW_PARAM_INDEX] >> 5;
     
-    // Set clock division for LFO rate
+
     if (lfo_division == 0) {
-        clocks_per_cycle = 96;     // 1 bar (4 beats)
+        clocks_per_cycle = 96;
     } else if (lfo_division == 1) {
-        clocks_per_cycle = 48;     // 2 beats
+        clocks_per_cycle = 48;
     } else if (lfo_division == 2) {
-        clocks_per_cycle = 24;     // 1 beat
+        clocks_per_cycle = 24;
     } else if (lfo_division == 3) {
-        clocks_per_cycle = 12;     // 1/2 beat
+        clocks_per_cycle = 12;
     } else {
-        clocks_per_cycle = 6;      // 1/4 beat
+        clocks_per_cycle = 6;
     }
     
     if (global midi_running == 1) {
-        // Sync to MIDI clock
+
         global lfo_phase = ((global clock_counter % clocks_per_cycle) * 256) / clocks_per_cycle;
         
-        // Add inter-clock interpolation
+
         phase_increment = (global sample_counter * 256) / (global samples_per_clock * clocks_per_cycle);
         global lfo_phase = global lfo_phase + phase_increment;
         if (global lfo_phase > 255) global lfo_phase = global lfo_phase - 256;
     } else {
-        // Free-running mode
-        phase_increment = 256 / 1000;  // Slow free-running rate
+
+        phase_increment = 256 / 1000;
         global lfo_phase = global lfo_phase + phase_increment;
         if (global lfo_phase > 255) global lfo_phase = global lfo_phase - 256;
     }
     
-    // Generate triangle wave (simple LFO shape)
+
     if (global lfo_phase < 128) {
-        lfo_output = global lfo_phase * 2;           // Rising
+        lfo_output = global lfo_phase * 2;
     } else {
-        lfo_output = 255 - ((global lfo_phase - 128) * 2);  // Falling
+        lfo_output = 255 - ((global lfo_phase - 128) * 2);
     }
     
     return lfo_output;
@@ -245,21 +245,21 @@ locals int lfo_division, int clocks_per_cycle, int phase_increment, int lfo_outp
 ### Rhythmic Gate Sequencer
 
 ```impala
-// Simple gate sequencer synced to MIDI clock
+
 global array gate_pattern[16] = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0}
 global int current_step = 0
-global int clocks_per_step = 6  // 16th note steps
+global int clocks_per_step = 6
 global int step_clock = 0
 
 function update_synced_gate()
 locals int gate_open, int gate_level, int audio_sample
 {
     if (global midi_running == 0) {
-        // No sync - gate always open
+
         return (int)global signal[0];
     }
     
-    // Update step position based on MIDI clock
+
     global step_clock = global step_clock + 1;
     if (global step_clock >= global clocks_per_step) {
         global step_clock = 0;
@@ -267,28 +267,28 @@ locals int gate_open, int gate_level, int audio_sample
         if (global current_step >= 16) global current_step = 0;
     }
     
-    // Get gate state from pattern
+
     gate_open = global gate_pattern[global current_step];
     
-    // Process audio through gate
+
     audio_sample = (int)global signal[0];
     
     if (gate_open == 1) {
-        gate_level = 255;  // Gate open
+        gate_level = 255;
     } else {
-        gate_level = (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 2;  // Closed level (0-63)
+        gate_level = (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 2;
     }
     
-    // Apply gate
+
     audio_sample = (audio_sample * gate_level) >> 8;
     
-    // Visual feedback
+
     if (gate_open) {
         global displayLEDs[1] = 255;
     } else {
         global displayLEDs[1] = 32;
     }
-    global displayLEDs[2] = global current_step << 4;  // Show step
+    global displayLEDs[2] = global current_step << 4;
     
     return audio_sample;
 }
@@ -301,57 +301,57 @@ function process()
 locals int input_sample, int delayed_sample, int lfo_value, int gated_sample, int output_sample
 {
     loop {
-        // Handle MIDI clock system
+
         process_midi_clock();
         update_clock_prediction();
         
-        // Read input
+
         input_sample = (int)global signal[0];
         
-        // Apply synchronized effects
+
         delayed_sample = synced_delay();
         lfo_value = generate_synced_lfo();
         gated_sample = update_synced_gate();
         
-        // Combine effects
+
         output_sample = gated_sample;
         
-        // Apply LFO modulation to output level
+
         output_sample = (output_sample * (128 + (lfo_value >> 1))) >> 8;
         
-        // Prevent clipping
+
         if (output_sample > 2047) output_sample = 2047;
         if (output_sample < -2047) output_sample = -2047;
         
-        // Output processed signal
+
         global signal[0] = output_sample;
         global signal[1] = output_sample;
         
-        // Update sync display
+
         update_sync_display();
         
         yield();
     }
 }
 
-// Visual feedback for synchronization status
+
 function update_sync_display()
 {
-    // Show running status
+
     if (global midi_running == 1) {
-        global displayLEDs[0] = 255;  // Bright when running
+        global displayLEDs[0] = 255;
     } else {
-        global displayLEDs[0] = 64;   // Dim when stopped
+        global displayLEDs[0] = 64;
     }
     
-    // Beat indicator - flash on quarter notes
+
     if ((global clock_counter % 24) == 0) {
-        global displayLEDs[1] = 255;  // Beat flash
+        global displayLEDs[1] = 255;
     } else if (global displayLEDs[1] > 10) {
-        global displayLEDs[1] = global displayLEDs[1] - 10;  // Fade
+        global displayLEDs[1] = global displayLEDs[1] - 10;
     }
     
-    // Show current tempo/timing
+
     global displayLEDs[2] = global current_tempo;
 }
 ```

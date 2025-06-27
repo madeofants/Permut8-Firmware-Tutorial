@@ -21,7 +21,7 @@ Creates basic pitch shifting by using a variable delay line with modulated read 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -33,117 +33,117 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
-extern native read              // Read from delay line memory
-extern native write             // Write to delay line memory
 
-// Standard global variables
-global int clock                 // Sample counter for timing
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT] // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
-global int clockFreqLimit        // Current clock frequency limit
+extern native yield
+extern native read
+extern native write
 
-// Simple pitch shifter state
-global array temp_buffer[2]     // Temporary buffer for memory operations
-global int write_pos = 0        // Current write position
-global int read_pos_frac = 0    // Fractional read position (16-bit fixed point)
-global int last_sample_l = 0    // For smoothing left channel
-global int last_sample_r = 0    // For smoothing right channel
-const int MAX_BUFFER_SIZE = 4096 // Maximum delay buffer size
+
+global int clock
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global int clockFreqLimit
+
+
+global array temp_buffer[2]
+global int write_pos = 0
+global int read_pos_frac = 0
+global int last_sample_l = 0
+global int last_sample_r = 0
+const int MAX_BUFFER_SIZE = 4096
 
 function process()
 locals int pitch_shift, int buffer_size, int smoothing, int mix, int pitch_speed, int new_read_pos, int current_sample_l, int current_sample_r, int smoothed_sample_l, int smoothed_sample_r, int output_l, int output_r, int smooth_factor, int position_diff
 {
     loop {
-        // Read parameters
-        pitch_shift = (int)global params[CLOCK_FREQ_PARAM_INDEX];             // 0-255 pitch control
-        buffer_size = ((int)global params[SWITCHES_PARAM_INDEX] >> 2) + 32; // 32-95 buffer size
-        smoothing = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 3) + 1;    // 1-32 smoothing
-        mix = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];                     // 0-255 dry/wet mix
+
+        pitch_shift = (int)global params[CLOCK_FREQ_PARAM_INDEX];
+        buffer_size = ((int)global params[SWITCHES_PARAM_INDEX] >> 2) + 32;
+        smoothing = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 3) + 1;
+        mix = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
         
-        // Safety bounds for buffer size
+
         if (buffer_size > 1000) buffer_size = 1000;
         
-        // Write current input to delay buffer (left channel)
+
         global temp_buffer[0] = global signal[0];
         write(global write_pos, 1, global temp_buffer);
         
-        // Write current input to delay buffer (right channel, offset location)
+
         global temp_buffer[0] = global signal[1];
         write(global write_pos + MAX_BUFFER_SIZE, 1, global temp_buffer);
         
-        // Calculate pitch shift speed (improved mapping)
-        // Map 0-255 to 0.5x-2.0x speed range, with 128 = 1.0x (unity)
+
+
         if (pitch_shift < 128) {
-            pitch_speed = 128 + (pitch_shift >> 1);  // 128-191 (0.5x-0.75x)
+            pitch_speed = 128 + (pitch_shift >> 1);
         } else {
-            pitch_speed = 128 + ((pitch_shift - 128) << 1);  // 128-384 (1.0x-2.0x)
+            pitch_speed = 128 + ((pitch_shift - 128) << 1);
         }
         
-        // Update fractional read position with proper overflow handling
+
         global read_pos_frac = (global read_pos_frac + pitch_speed) & 65535;
         
-        // Extract integer part for actual read position
+
         new_read_pos = global write_pos - (global read_pos_frac >> 8) - buffer_size;
         
-        // Handle negative wraparound for circular buffer
+
         while (new_read_pos < 0) {
             new_read_pos = new_read_pos + MAX_BUFFER_SIZE;
         }
         
-        // Read samples from delay buffer (left channel)
+
         read(new_read_pos, 1, global temp_buffer);
         current_sample_l = (int)global temp_buffer[0];
         
-        // Read samples from delay buffer (right channel)
+
         read(new_read_pos + MAX_BUFFER_SIZE, 1, global temp_buffer);
         current_sample_r = (int)global temp_buffer[0];
         
-        // Limit smoothing factor for reasonable range
-        smooth_factor = smoothing & 7;  // Limit to 0-7 for reasonable smoothing
+
+        smooth_factor = smoothing & 7;
         
-        // Simple smoothing to reduce glitches (left channel)
+
         smoothed_sample_l = global last_sample_l + ((current_sample_l - global last_sample_l) >> smooth_factor);
         global last_sample_l = smoothed_sample_l;
         
-        // Simple smoothing to reduce glitches (right channel)
+
         smoothed_sample_r = global last_sample_r + ((current_sample_r - global last_sample_r) >> smooth_factor);
         global last_sample_r = smoothed_sample_r;
         
-        // Gradual correction when read position drifts too far
+
         position_diff = global write_pos - new_read_pos;
         if (position_diff > (buffer_size + 100)) {
-            // Gradually correct instead of hard reset
+
             global read_pos_frac = global read_pos_frac - 256;
         }
         
-        // Mix dry and wet signals (left channel)
+
         output_l = (((int)global signal[0] * (255 - mix)) + (smoothed_sample_l * mix)) >> 8;
         
-        // Mix dry and wet signals (right channel)
+
         output_r = (((int)global signal[1] * (255 - mix)) + (smoothed_sample_r * mix)) >> 8;
         
-        // Prevent clipping (left channel)
+
         if (output_l > 2047) output_l = 2047;
         if (output_l < -2047) output_l = -2047;
         
-        // Prevent clipping (right channel)
+
         if (output_r > 2047) output_r = 2047;
         if (output_r < -2047) output_r = -2047;
         
-        // Output stereo result
+
         global signal[0] = output_l;
         global signal[1] = output_r;
         
-        // Show activity on LEDs with proper scaling
-        global displayLEDs[0] = pitch_shift;                    // Pitch control
-        global displayLEDs[1] = (global read_pos_frac >> 8);    // Read position (high byte)
-        global displayLEDs[2] = (buffer_size - 32) << 2;       // Buffer size (offset and scaled)
-        global displayLEDs[3] = (mix >> 2);                    // Mix level
+
+        global displayLEDs[0] = pitch_shift;
+        global displayLEDs[1] = (global read_pos_frac >> 8);
+        global displayLEDs[2] = (buffer_size - 32) << 2;
+        global displayLEDs[3] = (mix >> 2);
         
-        // Update write position with circular buffer wrapping
+
         global write_pos = (global write_pos + 1) % MAX_BUFFER_SIZE;
         
         yield();
@@ -173,23 +173,23 @@ locals int pitch_shift, int buffer_size, int smoothing, int mix, int pitch_speed
 ## Try These Settings
 
 ```impala
-// Octave up
-global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Fast read speed
-global params[SWITCHES_PARAM_INDEX] = 128;  // Medium buffer
-global params[OPERATOR_1_PARAM_INDEX] = 64;   // Some smoothing
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Mostly wet
 
-// Octave down
-global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Slow read speed
-global params[SWITCHES_PARAM_INDEX] = 180;  // Large buffer
-global params[OPERATOR_1_PARAM_INDEX] = 128;  // More smoothing
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Mostly wet
+global params[CLOCK_FREQ_PARAM_INDEX] = 200;
+global params[SWITCHES_PARAM_INDEX] = 128;
+global params[OPERATOR_1_PARAM_INDEX] = 64;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;
 
-// Subtle detuning
-global params[CLOCK_FREQ_PARAM_INDEX] = 140;  // Slightly fast
-global params[SWITCHES_PARAM_INDEX] = 64;   // Small buffer
-global params[OPERATOR_1_PARAM_INDEX] = 32;   // Light smoothing
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // 50% mix
+
+global params[CLOCK_FREQ_PARAM_INDEX] = 64;
+global params[SWITCHES_PARAM_INDEX] = 180;
+global params[OPERATOR_1_PARAM_INDEX] = 128;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;
+
+
+global params[CLOCK_FREQ_PARAM_INDEX] = 140;
+global params[SWITCHES_PARAM_INDEX] = 64;
+global params[OPERATOR_1_PARAM_INDEX] = 32;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;
 ```
 
 ## Limitations & Improvements

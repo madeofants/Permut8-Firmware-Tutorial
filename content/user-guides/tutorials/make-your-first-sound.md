@@ -21,7 +21,7 @@ Create your first sound-generating plugin! Instead of just processing incoming a
 ### 1.1 Processing vs. Generating
 **What you did before** (processing):
 ```impala
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -32,13 +32,13 @@ const int SWITCHES_PARAM_INDEX
 const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
-signal[0] = signal[0] / 2  // Take incoming audio, modify it
+signal[0] = signal[0] / 2
 
 ```
 
 **What you'll do now** (generating):
 ```impala
-signal[0] = myGeneratedSound  // Create audio from scratch, replace input
+signal[0] = myGeneratedSound
 ```
 
 ### 1.2 How Digital Oscillators Work
@@ -66,40 +66,40 @@ We'll start with a triangle wave because it's simple to calculate.
 Create `tone_generator.impala`:
 
 ```impala
-// Simple Tone Generator - My First Sound
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
+extern native yield
+
+
 global int clock = 0
 global array signal[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
 global int clockFreqLimit = 132300
 
-// Oscillator state
-global int phase = 0        // Current position in the waveform
-global int frequency = 100  // How fast the wave repeats
+
+global int phase = 0
+global int frequency = 100
 
 function process()
 {
     loop {
-        // Generate triangle wave
+
         int amplitude = 0
         if (phase < 32768) {
-            amplitude = phase - 16384      // Rising part: -16384 to +16384
+            amplitude = phase - 16384
         } else {
-            amplitude = 49152 - phase      // Falling part: +16384 to -16384
+            amplitude = 49152 - phase
         }
         
-        // Scale to audio range and output
-        int output = amplitude / 8  // Scale down to reasonable volume
-        signal[0] = output          // Left channel
-        signal[1] = output          // Right channel (same sound)
+
+        int output = amplitude / 8
+        signal[0] = output
+        signal[1] = output
         
-        // Update phase for next sample
+
         phase = (phase + frequency) % AUDIO_FULL_RANGE
         
         yield()
@@ -121,7 +121,7 @@ function process()
 
 ### 3.1 The Phase Variable
 ```impala
-global int phase = 0  // Current position in waveform (0 to 65535)
+global int phase = 0
 ```
 
 **Think of phase as:** A position on a circular track
@@ -132,9 +132,9 @@ global int phase = 0  // Current position in waveform (0 to 65535)
 ### 3.2 The Triangle Wave Math
 ```impala
 if (phase < 32768) {
-    amplitude = phase - 16384      // First half: rises from -16384 to +16384
+    amplitude = phase - 16384
 } else {
-    amplitude = 49152 - phase      // Second half: falls from +16384 to -16384
+    amplitude = 49152 - phase
 }
 ```
 
@@ -170,10 +170,10 @@ Replace your `process()` function:
 function process()
 {
     loop {
-        // Simple frequency control (we'll add knob control later)
-        frequency = 200  // Try different values: 100=low, 500=medium, 1000=high
+
+        frequency = 200
         
-        // Generate triangle wave (same as before)
+
         int amplitude = 0
         if (phase < 32768) {
             amplitude = phase - 16384
@@ -185,7 +185,7 @@ function process()
         signal[0] = output
         signal[1] = output
         
-        // Update phase
+
         phase = (phase + frequency) % AUDIO_FULL_RANGE
         
         yield()
@@ -220,10 +220,10 @@ function process()
     loop {
         frequency = 200
         
-        // Volume control (0 = silent, 1000 = loud)
-        int volume = 500  // Medium volume - adjust as needed
+
+        int volume = 500
         
-        // Generate triangle wave
+
         int amplitude = 0
         if (phase < 32768) {
             amplitude = phase - 16384
@@ -231,8 +231,8 @@ function process()
             amplitude = 49152 - phase
         }
         
-        // Apply volume control
-        int output = (amplitude * volume) / 8000  // Scale by volume and reduce overall level
+
+        int output = (amplitude * volume) / 8000
         
         signal[0] = output
         signal[1] = output
@@ -265,26 +265,26 @@ Replace the frequency calculation with musical note frequencies:
 function process()
 {
     loop {
-        // Musical note selection
-        int note = 5  // Try values 0-11 for different notes
+
+        int note = 5
         
-        // Convert note to frequency (approximate musical scale)
-        if (note == 0) frequency = 65   // C
-        else if (note == 1) frequency = 73   // C#
-        else if (note == 2) frequency = 82   // D
-        else if (note == 3) frequency = 87   // D#
-        else if (note == 4) frequency = 98   // E
-        else if (note == 5) frequency = 110  // F
-        else if (note == 6) frequency = 123  // F#
-        else if (note == 7) frequency = 131  // G
-        else if (note == 8) frequency = 147  // G#
-        else if (note == 9) frequency = 165  // A
-        else if (note == 10) frequency = 175 // A#
-        else frequency = 196                 // B
+
+        if (note == 0) frequency = 65
+        else if (note == 1) frequency = 73
+        else if (note == 2) frequency = 82
+        else if (note == 3) frequency = 87
+        else if (note == 4) frequency = 98
+        else if (note == 5) frequency = 110
+        else if (note == 6) frequency = 123
+        else if (note == 7) frequency = 131
+        else if (note == 8) frequency = 147
+        else if (note == 9) frequency = 165
+        else if (note == 10) frequency = 175
+        else frequency = 196
         
         int volume = 500
         
-        // Generate triangle wave (same as before)
+
         int amplitude = 0
         if (phase < 32768) {
             amplitude = phase - 16384
@@ -321,16 +321,16 @@ function process()
 Add this before `yield()`:
 
 ```impala
-// LED visualization
-displayLEDs[0] = note * 20        // Show current note selection
-displayLEDs[1] = volume / 4       // Show volume level
-displayLEDs[2] = (phase / (AUDIO_FULL_RANGE / 8))   // Show oscillator phase (creates moving pattern)
 
-// Activity indicator
+displayLEDs[0] = note * 20
+displayLEDs[1] = volume / 4
+displayLEDs[2] = (phase / (AUDIO_FULL_RANGE / 8))
+
+
 if (output > 100 || output < -100) {
-    displayLEDs[3] = 255  // Flash when sound is playing (LED_ALL_ON)
+    displayLEDs[3] = 255
 } else {
-    displayLEDs[3] = 1  // Dim when quiet (LED_SINGLE)
+    displayLEDs[3] = 1
 }
 ```
 
@@ -348,10 +348,10 @@ if (output > 100 || output < -100) {
 Here's your complete first sound generator:
 
 ```impala
-// Complete Tone Generator - Musical Note Synthesizer
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -362,68 +362,68 @@ const int SWITCHES_PARAM_INDEX
 const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
-// Standard global variables
+
 global int clock = 0
 global array signal[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
 global int clockFreqLimit = 132300
 
-// Oscillator state variables
-global int phase = 0        // Current waveform position (0-65535)
-global int frequency = 110  // Oscillator frequency
-global int volume = 500     // Output volume level
+
+global int phase = 0
+global int frequency = 110
+global int volume = 500
 
 function process()
 {
     loop {
-        // Musical note selection (change this value to hear different notes)
-        int note = 5  // 0-11 for chromatic scale
+
+        int note = 5
         
-        // Convert note number to oscillator frequency
-        if (note == 0) frequency = 65        // C (low C)
-        else if (note == 1) frequency = 73   // C# 
-        else if (note == 2) frequency = 82   // D
-        else if (note == 3) frequency = 87   // D#
-        else if (note == 4) frequency = 98   // E
-        else if (note == 5) frequency = 110  // F
-        else if (note == 6) frequency = 123  // F#
-        else if (note == 7) frequency = 131  // G
-        else if (note == 8) frequency = 147  // G#
-        else if (note == 9) frequency = 165  // A (reference pitch)
-        else if (note == 10) frequency = 175 // A#
-        else frequency = 196                 // B
+
+        if (note == 0) frequency = 65
+        else if (note == 1) frequency = 73
+        else if (note == 2) frequency = 82
+        else if (note == 3) frequency = 87
+        else if (note == 4) frequency = 98
+        else if (note == 5) frequency = 110
+        else if (note == 6) frequency = 123
+        else if (note == 7) frequency = 131
+        else if (note == 8) frequency = 147
+        else if (note == 9) frequency = 165
+        else if (note == 10) frequency = 175
+        else frequency = 196
         
-        // Generate triangle wave oscillator
+
         int amplitude = 0
         if (phase < 32768) {
-            // First half of wave: rising from -16384 to +16384
+
             amplitude = phase - 16384
         } else {
-            // Second half of wave: falling from +16384 to -16384
+
             amplitude = 49152 - phase
         }
         
-        // Apply volume control and scale to audio range
+
         int output = (amplitude * volume) / 8000
         
-        // Output generated sound (replaces any input audio)
-        signal[0] = output  // Left channel
-        signal[1] = output  // Right channel (mono output)
+
+        signal[0] = output
+        signal[1] = output
         
-        // LED visual feedback
-        displayLEDs[0] = note * 20            // Current note indicator
-        displayLEDs[1] = volume / 4           // Volume level display
-        displayLEDs[2] = (phase / 8192)       // Oscillator phase (moving pattern)
+
+        displayLEDs[0] = note * 20
+        displayLEDs[1] = volume / 4
+        displayLEDs[2] = (phase / 8192)
         
-        // Activity indicator (flashes with audio)
+
         if (output > 100 || output < -100) {
-            displayLEDs[3] = 255             // Bright when sound is active (LED_ALL_ON)
+            displayLEDs[3] = 255
         } else {
-            displayLEDs[3] = 1             // Dim when quiet (LED_SINGLE)
+            displayLEDs[3] = 1
         }
         
-        // Update oscillator phase for next sample
+
         phase = (phase + frequency) % AUDIO_FULL_RANGE
         
         yield()
@@ -463,34 +463,34 @@ function process()
 
 **Different Waveforms:**
 ```impala
-// Square wave (buzzy sound)
+
 if (phase < 32768) {
-    amplitude = 16384   // High for first half
+    amplitude = 16384
 } else {
-    amplitude = -16384  // Low for second half
+    amplitude = -16384
 }
 
-// Sawtooth wave (bright, buzzy)
-amplitude = (phase / 2) - 16384  // Linear ramp
 
-// Sine wave approximation (smooth, pure)
-// This is more complex - try the triangle first!
+amplitude = (phase / 2) - 16384
+
+
+
 ```
 
 **Multiple Oscillators:**
 ```impala
-// Add a second oscillator at different frequency
-int phase2 = 0  // Add this as global variable
-int frequency2 = frequency * 2  // Octave higher
-// Generate second wave and mix: output = (wave1 + wave2) / 2
+
+int phase2 = 0
+int frequency2 = frequency * 2
+
 ```
 
 **Frequency Sweeps:**
 ```impala
-// Slowly change frequency over time
+
 static int sweepCounter = 0
 sweepCounter = (sweepCounter + 1) % 10000
-frequency = 100 + (sweepCounter / 50)  // Sweep from 100 to 300
+frequency = 100 + (sweepCounter / 50)
 ```
 
 ### 10.2 Ready for Next Steps

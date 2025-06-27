@@ -21,7 +21,7 @@ Creates distortion by applying mathematical curves to reshape the audio waveform
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -33,48 +33,48 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global int clock                 // Sample counter for timing
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT] // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
-global int clockFreqLimit        // Current clock frequency limit
+extern native yield
+
+
+global int clock
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global int clockFreqLimit
 
 function process()
 locals int drive, int dist_type, int output_level, int mix, int input, int driven, int shaped, int output, int mask
 {
     loop {
-        // Read parameters
-        drive = ((int)global params[CLOCK_FREQ_PARAM_INDEX] >> 2) + 1;     // 1-64 drive amount
-        dist_type = ((int)global params[SWITCHES_PARAM_INDEX] >> 6);     // 0-3 distortion types
-        output_level = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 1) + 64;  // 64-191 output gain
-        mix = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];                  // 0-255 dry/wet mix
+
+        drive = ((int)global params[CLOCK_FREQ_PARAM_INDEX] >> 2) + 1;
+        dist_type = ((int)global params[SWITCHES_PARAM_INDEX] >> 6);
+        output_level = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 1) + 64;
+        mix = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
         
         input = (int)global signal[0];
         
-        // Apply input drive
+
         driven = input * drive;
         
-        // Prevent overflow before waveshaping
+
         if (driven > 2047) driven = 2047;
         if (driven < -2047) driven = -2047;
         
-        // Apply waveshaping based on type
+
         if (dist_type == 0) {
-            // Soft clipping - gentle saturation
+
             if (driven > 1365) {
-                shaped = 1365 + ((driven - 1365) >> 2);  // Compress highs
+                shaped = 1365 + ((driven - 1365) >> 2);
             } else if (driven < -1365) {
-                shaped = -1365 + ((driven + 1365) >> 2); // Compress lows
+                shaped = -1365 + ((driven + 1365) >> 2);
             } else {
-                shaped = driven;  // Linear in middle
+                shaped = driven;
             }
             
         } else if (dist_type == 1) {
-            // Hard clipping - aggressive limiting
+
             if (driven > 1024) {
                 shaped = 1024;
             } else if (driven < -1024) {
@@ -84,40 +84,40 @@ locals int drive, int dist_type, int output_level, int mix, int input, int drive
             }
             
         } else if (dist_type == 2) {
-            // Bit reduction - digital artifacts
-            mask = 0xFFF0;  // Remove lower 4 bits
+
+            mask = 0xFFF0;
             shaped = driven & mask;
             
         } else {
-            // Fold-back - wrap around at limits
+
             if (driven > 1024) {
-                shaped = 2048 - driven;  // Fold back down
+                shaped = 2048 - driven;
             } else if (driven < -1024) {
-                shaped = -2048 + driven; // Fold back up (corrected sign)
+                shaped = -2048 + driven;
             } else {
                 shaped = driven;
             }
         }
         
-        // Apply output level compensation
+
         shaped = (shaped * output_level) >> 8;
         
-        // Prevent final clipping
+
         if (shaped > 2047) shaped = 2047;
         if (shaped < -2047) shaped = -2047;
         
-        // Mix dry and wet signals
+
         output = ((input * (255 - mix)) + (shaped * mix)) >> 8;
         
-        // Output result
+
         global signal[0] = output;
         global signal[1] = output;
         
-        // Show activity on LEDs with optimized scaling
-        global displayLEDs[0] = (drive - 1) << 2;              // Drive level (0-252)
-        global displayLEDs[1] = dist_type << 6;                // Distortion type (0,64,128,192)
-        global displayLEDs[2] = (output_level - 64) << 1;      // Output gain (0-254)
-        global displayLEDs[3] = (mix >> 2);                    // Mix level (0-63)
+
+        global displayLEDs[0] = (drive - 1) << 2;
+        global displayLEDs[1] = dist_type << 6;
+        global displayLEDs[2] = (output_level - 64) << 1;
+        global displayLEDs[3] = (mix >> 2);
         
         yield();
     }
@@ -146,29 +146,29 @@ locals int drive, int dist_type, int output_level, int mix, int input, int drive
 ## Try These Settings
 
 ```impala
-// Subtle tube warmth
-global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Light drive
-global params[SWITCHES_PARAM_INDEX] = 32;   // Soft clipping
-global params[OPERATOR_1_PARAM_INDEX] = 180;  // Boost output
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Blend with dry
 
-// Heavy rock distortion
-global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High drive
-global params[SWITCHES_PARAM_INDEX] = 100;  // Hard clipping
-global params[OPERATOR_1_PARAM_INDEX] = 140;  // Lower output
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 220;  // Mostly distorted
+global params[CLOCK_FREQ_PARAM_INDEX] = 100;
+global params[SWITCHES_PARAM_INDEX] = 32;
+global params[OPERATOR_1_PARAM_INDEX] = 180;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 150;
 
-// Digital glitch
-global params[CLOCK_FREQ_PARAM_INDEX] = 150;  // Medium drive
-global params[SWITCHES_PARAM_INDEX] = 160;  // Bit crushing
-global params[OPERATOR_1_PARAM_INDEX] = 200;  // Boost output
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Mostly wet
 
-// Experimental texture
-global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // High drive
-global params[SWITCHES_PARAM_INDEX] = 220;  // Fold-back
-global params[OPERATOR_1_PARAM_INDEX] = 160;  // Medium output
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Mostly processed
+global params[CLOCK_FREQ_PARAM_INDEX] = 200;
+global params[SWITCHES_PARAM_INDEX] = 100;
+global params[OPERATOR_1_PARAM_INDEX] = 140;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 220;
+
+
+global params[CLOCK_FREQ_PARAM_INDEX] = 150;
+global params[SWITCHES_PARAM_INDEX] = 160;
+global params[OPERATOR_1_PARAM_INDEX] = 200;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;
+
+
+global params[CLOCK_FREQ_PARAM_INDEX] = 180;
+global params[SWITCHES_PARAM_INDEX] = 220;
+global params[OPERATOR_1_PARAM_INDEX] = 160;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;
 ```
 
 ## Understanding Waveshaping

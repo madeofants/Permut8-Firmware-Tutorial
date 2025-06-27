@@ -7,38 +7,38 @@ Essential utility functions for mathematical operations, data conversions, debug
 
 ### Fast Math Approximations
 ```impala
-// High-performance approximations for audio applications
+
 namespace FastMath {
     
-    // Fast reciprocal approximation (Newton-Raphson)
+
     float fastReciprocal(float x) {
-        // Initial approximation using bit manipulation
+
         int i = *(int*)&x;
         i = 0x7F000000 - i;
         float r = *(float*)&i;
         
-        // One Newton-Raphson iteration for improved accuracy
+
         return r * (2.0 - x * r);
     }
     
-    // Fast square root using Newton-Raphson
+
     float fastSqrt(float x) {
         if (x <= 0.0) return 0.0;
         
-        // Fast inverse square root approximation
+
         float xhalf = 0.5 * x;
         int i = *(int*)&x;
-        i = 0x5f3759df - (i >> 1);  // Magic number for initial guess
+        i = 0x5f3759df - (i >> 1);
         x = *(float*)&i;
         
-        // Newton-Raphson iterations
-        x = x * (1.5 - xhalf * x * x);  // First iteration
-        x = x * (1.5 - xhalf * x * x);  // Second iteration (optional)
+
+        x = x * (1.5 - xhalf * x * x);
+        x = x * (1.5 - xhalf * x * x);
         
-        return 1.0 / x;  // Convert from inverse sqrt to sqrt
+        return 1.0 / x;
     }
     
-    // Fast power function for integer exponents
+
     float fastPow(float base, int exponent) {
         if (exponent == 0) return 1.0;
         if (exponent == 1) return base;
@@ -48,7 +48,7 @@ namespace FastMath {
         float currentPower = base;
         int exp = abs(exponent);
         
-        // Binary exponentiation
+
         while (exp > 0) {
             if (exp & 1) result *= currentPower;
             currentPower *= currentPower;
@@ -62,10 +62,10 @@ namespace FastMath {
 
 ### Trigonometric Functions
 ```impala
-// Optimized trigonometric functions using lookup tables
+
 namespace TrigLookup {
     
-    // Pre-computed sine table (256 samples for one period)
+
     static float sineTable[256];
     static bool tablesInitialized = false;
     
@@ -78,32 +78,32 @@ namespace TrigLookup {
         tablesInitialized = true;
     }
     
-    // Fast sine using linear interpolation
+
     float fastSin(float angle) {
         if (!tablesInitialized) initializeTables();
         
-        // Normalize angle to 0-1 range
+
         angle = angle / (2.0 * M_PI);
-        angle = angle - floor(angle);  // Keep fractional part
+        angle = angle - floor(angle);
         
-        // Convert to table index
+
         float indexFloat = angle * 256.0;
         int index = (int)indexFloat;
         float fraction = indexFloat - index;
         
-        // Linear interpolation between table entries
+
         int nextIndex = (index + 1) % 256;
         return sineTable[index] + fraction * (sineTable[nextIndex] - sineTable[index]);
     }
     
-    // Fast cosine (phase-shifted sine)
+
     float fastCos(float angle) {
         return fastSin(angle + M_PI * 0.5);
     }
     
-    // Fast tan approximation for small angles
+
     float fastTan(float angle) {
-        // Taylor series approximation: tan(x) ≈ x + x³/3 + 2x⁵/15
+
         float x2 = angle * angle;
         return angle * (1.0 + x2 * (1.0/3.0 + x2 * 2.0/15.0));
     }
@@ -112,15 +112,15 @@ namespace TrigLookup {
 
 ### Interpolation Functions
 ```impala
-// Various interpolation methods for sample rate conversion and smoothing
+
 namespace Interpolation {
     
-    // Linear interpolation
+
     float lerp(float a, float b, float t) {
         return a + t * (b - a);
     }
     
-    // Cubic interpolation for higher quality
+
     float cubicInterp(float y0, float y1, float y2, float y3, float t) {
         float a0 = y3 - y2 - y0 + y1;
         float a1 = y0 - y1 - a0;
@@ -130,7 +130,7 @@ namespace Interpolation {
         return a0 * t * t * t + a1 * t * t + a2 * t + a3;
     }
     
-    // Hermite interpolation for smooth curves
+
     float hermiteInterp(float y0, float y1, float y2, float y3, float t) {
         float c0 = y1;
         float c1 = 0.5 * (y2 - y0);
@@ -140,13 +140,13 @@ namespace Interpolation {
         return ((c3 * t + c2) * t + c1) * t + c0;
     }
     
-    // Smooth step function for parameter ramping
+
     float smoothStep(float edge0, float edge1, float x) {
         float t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
         return t * t * (3.0 - 2.0 * t);
     }
     
-    // Smoother step function (higher order)
+
     float smootherStep(float edge0, float edge1, float x) {
         float t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
         return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
@@ -158,36 +158,36 @@ namespace Interpolation {
 
 ### Audio Format Conversions
 ```impala
-// Convert between different audio sample formats
+
 namespace AudioConversion {
     
-    // Convert from Permut8 internal format (-2047 to 2047) to normalized float
+
     float toNormalizedFloat(int sample) {
         return (float)sample / 2047.0;
     }
     
-    // Convert from normalized float to Permut8 internal format
+
     int fromNormalizedFloat(float sample) {
         return (int)(clamp(sample, -1.0, 1.0) * 2047.0);
     }
     
-    // Convert dB to linear amplitude
+
     float dbToLinear(float db) {
         return pow(10.0, db / 20.0);
     }
     
-    // Convert linear amplitude to dB
+
     float linearToDb(float linear) {
-        if (linear <= 0.0) return -96.0;  // -96dB minimum
+        if (linear <= 0.0) return -96.0;
         return 20.0 * log10(linear);
     }
     
-    // Convert MIDI note number to frequency
+
     float midiToFreq(float midiNote) {
         return 440.0 * pow(2.0, (midiNote - 69.0) / 12.0);
     }
     
-    // Convert frequency to MIDI note number
+
     float freqToMidi(float frequency) {
         if (frequency <= 0.0) return 0.0;
         return 69.0 + 12.0 * log2(frequency / 440.0);
@@ -197,39 +197,39 @@ namespace AudioConversion {
 
 ### Parameter Mapping
 ```impala
-// Advanced parameter scaling and mapping functions
+
 namespace ParameterMapping {
     
-    // Exponential curve for frequency parameters
+
     float expCurve(float input, float minVal, float maxVal, float curve) {
-        // curve: 1.0 = linear, >1.0 = exponential, <1.0 = logarithmic
+
         float normalized = pow(input, curve);
         return minVal + normalized * (maxVal - minVal);
     }
     
-    // Logarithmic curve for audio-related parameters
+
     float logCurve(float input, float minVal, float maxVal) {
         if (input <= 0.0) return minVal;
         float logInput = log(1.0 + input * (M_E - 1.0));
         return minVal + logInput * (maxVal - minVal);
     }
     
-    // S-curve for smooth parameter transitions
+
     float sCurve(float input, float sharpness) {
-        // sharpness: 0.0 = linear, higher values = more S-shaped
-        float x = input * 2.0 - 1.0;  // Map to -1 to 1
+
+        float x = input * 2.0 - 1.0;
         float result = x / (1.0 + sharpness * abs(x));
-        return (result + 1.0) * 0.5;  // Map back to 0 to 1
+        return (result + 1.0) * 0.5;
     }
     
-    // Quantize parameter to discrete steps
+
     float quantize(float input, int steps) {
         if (steps <= 1) return input;
         float stepSize = 1.0 / (steps - 1);
         return round(input / stepSize) * stepSize;
     }
     
-    // Hysteresis for parameter switching
+
     float hysteresis(float input, float threshold, float* state) {
         if (input > threshold + 0.05) {
             *state = 1.0;
@@ -243,10 +243,10 @@ namespace ParameterMapping {
 
 ### Data Structure Utilities
 ```impala
-// Utilities for working with common data structures
+
 namespace DataStructures {
     
-    // Circular buffer implementation
+
     struct CircularBuffer {
         float* data;
         int size;
@@ -275,7 +275,7 @@ namespace DataStructures {
     
     float readCircularBuffer(CircularBuffer* buf) {
         if (!buf->full && buf->readIndex == buf->writeIndex) {
-            return 0.0;  // Buffer empty
+            return 0.0;
         }
         
         float value = buf->data[buf->readIndex];
@@ -284,7 +284,7 @@ namespace DataStructures {
         return value;
     }
     
-    // Ring buffer with delay tap access
+
     float readDelayTap(CircularBuffer* buf, int delaySamples) {
         int tapIndex = (buf->writeIndex - delaySamples - 1 + buf->size) % buf->size;
         return buf->data[tapIndex];
@@ -296,7 +296,7 @@ namespace DataStructures {
 
 ### Performance Profiling
 ```impala
-// Performance measurement utilities
+
 namespace Profiler {
     
     struct PerformanceCounter {
@@ -307,12 +307,12 @@ namespace Profiler {
         const char* name;
     };
     
-    // Start timing measurement
+
     void startTimer(PerformanceCounter* counter) {
         counter->startTime = getCurrentCycles();
     }
     
-    // End timing measurement
+
     void endTimer(PerformanceCounter* counter) {
         int elapsed = getCurrentCycles() - counter->startTime;
         counter->totalTime = counter->totalTime + elapsed;
@@ -322,25 +322,25 @@ namespace Profiler {
         }
     }
     
-    // Get average execution time
+
     float getAverageTime(PerformanceCounter* counter) {
         if (counter->callCount == 0) return 0.0;
         return (float)counter->totalTime / counter->callCount;
     }
     
-    // Reset counter
+
     void resetCounter(PerformanceCounter* counter) {
         counter->totalTime = 0;
         counter->callCount = 0;
         counter->maxTime = 0;
     }
     
-    // Usage example
+
     PerformanceCounter delayCounter = {0, 0, 0, 0, "Delay Processing"};
     
     void profiledDelayProcessing() {
         startTimer(&delayCounter);
-        // ... delay processing code ...
+
         endTimer(&delayCounter);
     }
 }
@@ -348,7 +348,7 @@ namespace Profiler {
 
 ### Memory Debugging
 ```impala
-// Memory usage tracking and debugging
+
 namespace MemoryDebug {
     
     struct MemoryStats {
@@ -361,7 +361,7 @@ namespace MemoryDebug {
     
     static MemoryStats memStats = {0, 0, 0, 0, 0};
     
-    // Track memory allocation
+
     void* debugMalloc(int size, const char* file, int line) {
         void* ptr = malloc(size);
         if (ptr) {
@@ -380,7 +380,7 @@ namespace MemoryDebug {
         return ptr;
     }
     
-    // Track memory deallocation
+
     void debugFree(void* ptr, int size, const char* file, int line) {
         if (ptr) {
             free(ptr);
@@ -393,11 +393,11 @@ namespace MemoryDebug {
         }
     }
     
-    // Macros for easy usage
+
     #define DEBUG_MALLOC(size) debugMalloc(size, __FILE__, __LINE__)
     #define DEBUG_FREE(ptr, size) debugFree(ptr, size, __FILE__, __LINE__)
     
-    // Memory leak detection
+
     void checkMemoryLeaks() {
         if (memStats.allocationCount != memStats.freeCount) {
             printf("MEMORY LEAK: %d allocations, %d frees\n", 
@@ -412,10 +412,10 @@ namespace MemoryDebug {
 
 ### Assertion and Validation
 ```impala
-// Debugging assertions and validation
+
 namespace Debug {
     
-    // Custom assertion with message
+
     #ifdef DEBUG
         #define ASSERT(condition, message) \
             do { \
@@ -428,7 +428,7 @@ namespace Debug {
         #define ASSERT(condition, message) ((void)0)
     #endif
     
-    // Range validation
+
     bool validateRange(float value, float min, float max, const char* name) {
         if (value < min || value > max) {
             #ifdef DEBUG
@@ -439,7 +439,7 @@ namespace Debug {
         return true;
     }
     
-    // Audio sample validation
+
     bool validateAudioSample(float sample) {
         if (isnan(sample) || isinf(sample)) {
             #ifdef DEBUG
@@ -450,7 +450,7 @@ namespace Debug {
         return validateRange(sample, -10.0, 10.0, "audio_sample");
     }
     
-    // Buffer overflow detection
+
     void checkBufferBounds(int index, int bufferSize, const char* bufferName) {
         ASSERT(index >= 0 && index < bufferSize, 
                "Buffer index out of bounds");
@@ -467,7 +467,7 @@ namespace Debug {
 
 ### Diagnostic Output
 ```impala
-// Diagnostic and logging utilities
+
 namespace Diagnostics {
     
     enum LogLevel {
@@ -479,7 +479,7 @@ namespace Diagnostics {
     
     static LogLevel currentLogLevel = LOG_INFO;
     
-    // Conditional logging
+
     void logMessage(LogLevel level, const char* format, ...) {
         if (level <= currentLogLevel) {
             const char* levelNames[] = {"ERROR", "WARN", "INFO", "DEBUG"};
@@ -493,7 +493,7 @@ namespace Diagnostics {
         }
     }
     
-    // Signal analysis for debugging
+
     void analyzeSignal(float* buffer, int size, const char* name) {
         float min = buffer[0], max = buffer[0];
         float sum = 0.0, sumSquares = 0.0;
@@ -513,7 +513,7 @@ namespace Diagnostics {
                    name, min, max, mean, rms);
     }
     
-    // Parameter state dump
+
     void dumpParameters() {
         logMessage(LOG_DEBUG, "Parameter dump:");
         for (int i = 0; i < PARAM_COUNT; i++) {
@@ -521,7 +521,7 @@ namespace Diagnostics {
         }
     }
     
-    // LED state visualization
+
     void visualizeLEDs() {
         printf("LEDs: ");
         for (int i = 0; i < LED_COUNT; i++) {
@@ -536,7 +536,7 @@ namespace Diagnostics {
 
 ### Unit Testing Framework
 ```impala
-// Simple unit testing framework
+
 namespace UnitTest {
     
     struct TestStats {
@@ -547,7 +547,7 @@ namespace UnitTest {
     
     static TestStats testStats = {0, 0, 0};
     
-    // Test assertion
+
     void testAssert(bool condition, const char* testName) {
         testStats.totalTests = testStats.totalTests + 1;
         if (condition) {
@@ -559,7 +559,7 @@ namespace UnitTest {
         }
     }
     
-    // Floating point comparison with tolerance
+
     void testFloatEqual(float actual, float expected, float tolerance, const char* testName) {
         bool equal = abs(actual - expected) <= tolerance;
         testAssert(equal, testName);
@@ -569,12 +569,12 @@ namespace UnitTest {
         }
     }
     
-    // Test suite runner
+
     void runTests() {
         printf("Running unit tests...\n");
-        testStats = {0, 0, 0};  // Reset stats
+        testStats = {0, 0, 0};
         
-        // Example tests
+
         testMathFunctions();
         testAudioProcessing();
         testParameterMapping();
@@ -583,7 +583,7 @@ namespace UnitTest {
                testStats.passedTests, testStats.totalTests, testStats.failedTests);
     }
     
-    // Example test functions
+
     void testMathFunctions() {
         testFloatEqual(FastMath::fastSqrt(4.0), 2.0, 0.01, "FastMath sqrt");
         testFloatEqual(TrigLookup::fastSin(0.0), 0.0, 0.01, "TrigLookup sin(0)");
@@ -594,10 +594,10 @@ namespace UnitTest {
 
 ### Performance Benchmarking
 ```impala
-// Benchmarking utilities for performance testing
+
 namespace Benchmark {
     
-    // Benchmark a function with multiple iterations
+
     float benchmarkFunction(void (*func)(), int iterations) {
         int startTime = getCurrentCycles();
         
@@ -609,7 +609,7 @@ namespace Benchmark {
         return (float)(endTime - startTime) / iterations;
     }
     
-    // Compare two implementations
+
     void compareImplementations(void (*func1)(), void (*func2)(), 
                                const char* name1, const char* name2) {
         const int iterations = 1000;
@@ -629,35 +629,35 @@ namespace Benchmark {
 
 ### Complete Utility Usage
 ```impala
-// Example firmware using utility functions
+
 void advancedFirmware() {
-    // Performance profiling
+
     Profiler::PerformanceCounter mainCounter = {0, 0, 0, 0, "Main Process"};
     Profiler::startTimer(&mainCounter);
     
-    // Parameter validation
+
     Debug::validateRange(params[CUTOFF], 0.0, 1.0, "cutoff");
     
-    // Fast math operations
+
     TrigLookup::initializeTables();
     float lfoValue = TrigLookup::fastSin(getCurrentPhase());
     
-    // Parameter mapping
+
     float cutoffFreq = ParameterMapping::expCurve(params[CUTOFF], 20.0, 20000.0, 2.0);
     
-    // Audio processing with validation
+
     float processedSample = applyFilter(signal[2], cutoffFreq);
     Debug::validateAudioSample(processedSample);
     signal[2] = processedSample;
     
-    // Update profiling
+
     Profiler::endTimer(&mainCounter);
     
-    // Diagnostic output (debug builds only)
+
     #ifdef DEBUG
         static int debugCounter = 0;
         debugCounter = debugCounter + 1;
-        if (debugCounter % 48000 == 0) {  // Every second
+        if (debugCounter % 48000 == 0) {
             Diagnostics::logMessage(LOG_INFO, "Average processing time: %.2f cycles", 
                                    Profiler::getAverageTime(&mainCounter));
         }

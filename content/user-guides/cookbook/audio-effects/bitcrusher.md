@@ -29,7 +29,7 @@ This effect uses all four instruction operands as custom knob controls:
 
 **Suggested Panel Layout**:
 ```impala
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -44,11 +44,11 @@ readonly array panelTextRows[8] = {
     "",
     "",
     "",
-    "CRUSH |-- BIT DEPTH --| |--- DRY/WET ---|",  // params[OPERAND_1_HIGH_PARAM_INDEX] & params[OPERAND_2_HIGH_PARAM_INDEX]
+    "CRUSH |-- BIT DEPTH --| |--- DRY/WET ---|",
     "",
     "",
     "",
-    "CRUSH |-- RATE DIV ---| |--- GAIN -----|")   // params[OPERAND_1_LOW_PARAM_INDEX] & params[OPERAND_2_LOW_PARAM_INDEX]
+    "CRUSH |-- RATE DIV ---| |--- GAIN -----|")
 };
 
 ```
@@ -65,13 +65,13 @@ readonly array panelTextRows[8] = {
 
 **Common Settings:**
 ```impala
-// Vintage sampler: moderate crushing with character
+
 vintage_bits = 180; vintage_rate = 60; vintage_mix = 200; vintage_gain = 220;
 
-// Lo-fi texture: heavy digital artifacts
+
 lofi_bits = 100; lofi_rate = 120; lofi_mix = 180; lofi_gain = 240;
 
-// Extreme digital: maximum destruction
+
 extreme_bits = 30; extreme_rate = 200; extreme_mix = 255; extreme_gain = 200;
 ```
 
@@ -80,7 +80,7 @@ extreme_bits = 30; extreme_rate = 200; extreme_mix = 255; extreme_gain = 200;
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -91,32 +91,32 @@ const int SWITCHES_PARAM_INDEX
 const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global int clock                 // Sample counter for timing
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT] // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
-global int clockFreqLimit        // Current clock frequency limit
+extern native yield
 
-// Simple bitcrusher state
-global int hold_left = 0         // Held sample for left channel
-global int hold_right = 0        // Held sample for right channel
-global int hold_counter = 0      // Counter for sample rate reduction
+
+global int clock
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global int clockFreqLimit
+
+
+global int hold_left = 0
+global int hold_right = 0
+global int hold_counter = 0
 
 function process()
 locals int bits, int rate_div, int mix, int gain, int crushed_left, int crushed_right, int shift_amount, int dry_left, int dry_right, int wet_left, int wet_right, int output_left, int output_right
 {
     loop {
-        // Read parameters (Instruction operands)
-        bits = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 4) + 1;        // 1-16 effective bit depth (Instruction 1 High)
-        rate_div = ((int)global params[OPERAND_1_LOW_PARAM_INDEX] >> 3) + 1;    // 1-32 rate division (Instruction 1 Low)
-        mix = (int)global params[OPERAND_2_HIGH_PARAM_INDEX];                    // 0-255 dry/wet mix (Instruction 2 High)
-        gain = ((int)global params[OPERAND_2_LOW_PARAM_INDEX] >> 1) + 64;       // 64-191 output gain (Instruction 2 Low)
+
+        bits = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 4) + 1;
+        rate_div = ((int)global params[OPERAND_1_LOW_PARAM_INDEX] >> 3) + 1;
+        mix = (int)global params[OPERAND_2_HIGH_PARAM_INDEX];
+        gain = ((int)global params[OPERAND_2_LOW_PARAM_INDEX] >> 1) + 64;
         
-        // Sample rate reduction (hold samples)
+
         global hold_counter = global hold_counter + 1;
         if (global hold_counter >= rate_div) {
             global hold_counter = 0;
@@ -124,42 +124,42 @@ locals int bits, int rate_div, int mix, int gain, int crushed_left, int crushed_
             global hold_right = (int)global signal[1];
         }
         
-        // Calculate bit reduction for 12-bit audio (-2047 to 2047)
-        shift_amount = 12 - bits;                       // Amount to shift for quantization
-        if (shift_amount < 0) shift_amount = 0;         // Prevent negative shifts
-        if (shift_amount > 11) shift_amount = 11;       // Prevent excessive shifts
+
+        shift_amount = 12 - bits;
+        if (shift_amount < 0) shift_amount = 0;
+        if (shift_amount > 11) shift_amount = 11;
         
-        // Bit depth reduction through shift quantization
+
         crushed_left = (global hold_left >> shift_amount) << shift_amount;
         crushed_right = (global hold_right >> shift_amount) << shift_amount;
         
-        // Store dry signals
+
         dry_left = (int)global signal[0];
         dry_right = (int)global signal[1];
         
-        // Apply output gain to wet signals
-        wet_left = (crushed_left * gain) >> 7;          // Apply gain with scaling
+
+        wet_left = (crushed_left * gain) >> 7;
         wet_right = (crushed_right * gain) >> 7;
         
-        // Clip gained signals to valid range
+
         if (wet_left > 2047) wet_left = 2047;
         if (wet_left < -2047) wet_left = -2047;
         if (wet_right > 2047) wet_right = 2047;
         if (wet_right < -2047) wet_right = -2047;
         
-        // Mix dry and wet signals
+
         output_left = ((dry_left * (255 - mix)) + (wet_left * mix)) >> 8;
         output_right = ((dry_right * (255 - mix)) + (wet_right * mix)) >> 8;
         
-        // Output final mixed audio
+
         global signal[0] = output_left;
         global signal[1] = output_right;
         
-        // Show activity on LEDs with bounds checking
-        global displayLEDs[0] = ((bits - 1) << 4) & 255;      // Show effective bit depth
-        global displayLEDs[1] = ((rate_div - 1) << 3) & 255;  // Show rate reduction
-        global displayLEDs[2] = mix;                          // Show dry/wet mix
-        global displayLEDs[3] = (gain - 64) << 1;             // Show output gain
+
+        global displayLEDs[0] = ((bits - 1) << 4) & 255;
+        global displayLEDs[1] = ((rate_div - 1) << 3) & 255;
+        global displayLEDs[2] = mix;
+        global displayLEDs[3] = (gain - 64) << 1;
         
         yield();
     }
@@ -187,15 +187,15 @@ locals int bits, int rate_div, int mix, int gain, int crushed_left, int crushed_
 ## Try These Settings
 
 ```impala
-// Vintage lo-fi (moderate crushing)
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // 8-bit depth
-global params[OPERAND_1_LOW_PARAM_INDEX] = 64;   // 8x rate reduction  
-global params[OPERAND_2_HIGH_PARAM_INDEX] = 180;  // 70% wet mix
-global params[OPERAND_2_LOW_PARAM_INDEX] = 200;  // +6dB gain compensation
 
-// Extreme digital destruction  
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 32;   // 2-bit depth
-global params[OPERAND_1_LOW_PARAM_INDEX] = 200;  // 25x rate reduction
-global params[OPERAND_2_HIGH_PARAM_INDEX] = 255;  // 100% wet
-global params[OPERAND_2_LOW_PARAM_INDEX] = 255;  // Maximum gain
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 128;
+global params[OPERAND_1_LOW_PARAM_INDEX] = 64;
+global params[OPERAND_2_HIGH_PARAM_INDEX] = 180;
+global params[OPERAND_2_LOW_PARAM_INDEX] = 200;
+
+
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 32;
+global params[OPERAND_1_LOW_PARAM_INDEX] = 200;
+global params[OPERAND_2_HIGH_PARAM_INDEX] = 255;
+global params[OPERAND_2_LOW_PARAM_INDEX] = 255;
 ```

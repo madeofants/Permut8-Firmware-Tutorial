@@ -26,7 +26,7 @@ Stereo processing manipulates the relationship between left and right audio chan
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -38,87 +38,87 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
+
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
 
 function process()
 locals int pan_position, int stereo_width, int channel_mode, int left_input, int right_input, int mid_signal, int side_signal, int left_gain, int right_gain, int mono_input, int output_left, int output_right, int panned_left, int panned_right, int width_left, int width_right
 {
     loop {
-        // Read parameters
-        pan_position = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];    // 0-255 panning
-        stereo_width = (int)global (int)global params[SWITCHES_PARAM_INDEX];    // 0-255 width control
-        channel_mode = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];    // 0-255 routing mode
+
+        pan_position = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];
+        stereo_width = (int)global (int)global params[SWITCHES_PARAM_INDEX];
+        channel_mode = (int)global (int)global params[OPERATOR_1_PARAM_INDEX];
         
-        // Store input signals
+
         left_input = (int)global signal[0];
         right_input = (int)global signal[1];
         
-        // Create mono signal from stereo input
+
         mono_input = (left_input + right_input) >> 1;
         
-        // Calculate mid and side signals
-        mid_signal = (left_input + right_input) >> 1;      // Center information
-        side_signal = (left_input - right_input) >> 1;    // Stereo information
+
+        mid_signal = (left_input + right_input) >> 1;
+        side_signal = (left_input - right_input) >> 1;
         
-        // Apply stereo width control to side signal
+
         side_signal = (side_signal * stereo_width) >> 8;
         
-        // Calculate panning gains (simple linear panning)
-        left_gain = 255 - pan_position;   // More left as pan decreases
-        right_gain = pan_position;        // More right as pan increases
+
+        left_gain = 255 - pan_position;
+        right_gain = pan_position;
         
-        // Apply panning to mono signal
+
         panned_left = (mono_input * left_gain) >> 8;
         panned_right = (mono_input * right_gain) >> 8;
         
-        // Reconstruct stereo from mid/side with width control
+
         width_left = mid_signal + side_signal;
         width_right = mid_signal - side_signal;
         
-        // Select processing mode based on channel_mode parameter
+
         if (channel_mode < 64) {
-            // Mode 0: Panning mode (mono input positioned in stereo field)
+
             output_left = panned_left;
             output_right = panned_right;
             
         } else if (channel_mode < 128) {
-            // Mode 1: Width control mode (adjust stereo width)
+
             output_left = width_left;
             output_right = width_right;
             
         } else if (channel_mode < 192) {
-            // Mode 2: Channel swap mode
+
             output_left = right_input;
             output_right = left_input;
             
         } else {
-            // Mode 3: Mid-side monitor mode (mid on left, side on right)
+
             output_left = mid_signal;
             output_right = side_signal;
         }
         
-        // Prevent clipping
+
         if (output_left > 2047) output_left = 2047;
         if (output_left < -2047) output_left = -2047;
         if (output_right > 2047) output_right = 2047;
         if (output_right < -2047) output_right = -2047;
         
-        // Output processed signals
+
         global signal[0] = output_left;
         global signal[1] = output_right;
         
-        // Show processing activity on LEDs
-        global displayLEDs[0] = pan_position;                    // Show pan position
-        global displayLEDs[1] = stereo_width;                   // Show width setting
-        global displayLEDs[2] = channel_mode >> 2;              // Show current mode
+
+        global displayLEDs[0] = pan_position;
+        global displayLEDs[1] = stereo_width;
+        global displayLEDs[2] = channel_mode >> 2;
         
-        // Show stereo content (absolute value without abs function)
+
         if (side_signal >= 0) {
             global displayLEDs[3] = side_signal >> 3;
         } else {
@@ -149,25 +149,25 @@ locals int pan_position, int stereo_width, int channel_mode, int left_input, int
 ## Try These Settings
 
 ```impala
-// Mono to stereo panning
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Center pan
-(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Normal width
-(int)global params[OPERATOR_1_PARAM_INDEX] = 32;   // Panning mode
 
-// Stereo width adjustment
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Wide left
-(int)global params[SWITCHES_PARAM_INDEX] = 200;  // Increased width
-(int)global params[OPERATOR_1_PARAM_INDEX] = 96;   // Width control mode
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;
+(int)global params[SWITCHES_PARAM_INDEX] = 128;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 32;
 
-// Channel swap
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Any position
-(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Any width
-(int)global params[OPERATOR_1_PARAM_INDEX] = 160;  // Swap mode
 
-// Mid-side monitoring
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Any position
-(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Any width
-(int)global params[OPERATOR_1_PARAM_INDEX] = 224;  // Monitor mode
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;
+(int)global params[SWITCHES_PARAM_INDEX] = 200;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 96;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;
+(int)global params[SWITCHES_PARAM_INDEX] = 128;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 160;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;
+(int)global params[SWITCHES_PARAM_INDEX] = 128;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 224;
 ```
 
 ## Understanding Stereo Processing

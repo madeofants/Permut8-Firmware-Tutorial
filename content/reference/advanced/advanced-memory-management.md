@@ -13,13 +13,13 @@ Unlike general-purpose applications, Permut8 firmware operates under strict real
 Traditional `malloc()` and `free()` are unsuitable for real-time audio code due to unpredictable timing. Instead, use pre-allocated memory pools:
 
 ```impala
-// Memory pool for dynamic objects
+
 static u8 audioObjectPool[MAX_OBJECTS * sizeof(AudioObject)];
 static bool poolSlots[MAX_OBJECTS];
 static int poolNextFree = 0;
 
 AudioObject* allocateAudioObject() {
-    // O(1) allocation - no malloc
+
     for (int i = 0; i < MAX_OBJECTS; i++) {
         int slot = (poolNextFree + i) % MAX_OBJECTS;
         if (!poolSlots[slot]) {
@@ -28,11 +28,11 @@ AudioObject* allocateAudioObject() {
             return (AudioObject*)&audioObjectPool[slot * sizeof(AudioObject)];
         }
     }
-    return null; // Pool exhausted
+    return null;
 }
 
 void freeAudioObject(AudioObject* obj) {
-    // Calculate slot index
+
     int slot = ((u8*)obj - audioObjectPool) / sizeof(AudioObject);
     if (slot >= 0 && slot < MAX_OBJECTS) {
         poolSlots[slot] = false;
@@ -62,7 +62,7 @@ void initFrameAllocator() {
 
 void* allocateFrame(int bytes) {
     if (frameAllocator.used + bytes > frameAllocator.size) {
-        return null; // Out of frame memory
+        return null;
     }
     void* result = &frameAllocator.memory[frameAllocator.used];
     frameAllocator.used += bytes;
@@ -70,19 +70,19 @@ void* allocateFrame(int bytes) {
 }
 
 void resetFrameAllocator() {
-    frameAllocator.used = 0; // Reset for next frame
+    frameAllocator.used = 0;
 }
 
-// Usage in process() function
+
 void process() {
-    resetFrameAllocator(); // Start fresh each frame
+    resetFrameAllocator();
     
-    // Allocate temporary buffers
+
     f32* tempBuffer = (f32*)allocateFrame(BLOCK_SIZE * sizeof(f32));
     
-    // Use tempBuffer for processing...
+
     
-    // Memory automatically freed at next resetFrameAllocator()
+
 }
 ```
 
@@ -93,7 +93,7 @@ void process() {
 Create specialized pools for different object types to eliminate fragmentation:
 
 ```impala
-// Delay line pool
+
 struct DelayLinePool {
     DelayLine lines[MAX_DELAY_LINES];
     bool allocated[MAX_DELAY_LINES];
@@ -110,7 +110,7 @@ DelayLine* allocateDelayLine(int length) {
             delayPool.allocated[i] = true;
             delayPool.count++;
             
-            // Initialize delay line
+
             DelayLine* line = &delayPool.lines[i];
             initDelayLine(line, length);
             return line;
@@ -135,15 +135,15 @@ Handle varying allocation sizes with multiple fixed-size pools:
 
 ```impala
 struct MultiPool {
-    // Small allocations (8-32 bytes)
+
     u8 smallPool[SMALL_POOL_COUNT][32];
     bool smallAllocated[SMALL_POOL_COUNT];
     
-    // Medium allocations (64-256 bytes)
+
     u8 mediumPool[MEDIUM_POOL_COUNT][256];
     bool mediumAllocated[MEDIUM_POOL_COUNT];
     
-    // Large allocations (512+ bytes)
+
     u8 largePool[LARGE_POOL_COUNT][1024];
     bool largeAllocated[LARGE_POOL_COUNT];
 };
@@ -161,7 +161,7 @@ void* allocateFromMultiPool(int size) {
         return allocateFromPool(globalPool.largePool, globalPool.largeAllocated,
                                LARGE_POOL_COUNT, 1024);
     }
-    return null; // Size too large
+    return null;
 }
 
 void* allocateFromPool(void* pool, bool* allocated, int count, int itemSize) {
@@ -182,18 +182,18 @@ void* allocateFromPool(void* pool, bool* allocated, int count, int itemSize) {
 Optimize circular buffers for cache efficiency and prevent false sharing:
 
 ```impala
-// Cache-line aligned circular buffer
+
 struct alignas(64) CircularBuffer {
     f32* data;
     int size;
     int readPos;
     int writePos;
-    int padding[12]; // Pad to cache line size
+    int padding[12];
 };
 
-// Initialize with power-of-2 size for fast modulo
+
 void initCircularBuffer(CircularBuffer* buf, int size) {
-    // Ensure size is power of 2
+
     buf->size = 1;
     while (buf->size < size) buf->size <<= 1;
     
@@ -202,13 +202,13 @@ void initCircularBuffer(CircularBuffer* buf, int size) {
     buf->writePos = 0;
 }
 
-// Fast write with power-of-2 modulo
+
 void writeToBuffer(CircularBuffer* buf, f32 sample) {
     buf->data[buf->writePos & (buf->size - 1)] = sample;
     buf->writePos++;
 }
 
-// Fast read with bounds checking
+
 f32 readFromBuffer(CircularBuffer* buf, int delay) {
     int pos = (buf->writePos - delay - 1) & (buf->size - 1);
     return buf->data[pos];
@@ -227,22 +227,22 @@ struct LockFreeBuffer {
     int size;
 };
 
-// Single writer, single reader safe
+
 void writeLockFree(LockFreeBuffer* buf, f32 sample) {
     int nextWrite = (buf->writePos + 1) % buf->size;
-    if (nextWrite != buf->readPos) { // Not full
+    if (nextWrite != buf->readPos) {
         buf->data[buf->writePos] = sample;
-        // Memory barrier ensures data written before position update
+
         __sync_synchronize();
         buf->writePos = nextWrite;
     }
 }
 
 bool readLockFree(LockFreeBuffer* buf, f32* sample) {
-    if (buf->readPos == buf->writePos) return false; // Empty
+    if (buf->readPos == buf->writePos) return false;
     
     *sample = buf->data[buf->readPos];
-    // Memory barrier ensures data read before position update
+
     __sync_synchronize();
     buf->readPos = (buf->readPos + 1) % buf->size;
     return true;
@@ -256,17 +256,17 @@ bool readLockFree(LockFreeBuffer* buf, f32* sample) {
 Structure memory-mapped hardware access for type safety and clarity:
 
 ```impala
-// Memory-mapped register structure
+
 struct PermutHardware {
-    volatile u32 audioInput;      // 0x1000
-    volatile u32 audioOutput;     // 0x1004
-    volatile u32 parameterBank[8]; // 0x1008-0x1024
-    volatile u32 ledControl;      // 0x1028
-    volatile u32 clockControl;    // 0x102C
-    volatile u32 statusRegister;  // 0x1030
+    volatile u32 audioInput;
+    volatile u32 audioOutput;
+    volatile u32 parameterBank[8];
+    volatile u32 ledControl;
+    volatile u32 clockControl;
+    volatile u32 statusRegister;
 };
 
-// Safe hardware access macros
+
 #define HW ((PermutHardware*)0x40000000)
 #define WRITE_REG(reg, value) do { \
     __sync_synchronize(); \
@@ -281,7 +281,7 @@ struct PermutHardware {
     _val; \
 })
 
-// Usage
+
 void updateLEDs(u32 ledPattern) {
     WRITE_REG(HW->ledControl, ledPattern);
 }
@@ -303,11 +303,11 @@ struct DMABuffer {
     volatile int position;
 };
 
-// Allocate cache-coherent DMA buffer
+
 DMABuffer* allocateDMABuffer(int samples) {
     DMABuffer* buf = (DMABuffer*)allocateAligned(sizeof(DMABuffer), 64);
     
-    // Allocate non-cached memory for DMA
+
     buf->data = (f32*)allocateUncached(samples * sizeof(f32));
     buf->size = samples;
     buf->ready = false;
@@ -316,14 +316,14 @@ DMABuffer* allocateDMABuffer(int samples) {
     return buf;
 }
 
-// Cache coherency operations
+
 void flushDMABuffer(DMABuffer* buf) {
-    // Flush CPU cache to ensure DMA sees latest data
+
     __builtin_dcache_flush_range(buf->data, buf->size * sizeof(f32));
 }
 
 void invalidateDMABuffer(DMABuffer* buf) {
-    // Invalidate CPU cache to see DMA updates
+
     __builtin_dcache_invalidate_range(buf->data, buf->size * sizeof(f32));
 }
 ```
@@ -335,9 +335,9 @@ void invalidateDMABuffer(DMABuffer* buf) {
 Organize data structures for optimal cache behavior:
 
 ```impala
-// Cache-friendly vs cache-hostile layouts
 
-// BAD: Array of structures (AoS) - poor cache locality
+
+
 struct BadVoice {
     f32 frequency;
     f32 amplitude;
@@ -346,11 +346,11 @@ struct BadVoice {
     f32 filterResonance;
     bool active;
     int noteNumber;
-    // ... more fields
-};
-BadVoice voices[MAX_VOICES]; // Each voice access loads unrelated data
 
-// GOOD: Structure of arrays (SoA) - excellent cache locality
+};
+BadVoice voices[MAX_VOICES];
+
+
 struct GoodVoiceBank {
     f32 frequencies[MAX_VOICES];
     f32 amplitudes[MAX_VOICES];
@@ -360,7 +360,7 @@ struct GoodVoiceBank {
     bool active[MAX_VOICES];
     int noteNumbers[MAX_VOICES];
 };
-GoodVoiceBank voiceBank; // Processing frequencies loads related data
+GoodVoiceBank voiceBank;
 ```
 
 ### Loop Optimization
@@ -368,26 +368,26 @@ GoodVoiceBank voiceBank; // Processing frequencies loads related data
 Structure loops for optimal cache and prefetch behavior:
 
 ```impala
-// Cache-friendly processing patterns
+
 void processVoicesOptimized(GoodVoiceBank* voices, f32* output, int samples) {
-    // Process all frequencies together (cache-friendly)
+
     for (int v = 0; v < MAX_VOICES; v++) {
         if (!voices->active[v]) continue;
         
-        // Update all frequency-related calculations
+
         voices->phases[v] += voices->frequencies[v] * PHASE_INCREMENT;
         if (voices->phases[v] >= TWO_PI) {
             voices->phases[v] -= TWO_PI;
         }
     }
     
-    // Process all amplitudes together
+
     for (int v = 0; v < MAX_VOICES; v++) {
         if (!voices->active[v]) continue;
         voices->amplitudes[v] = updateEnvelope(voices->amplitudes[v]);
     }
     
-    // Generate output samples
+
     for (int s = 0; s < samples; s++) {
         f32 sample = 0.0f;
         for (int v = 0; v < MAX_VOICES; v++) {
@@ -404,32 +404,32 @@ void processVoicesOptimized(GoodVoiceBank* voices, f32* output, int samples) {
 Use explicit prefetching for predictable access patterns:
 
 ```impala
-// Manual prefetching for large arrays
+
 void processDelayLineWithPrefetch(DelayLine* delay, f32* input, f32* output, int samples) {
     for (int i = 0; i < samples; i++) {
-        // Prefetch future samples
+
         if (i + 8 < samples) {
             __builtin_prefetch(&delay->buffer[(delay->writePos + 8) & delay->mask], 1, 3);
         }
         
-        // Current processing
+
         delay->buffer[delay->writePos & delay->mask] = input[i];
         output[i] = delay->buffer[(delay->writePos - delay->length) & delay->mask];
         delay->writePos++;
     }
 }
 
-// Streaming prefetch for large data processing
+
 void streamProcessWithPrefetch(f32* data, int count) {
-    const int PREFETCH_DISTANCE = 64; // Cache lines ahead
+    const int PREFETCH_DISTANCE = 64;
     
     for (int i = 0; i < count; i++) {
-        // Prefetch future data
+
         if (i + PREFETCH_DISTANCE < count) {
             __builtin_prefetch(&data[i + PREFETCH_DISTANCE], 0, 0);
         }
         
-        // Process current data
+
         data[i] = processample(data[i]);
     }
 }
@@ -494,33 +494,33 @@ Implement guard bytes and corruption detection:
 
 ```impala
 struct GuardedAllocation {
-    u32 frontGuard[4];  // 16 bytes
-    // User data goes here
-    // Back guard follows user data
+    u32 frontGuard[4];
+
+
 };
 
 #define GUARD_PATTERN 0xDEADBEEF
 #define GUARD_SIZE 16
 
 void* guardedAllocate(int size) {
-    int totalSize = size + 2 * GUARD_SIZE + sizeof(int); // Size stored before front guard
+    int totalSize = size + 2 * GUARD_SIZE + sizeof(int);
     u8* raw = (u8*)regularAllocate(totalSize);
     
     if (!raw) return null;
     
-    // Store size
+
     *(int*)raw = size;
     
-    // Setup front guard
+
     u32* frontGuard = (u32*)(raw + sizeof(int));
     for (int i = 0; i < 4; i++) {
         frontGuard[i] = GUARD_PATTERN;
     }
     
-    // User data starts after front guard
+
     u8* userData = raw + sizeof(int) + GUARD_SIZE;
     
-    // Setup back guard
+
     u32* backGuard = (u32*)(userData + size);
     for (int i = 0; i < 4; i++) {
         backGuard[i] = GUARD_PATTERN;
@@ -534,7 +534,7 @@ bool checkGuards(void* ptr) {
     u8* raw = userData - sizeof(int) - GUARD_SIZE;
     int size = *(int*)raw;
     
-    // Check front guard
+
     u32* frontGuard = (u32*)(raw + sizeof(int));
     for (int i = 0; i < 4; i++) {
         if (frontGuard[i] != GUARD_PATTERN) {
@@ -543,7 +543,7 @@ bool checkGuards(void* ptr) {
         }
     }
     
-    // Check back guard
+
     u32* backGuard = (u32*)(userData + size);
     for (int i = 0; i < 4; i++) {
         if (backGuard[i] != GUARD_PATTERN) {
@@ -635,7 +635,7 @@ struct BoundedBuffer {
 
 bool advancePointer(BoundedBuffer* buf, int bytes) {
     if (buf->current + bytes > buf->end) {
-        return false; // Would overflow
+        return false;
     }
     buf->current += bytes;
     return true;
@@ -643,7 +643,7 @@ bool advancePointer(BoundedBuffer* buf, int bytes) {
 
 bool retreatPointer(BoundedBuffer* buf, int bytes) {
     if (buf->current - bytes < buf->start) {
-        return false; // Would underflow
+        return false;
     }
     buf->current -= bytes;
     return true;
@@ -651,7 +651,7 @@ bool retreatPointer(BoundedBuffer* buf, int bytes) {
 
 void* safeRead(BoundedBuffer* buf, int size) {
     if (buf->current + size > buf->end) {
-        return null; // Not enough data
+        return null;
     }
     void* result = buf->current;
     buf->current += size;
@@ -679,7 +679,7 @@ void initLayout(LayoutCalculator* calc, void* base, int alignment) {
 }
 
 void* allocateInLayout(LayoutCalculator* calc, int size, int align) {
-    // Align current offset
+
     int alignedOffset = (calc->offset + align - 1) & ~(align - 1);
     
     void* result = calc->base + alignedOffset;
@@ -692,16 +692,16 @@ void* allocateInLayout(LayoutCalculator* calc, int size, int align) {
     return result;
 }
 
-// Usage for complex data structure layout
+
 void layoutAudioEngine(LayoutCalculator* calc) {
-    // Align large arrays to cache boundaries
+
     f32* sampleBuffer = (f32*)allocateInLayout(calc, BUFFER_SIZE * sizeof(f32), 64);
     f32* delayBuffer = (f32*)allocateInLayout(calc, DELAY_SIZE * sizeof(f32), 64);
     
-    // Control data can be less aligned
+
     ParamState* params = (ParamState*)allocateInLayout(calc, sizeof(ParamState), 16);
     
-    // Small frequently accessed data together
+
     EngineState* state = (EngineState*)allocateInLayout(calc, sizeof(EngineState), 8);
     
     logInfo("Audio engine layout: %d bytes total", calc->totalSize);
@@ -720,7 +720,7 @@ struct MemoryProfiler {
     int totalFrees;
     int peakUsage;
     int currentUsage;
-    int allocationSizes[16]; // Histogram of allocation sizes
+    int allocationSizes[16];
     u64 allocationTimes[MAX_TIMING_SAMPLES];
     int timingIndex;
 };
@@ -735,7 +735,7 @@ void profileAllocation(int size, u64 time) {
         profiler.peakUsage = profiler.currentUsage;
     }
     
-    // Update size histogram
+
     int bucket = 0;
     int bucketSize = size;
     while (bucketSize > 32 && bucket < 15) {
@@ -744,7 +744,7 @@ void profileAllocation(int size, u64 time) {
     }
     profiler.allocationSizes[bucket]++;
     
-    // Track timing
+
     profiler.allocationTimes[profiler.timingIndex] = time;
     profiler.timingIndex = (profiler.timingIndex + 1) % MAX_TIMING_SAMPLES;
 }

@@ -22,7 +22,7 @@ Circular buffers enable delay-based audio effects like echo, reverb, and chorus.
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -34,66 +34,66 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// Circular buffer for delay
-global array delay_buffer[128]  // Fixed delay buffer
-global int write_pos = 0        // Current write position
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global array delay_buffer[128]
+global int write_pos = 0
 
 function process()
 locals int delay_time, int feedback, int wet_mix, int read_pos, int delayed_sample, int feedback_sample, int dry_signal, int wet_signal, int output
 {
     loop {
-        // Read parameters
-        delay_time = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 1) + 1;  // 1-128 delay samples
-        feedback = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 1);        // 0-127 feedback amount
-        wet_mix = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX]);              // 0-255 wet/dry balance
+
+        delay_time = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 1) + 1;
+        feedback = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 1);
+        wet_mix = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX]);
         
-        // Calculate read position (look back in time)
+
         read_pos = global write_pos - delay_time;
-        if (read_pos < 0) read_pos = read_pos + 128;    // Wrap negative positions
+        if (read_pos < 0) read_pos = read_pos + 128;
         
-        // Read delayed sample from buffer
+
         delayed_sample = (int)global delay_buffer[read_pos];
         
-        // Create feedback signal (delayed signal fed back into input)
-        feedback_sample = (delayed_sample * feedback) >> 7;  // Scale feedback
+
+        feedback_sample = (delayed_sample * feedback) >> 7;
         
-        // Prevent feedback explosion
+
         if (feedback_sample > 2047) feedback_sample = 2047;
         if (feedback_sample < -2047) feedback_sample = -2047;
         
-        // Mix input with feedback and write to buffer
+
         global delay_buffer[global write_pos] = (int)global signal[0] + feedback_sample;
         
-        // Advance write position with wraparound
+
         global write_pos = global write_pos + 1;
         if (global write_pos >= 128) global write_pos = 0;
         
-        // Mix dry and wet signals
+
         dry_signal = ((int)global signal[0] * (255 - wet_mix)) >> 8;
         wet_signal = (delayed_sample * wet_mix) >> 8;
         output = dry_signal + wet_signal;
         
-        // Prevent clipping
+
         if (output > 2047) output = 2047;
         if (output < -2047) output = -2047;
         
-        // Output result
+
         global signal[0] = output;
         global signal[1] = output;
         
-        // Show activity on LEDs
-        global displayLEDs[0] = delay_time << 1;      // Show delay time
-        global displayLEDs[1] = feedback << 1;       // Show feedback amount
-        global displayLEDs[2] = wet_mix;             // Show wet/dry mix
-        global displayLEDs[3] = global write_pos << 1; // Show buffer position
+
+        global displayLEDs[0] = delay_time << 1;
+        global displayLEDs[1] = feedback << 1;
+        global displayLEDs[2] = wet_mix;
+        global displayLEDs[3] = global write_pos << 1;
         
         yield();
     }
@@ -119,25 +119,25 @@ locals int delay_time, int feedback, int wet_mix, int read_pos, int delayed_samp
 ## Try These Settings
 
 ```impala
-// Short slap-back delay
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 30;   // Short delay
-(int)global params[SWITCHES_PARAM_INDEX] = 80;   // Medium feedback
-(int)global params[OPERATOR_1_PARAM_INDEX] = 100;  // Mix with dry signal
 
-// Long echo
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Long delay
-(int)global params[SWITCHES_PARAM_INDEX] = 120;  // Strong feedback
-(int)global params[OPERATOR_1_PARAM_INDEX] = 150;  // More wet signal
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 30;
+(int)global params[SWITCHES_PARAM_INDEX] = 80;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 100;
 
-// Subtle ambience
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 50;   // Medium delay
-(int)global params[SWITCHES_PARAM_INDEX] = 40;   // Light feedback
-(int)global params[OPERATOR_1_PARAM_INDEX] = 60;   // Mostly dry
 
-// Self-oscillation (careful!)
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Medium delay
-(int)global params[SWITCHES_PARAM_INDEX] = 127;  // Maximum feedback
-(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Heavy wet mix
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;
+(int)global params[SWITCHES_PARAM_INDEX] = 120;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 150;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 50;
+(int)global params[SWITCHES_PARAM_INDEX] = 40;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 60;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;
+(int)global params[SWITCHES_PARAM_INDEX] = 127;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;
 ```
 
 ## Understanding Delay Effects

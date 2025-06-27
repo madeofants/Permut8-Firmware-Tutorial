@@ -21,7 +21,7 @@ Creates a simple 2-band compressor that splits audio into low and high frequenci
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -33,44 +33,44 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global int clock                 // Sample counter for timing
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT] // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
-global int clockFreqLimit        // Current clock frequency limit
+extern native yield
 
-// Simple multi-band state
-global int low_envelope = 0     // Low band envelope
-global int high_envelope = 0    // High band envelope
-global int low_gain = 255       // Low band gain reduction
-global int high_gain = 255      // High band gain reduction
-global int filter_state = 0     // Simple filter state
+
+global int clock
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global int clockFreqLimit
+
+
+global int low_envelope = 0
+global int high_envelope = 0
+global int low_gain = 255
+global int high_gain = 255
+global int filter_state = 0
 
 function process()
 locals int crossover, int low_thresh, int high_thresh, int output_gain, int input, int low_band, int high_band, int compressed_low, int compressed_high, int output, int low_level, int high_level, int overage, int target_gain
 {
     loop {
-        // Read parameters
-        low_thresh = ((int)global params[CLOCK_FREQ_PARAM_INDEX] << 3) + 512;    // 512-2560 range
-        high_thresh = ((int)global params[SWITCHES_PARAM_INDEX] << 3) + 512;   // 512-2560 range
-        crossover = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;       // 1-16 filter strength
-        output_gain = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 1) + 128;   // 128-255 gain
+
+        low_thresh = ((int)global params[CLOCK_FREQ_PARAM_INDEX] << 3) + 512;
+        high_thresh = ((int)global params[SWITCHES_PARAM_INDEX] << 3) + 512;
+        crossover = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;
+        output_gain = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] >> 1) + 128;
         
         input = (int)global signal[0];
         
-        // Simple frequency splitting using one-pole filters
-        // Low band: low-pass filter (keeps bass)
+
+
         global filter_state = global filter_state + ((input - global filter_state) >> crossover);
         low_band = global filter_state;
         
-        // High band: subtract low from input (keeps treble)
+
         high_band = input - low_band;
         
-        // Simple envelope followers for each band
+
         low_level = low_band;
         if (low_level < 0) low_level = -low_level;
         if (low_level > global low_envelope) {
@@ -87,10 +87,10 @@ locals int crossover, int low_thresh, int high_thresh, int output_gain, int inpu
             global high_envelope = global high_envelope + ((high_level - global high_envelope) >> 4);
         }
         
-        // Calculate gain reduction for low band
+
         if (global low_envelope > low_thresh) {
             overage = global low_envelope - low_thresh;
-            target_gain = 255 - (overage >> 3);  // Simple 8:1 ratio
+            target_gain = 255 - (overage >> 3);
             if (target_gain < 128) target_gain = 128;
             
             if (target_gain < global low_gain) {
@@ -102,10 +102,10 @@ locals int crossover, int low_thresh, int high_thresh, int output_gain, int inpu
             global low_gain = global low_gain + ((255 - global low_gain) >> 4);
         }
         
-        // Calculate gain reduction for high band
+
         if (global high_envelope > high_thresh) {
             overage = global high_envelope - high_thresh;
-            target_gain = 255 - (overage >> 3);  // Simple 8:1 ratio
+            target_gain = 255 - (overage >> 3);
             if (target_gain < 128) target_gain = 128;
             
             if (target_gain < global high_gain) {
@@ -117,29 +117,29 @@ locals int crossover, int low_thresh, int high_thresh, int output_gain, int inpu
             global high_gain = global high_gain + ((255 - global high_gain) >> 4);
         }
         
-        // Apply compression to each band
+
         compressed_low = (low_band * global low_gain) >> 8;
         compressed_high = (high_band * global high_gain) >> 8;
         
-        // Recombine bands
+
         output = compressed_low + compressed_high;
         
-        // Apply output gain
+
         output = (output * output_gain) >> 8;
         
-        // Prevent clipping
+
         if (output > 2047) output = 2047;
         if (output < -2047) output = -2047;
         
-        // Output result
+
         global signal[0] = output;
         global signal[1] = output;
         
-        // Show compression activity on LEDs
-        global displayLEDs[0] = 255 - global low_gain;   // Low band gain reduction
-        global displayLEDs[1] = 255 - global high_gain;  // High band gain reduction
-        global displayLEDs[2] = global low_envelope >> 3; // Low band level
-        global displayLEDs[3] = global high_envelope >> 3; // High band level
+
+        global displayLEDs[0] = 255 - global low_gain;
+        global displayLEDs[1] = 255 - global high_gain;
+        global displayLEDs[2] = global low_envelope >> 3;
+        global displayLEDs[3] = global high_envelope >> 3;
         
         yield();
     }
@@ -166,17 +166,17 @@ locals int crossover, int low_thresh, int high_thresh, int output_gain, int inpu
 ## Try These Settings
 
 ```impala
-// Heavy bass compression, light treble
-global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Low threshold
-global params[SWITCHES_PARAM_INDEX] = 200;  // High threshold  
-global params[OPERATOR_1_PARAM_INDEX] = 128;  // Medium crossover
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Some makeup gain
 
-// Gentle overall compression
-global params[CLOCK_FREQ_PARAM_INDEX] = 180;  // High low threshold
-global params[SWITCHES_PARAM_INDEX] = 180;  // High high threshold
-global params[OPERATOR_1_PARAM_INDEX] = 128;  // Medium crossover
-global params[OPERAND_1_HIGH_PARAM_INDEX] = 160;  // Light makeup gain
+global params[CLOCK_FREQ_PARAM_INDEX] = 100;
+global params[SWITCHES_PARAM_INDEX] = 200;
+global params[OPERATOR_1_PARAM_INDEX] = 128;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 180;
+
+
+global params[CLOCK_FREQ_PARAM_INDEX] = 180;
+global params[SWITCHES_PARAM_INDEX] = 180;
+global params[OPERATOR_1_PARAM_INDEX] = 128;
+global params[OPERAND_1_HIGH_PARAM_INDEX] = 160;
 ```
 
 ## Try These Changes

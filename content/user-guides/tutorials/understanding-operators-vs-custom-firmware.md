@@ -66,7 +66,7 @@ Result: Clean, efficient delay effect
 
 ### **Example: Custom Delay Implementation**
 ```impala
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -77,17 +77,17 @@ const int SWITCHES_PARAM_INDEX
 const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
-// Manual delay processing (what SUB operator does automatically)
+
 input = (int)global signal[0];
 
-// Read delayed sample from memory (read position = write position - delay time)
+
 int readPosition = global writePosition - delayTime;
-if (readPosition < 0) readPosition = readPosition + 65536;  // Wrap around
+if (readPosition < 0) readPosition = readPosition + 65536;
 
 read(readPosition, 1, global tempBuffer);
 delayed = global tempBuffer[0];
 
-// Create echo: original + delayed signal
+
 output = input + (delayed * feedback / 255);
 
 ```
@@ -185,14 +185,14 @@ Result: Efficient hardware delay
 
 ### **Custom Version** (Educational & Flexible)
 ```impala
-// Same effect, manual implementation
-delayTime = ((int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 500 / 255) + 50;  // Same param[3]
-feedback = ((int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX] * 200 / 255);         // Same param[4]
 
-// Manual memory management (what SUB does automatically)
+delayTime = ((int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 500 / 255) + 50;
+feedback = ((int)global (int)global params[OPERAND_1_LOW_PARAM_INDEX] * 200 / 255);
+
+
 int readPosition = global writePosition - delayTime;
 read(readPosition, 1, global tempBuffer);
-// ... rest of delay algorithm
+
 ```
 
 **Both create the same delay effect**, but the custom version shows you exactly how delays work inside Permut8's memory system.

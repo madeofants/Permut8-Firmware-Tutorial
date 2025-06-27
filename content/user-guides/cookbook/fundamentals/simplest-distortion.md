@@ -39,7 +39,7 @@ The most basic distortion is just **making audio louder than it should be**:
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -58,9 +58,9 @@ global array displayLEDs[4]
 
 function process() {
     loop {
-        // Basic distortion: just make it louder!
-        signal[0] = signal[0] * 3;  // 3x louder
-        signal[1] = signal[1] * 3;  // Both channels
+
+        signal[0] = signal[0] * 3;
+        signal[1] = signal[1] * 3;
         
         yield();
     }
@@ -104,25 +104,25 @@ global array displayLEDs[4]
 
 function process() {
     loop {
-        // Read knob for distortion amount
-        int distortionKnob = (int)global params[CLOCK_FREQ_PARAM_INDEX];  // 0-255
-        int gainAmount = 1 + (distortionKnob / 32);  // 1x to 9x gain
+
+        int distortionKnob = (int)global params[CLOCK_FREQ_PARAM_INDEX];
+        int gainAmount = 1 + (distortionKnob / 32);
         
-        // Apply gain to both channels
+
         int leftGained = signal[0] * gainAmount;
         int rightGained = signal[1] * gainAmount;
         
-        // Safe clipping - WE control when distortion happens
+
         if (leftGained > 2047) leftGained = 2047;
         if (leftGained < -2047) leftGained = -2047;
         if (rightGained > 2047) rightGained = 2047;
         if (rightGained < -2047) rightGained = -2047;
         
-        // Output the controlled distortion
+
         signal[0] = leftGained;
         signal[1] = rightGained;
         
-        // Show distortion amount on LED
+
         displayLEDs[0] = distortionKnob;
         
         yield();
@@ -180,51 +180,51 @@ global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 function softClip(int input, int threshold) {
-    // Soft clipping algorithm - sounds warm like tube amps
+
     if (input > threshold) {
         int excess = input - threshold;
-        return threshold + (excess / 4);  // Gentle compression above threshold
+        return threshold + (excess / 4);
     } else if (input < -threshold) {
         int excess = input + threshold;
-        return -threshold + (excess / 4);  // Gentle compression below threshold
+        return -threshold + (excess / 4);
     } else {
-        return input;  // No change in normal range
+        return input;
     }
 }
 
 function process() {
     loop {
-        // Distortion controls from knobs
-        int driveKnob = (int)global params[CLOCK_FREQ_PARAM_INDEX];     // 0-255: Distortion amount
-        int toneKnob = (int)global params[SWITCHES_PARAM_INDEX];      // 0-255: Clipping threshold
+
+        int driveKnob = (int)global params[CLOCK_FREQ_PARAM_INDEX];
+        int toneKnob = (int)global params[SWITCHES_PARAM_INDEX];
         
-        // Calculate gain (1x to 8x)
+
         int gainAmount = 1 + (driveKnob / 36);
         
-        // Calculate clipping threshold (500 to 1800)
+
         int clipThreshold = 500 + ((toneKnob * 1300) / 255);
         
-        // Process both channels
+
         int leftGained = signal[0] * gainAmount;
         int rightGained = signal[1] * gainAmount;
         
-        // Apply soft clipping for musical distortion
+
         int leftClipped = softClip(leftGained, clipThreshold);
         int rightClipped = softClip(rightGained, clipThreshold);
         
-        // Final safety clipping (just in case)
+
         if (leftClipped > 2047) leftClipped = 2047;
         if (leftClipped < -2047) leftClipped = -2047;
         if (rightClipped > 2047) rightClipped = 2047;  
         if (rightClipped < -2047) rightClipped = -2047;
         
-        // Output the musical distortion
+
         signal[0] = leftClipped;
         signal[1] = rightClipped;
         
-        // Visual feedback
-        displayLEDs[0] = driveKnob;      // Drive amount
-        displayLEDs[1] = toneKnob;       // Tone control
+
+        displayLEDs[0] = driveKnob;
+        displayLEDs[1] = toneKnob;
         
         yield();
     }
@@ -249,13 +249,13 @@ function process() {
 
 #### **Soft vs Hard Clipping**:
 ```impala
-// Hard clipping (harsh, digital):
+
 if (signal > 1000) signal = 1000;
 
-// Soft clipping (warm, musical):
+
 if (signal > 1000) {
     excess = signal - 1000;
-    signal = 1000 + (excess / 4);  // Gentle transition
+    signal = 1000 + (excess / 4);
 }
 ```
 
@@ -298,25 +298,25 @@ Now that you understand the fundamentals, try these modifications:
 
 ### 1. Asymmetrical Clipping
 ```impala
-// Different clipping for positive and negative
+
 if (input > threshold) {
     return threshold + ((input - threshold) / 4);
 } else if (input < -threshold) {
-    return -threshold + ((input + threshold) / 2);  // Different ratio!
+    return -threshold + ((input + threshold) / 2);
 }
 ```
 
 ### 2. Multiple Stages
 ```impala
-// Run through soft clipping twice for more saturation
+
 int stage1 = softClip(input * gain1, threshold1);
 int stage2 = softClip(stage1 * gain2, threshold2);
 ```
 
 ### 3. Frequency-Dependent Distortion
 ```impala
-// Different distortion for different frequencies
-// (Requires filtering - see advanced tutorials)
+
+
 ```
 
 ---
@@ -393,17 +393,17 @@ You now understand how different approaches create different sounds:
 
 ### **Basic Distortion Pattern**:
 ```impala
-// 1. Control input gain
+
 int gained = signal[0] * gainAmount;
 
-// 2. Apply clipping algorithm  
+
 int clipped = softClip(gained, threshold);
 
-// 3. Safety limiting
+
 if (clipped > 2047) clipped = 2047;
 if (clipped < -2047) clipped = -2047;
 
-// 4. Output result
+
 signal[0] = clipped;
 ```
 

@@ -19,10 +19,10 @@ Learn systematic debugging techniques for Permut8 plugins. We'll create a delibe
 Create `broken_reverb.impala` with these deliberate mistakes:
 
 ```impala
-// Broken Reverb - Full of Common Mistakes!
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -38,41 +38,41 @@ global array signal[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
-// Delay buffers for reverb
+
 global array delayBuffer1[500]
 global array delayBuffer2[750]
 global array delayBuffer3[1000]
 global int delayIndex = 0
 
-// Missing global for output buffer!
-// global array outputBuffer[2]
+
+
 
 function process()
 {
     loop {
-        // BUG 1: Not reading parameters correctly
-        int roomSize = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]    // Should be scaled
-        int decay = (int)global params[OPERAND_1_LOW_PARAM_INDEX]       // Should be limited
+
+        int roomSize = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]
+        int decay = (int)global params[OPERAND_1_LOW_PARAM_INDEX]
         
-        // BUG 2: Delay index not bounded
-        delayIndex = delayIndex + 1  // Will overflow!
+
+        delayIndex = delayIndex + 1
         
-        // BUG 3: Array access without bounds checking
+
         int delay1 = delayBuffer1[delayIndex]
         int delay2 = delayBuffer2[delayIndex]  
         int delay3 = delayBuffer3[delayIndex]
         
-        // BUG 4: Math that can overflow
+
         int reverb = delay1 * decay + delay2 * decay + delay3 * decay
         
-        // BUG 5: Not storing new samples in delay buffers
-        // (reverb will be silent after initial buffer contents are used)
+
+
         
-        // BUG 6: Output without proper clipping
-        signal[0] = signal[0] + reverb  // Can overflow
+
+        signal[0] = signal[0] + reverb
         signal[1] = signal[1] + reverb
         
-        // BUG 7: Missing yield()!
+
     }
 }
 
@@ -101,9 +101,9 @@ The most common error: **missing `yield()`**. Add it:
 function process()
 {
     loop {
-        // ... all the same buggy code ...
+
         
-        // BUG 7 FIX: Add missing yield()
+
         yield()
     }
 }
@@ -113,22 +113,22 @@ function process()
 If you still get compilation errors, check these common issues:
 
 ```impala
-// WRONG: Missing semicolon
+
 int value = 42
 int other = 24
 
-// RIGHT: Every statement needs semicolon
+
 int value = 42;
 int other = 24;
 
-// WRONG: Mismatched brackets
+
 if (condition {
-    // code
+
 }
 
-// RIGHT: Matching brackets
+
 if (condition) {
-    // code
+
 }
 ```
 
@@ -149,46 +149,46 @@ Fix any syntax errors and compile until you get `broken_reverb.gazl` successfull
 
 **Check 1: Are you calling yield()?**
 ```impala
-// If you don't call yield(), the plugin hangs
+
 function process() {
     loop {
-        // ... processing code ...
-        yield();  // MUST be here!
+
+        yield();
     }
 }
 ```
 
 **Check 2: Are you preserving the signal?**
 ```impala
-// WRONG: This destroys the input signal
+
 signal[0] = someEffect;
 
-// RIGHT: This adds effect to the original signal
+
 signal[0] = signal[0] + someEffect;
-// OR mix them:
+
 signal[0] = (signal[0] * dryAmount + someEffect * wetAmount) / 255;
 ```
 
 **Check 3: Are you writing to both channels?**
 ```impala
-// WRONG: Only left channel has sound
-signal[0] = processedAudio;
-// signal[1] forgotten!
 
-// RIGHT: Both channels
 signal[0] = processedAudio;
-signal[1] = processedAudio;  // Same or different processing
+
+
+
+signal[0] = processedAudio;
+signal[1] = processedAudio;
 ```
 
 ### 3.3 Quick Fix for Our Broken Reverb
 Replace the signal output lines:
 
 ```impala
-// BUG 6 FIX: Proper mixing and clipping
-int mixedLeft = signal[0] + (reverb / 4);    // Reduce reverb level
+
+int mixedLeft = signal[0] + (reverb / 4);
 int mixedRight = signal[1] + (reverb / 4);
 
-// Clip to prevent overflow
+
 if (mixedLeft > 2047) mixedLeft = 2047;
 else if (mixedLeft < -2047) mixedLeft = -2047;
 if (mixedRight > 2047) mixedRight = 2047;
@@ -209,38 +209,38 @@ Our broken reverb will crash because `delayIndex` grows without limit and access
 **Always wrap array indices:**
 
 ```impala
-// WRONG: Index grows forever
-delayIndex = delayIndex + 1;
-int sample = delayBuffer1[delayIndex];  // CRASH when delayIndex > 499
 
-// RIGHT: Wrap index to array size
-delayIndex = (delayIndex + 1) % 500;    // Always stays 0-499
-int sample = delayBuffer1[delayIndex];  // Safe
+delayIndex = delayIndex + 1;
+int sample = delayBuffer1[delayIndex];
+
+
+delayIndex = (delayIndex + 1) % 500;
+int sample = delayBuffer1[delayIndex];
 ```
 
 ### 4.3 Fix Our Reverb's Array Access
 Replace the delay buffer access:
 
 ```impala
-// BUG 2 FIX: Properly wrap delay index
-delayIndex = (delayIndex + 1) % 500;    // Keep in bounds
 
-// BUG 3 FIX: Safe array access with different indices
+delayIndex = (delayIndex + 1) % 500;
+
+
 int delay1 = delayBuffer1[delayIndex];
-int delay2 = delayBuffer2[delayIndex % 750];   // Wrap to buffer 2 size
-int delay3 = delayBuffer3[delayIndex % 1000];  // Wrap to buffer 3 size
+int delay2 = delayBuffer2[delayIndex % 750];
+int delay3 = delayBuffer3[delayIndex % 1000];
 ```
 
 ### 4.4 General Array Safety Rules
 ```impala
-// ALWAYS check array bounds
+
 if (index < 0) index = 0;
 if (index >= arraySize) index = arraySize - 1;
 
-// OR use modulo for circular access
+
 index = index % arraySize;
 
-// OR use safe accessor functions
+
 int safeRead(array buffer[], int size, int index) {
     return buffer[index % size];
 }
@@ -255,13 +255,13 @@ Audio calculations can easily overflow Impala's integer range, causing distortio
 
 ### 5.2 Identify Overflow Sources
 ```impala
-// DANGEROUS: Can overflow easily
+
 int result = bigValue1 * bigValue2;
 
-// SAFER: Scale before multiplying
+
 int result = (bigValue1 / 2) * (bigValue2 / 2);
 
-// SAFEST: Check ranges
+
 int result = bigValue1 * bigValue2;
 if (result > 2047) result = 2047;
 else if (result < -2047) result = -2047;
@@ -271,14 +271,14 @@ else if (result < -2047) result = -2047;
 Replace the reverb calculation:
 
 ```impala
-// BUG 4 FIX: Prevent overflow in math
-// Scale decay parameter to safe range
-int safeDecay = decay / 4;  // Limit multiplier
 
-// Safe reverb calculation with scaling
+
+int safeDecay = decay / 4;
+
+
 int reverb = ((delay1 * safeDecay) + (delay2 * safeDecay) + (delay3 * safeDecay)) / 255;
 
-// Additional safety clipping
+
 if (reverb > 1000) reverb = 1000;
 else if (reverb < -1000) reverb = -1000;
 ```
@@ -302,10 +302,10 @@ For reverb:
 Add after reading the delay buffers:
 
 ```impala
-// BUG 5 FIX: Store new audio in delay buffers
-delayBuffer1[delayIndex] = signal[0] + (delay2 / 8);        // Input + some feedback
-delayBuffer2[delayIndex % 750] = signal[0] + (delay3 / 8);  // Different mixing
-delayBuffer3[delayIndex % 1000] = signal[0] + (delay1 / 8); // Create reverb network
+
+delayBuffer1[delayIndex] = signal[0] + (delay2 / 8);
+delayBuffer2[delayIndex % 750] = signal[0] + (delay3 / 8);
+delayBuffer3[delayIndex % 1000] = signal[0] + (delay1 / 8);
 ```
 
 ### 6.4 General Debugging Questions
@@ -323,22 +323,22 @@ Parameters come in as 0-255 but need to be scaled for different uses.
 
 ### 7.2 Debug Parameter Scaling
 ```impala
-// WRONG: Raw parameter value
-int feedback = (int)global params[OPERAND_1_LOW_PARAM_INDEX];           // 0-255, often too much
-effect = input * feedback;          // Huge multiplication!
 
-// RIGHT: Scale to useful range
-int feedback = (int)global params[OPERAND_1_LOW_PARAM_INDEX] / 4;       // 0-63, safer range
-effect = (input * feedback) / 64;  // Controlled multiplication
+int feedback = (int)global params[OPERAND_1_LOW_PARAM_INDEX];
+effect = input * feedback;
+
+
+int feedback = (int)global params[OPERAND_1_LOW_PARAM_INDEX] / 4;
+effect = (input * feedback) / 64;
 ```
 
 ### 7.3 Fix Our Reverb's Parameters
 Replace the parameter reading:
 
 ```impala
-// BUG 1 FIX: Properly scale parameters
-int roomSize = (int)global params[OPERAND_1_HIGH_PARAM_INDEX] / 2;       // 0-127 range
-int decay = (int)global params[OPERAND_1_LOW_PARAM_INDEX] / 4;          // 0-63 range for safety
+
+int roomSize = (int)global params[OPERAND_1_HIGH_PARAM_INDEX] / 2;
+int decay = (int)global params[OPERAND_1_LOW_PARAM_INDEX] / 4;
 ```
 
 ---
@@ -349,7 +349,7 @@ int decay = (int)global params[OPERAND_1_LOW_PARAM_INDEX] / 4;          // 0-63 
 Here's our reverb with all bugs fixed:
 
 ```impala
-// Fixed Reverb - All Problems Solved!
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 global array signal[2]
@@ -364,31 +364,31 @@ global int delayIndex = 0
 function process()
 {
     loop {
-        // FIX 1: Properly scale parameters
-        int roomSize = (int)global params[OPERAND_1_HIGH_PARAM_INDEX] / 2;       // 0-127 range
-        int decay = (int)global params[OPERAND_1_LOW_PARAM_INDEX] / 4;          // 0-63 range for safety
+
+        int roomSize = (int)global params[OPERAND_1_HIGH_PARAM_INDEX] / 2;
+        int decay = (int)global params[OPERAND_1_LOW_PARAM_INDEX] / 4;
         
-        // FIX 2: Bound delay index  
+
         delayIndex = (delayIndex + 1) % 500;
         
-        // FIX 3: Safe array access with proper indices
+
         int delay1 = delayBuffer1[delayIndex];
         int delay2 = delayBuffer2[delayIndex % 750];
         int delay3 = delayBuffer3[delayIndex % 1000];
         
-        // FIX 5: Store new audio in delay buffers (reverb network)
+
         delayBuffer1[delayIndex] = signal[0] + (delay2 * decay / 255);
         delayBuffer2[delayIndex % 750] = signal[0] + (delay3 * decay / 255);
         delayBuffer3[delayIndex % 1000] = signal[0] + (delay1 * decay / 255);
         
-        // FIX 4: Safe reverb calculation  
+
         int reverb = ((delay1 + delay2 + delay3) * roomSize) / 255;
         
-        // Additional safety clipping
+
         if (reverb > 1000) reverb = 1000;
         else if (reverb < -1000) reverb = -1000;
         
-        // FIX 6: Proper mixing and clipping
+
         int mixedLeft = signal[0] + (reverb / 4);
         int mixedRight = signal[1] + (reverb / 4);
         
@@ -400,10 +400,10 @@ function process()
         signal[0] = mixedLeft;
         signal[1] = mixedRight;
         
-        // LED feedback for debugging
+
         displayLEDs[0] = (reverb > 100 || reverb < -100) ? 0xFF : 0x01;
         
-        // FIX 7: Always call yield()
+
         yield();
     }
 }
@@ -447,24 +447,24 @@ When your plugin doesn't work, follow this order:
 ### 9.2 Debug by Elimination
 **Start Simple:**
 ```impala
-// Test 1: Just pass audio through
+
 signal[0] = signal[0];
 signal[1] = signal[1];
 yield();
-// If this doesn't work, you have basic setup issues
 
-// Test 2: Add simple effect
-signal[0] = signal[0] / 2;  // Half volume
+
+
+signal[0] = signal[0] / 2;
 signal[1] = signal[1] / 2;
 yield();
-// If this works, your effect processing has the problem
 
-// Test 3: Add one parameter
+
+
 int volume = (int)global params[OPERAND_1_HIGH_PARAM_INDEX] / 2;
 signal[0] = (signal[0] * volume) / 128;
 signal[1] = (signal[1] * volume) / 128;
 yield();
-// If this works, parameter scaling is correct
+
 ```
 
 **Build Up Complexity Gradually:**
@@ -479,26 +479,26 @@ yield();
 
 **Use LEDs for Debugging:**
 ```impala
-// Show parameter values
+
 displayLEDs[0] = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
 
-// Show if processing is happening
+
 displayLEDs[1] = (signal[0] > 100) ? 0xFF : 0x00;
 
-// Show internal state
+
 displayLEDs[2] = internalVariable % 256;
 ```
 
 **Add Safety Everywhere:**
 ```impala
-// Clip all audio outputs
+
 if (output > 2047) output = 2047;
 else if (output < -2047) output = -2047;
 
-// Bound all array access
+
 index = index % arraySize;
 
-// Scale all parameters
+
 param = (int)global params[OPERAND_1_HIGH_PARAM_INDEX] / scaleFactor;
 ```
 
@@ -516,34 +516,34 @@ param = (int)global params[OPERAND_1_HIGH_PARAM_INDEX] / scaleFactor;
 
 **Too Much Math:**
 ```impala
-// SLOW: Complex math every sample
+
 int result = sqrt(value1 * value1 + value2 * value2);
 
-// FAST: Approximate or use lookup tables
+
 int result = fastApproximateDistance(value1, value2);
 ```
 
 **Large Array Operations:**
 ```impala
-// SLOW: Processing huge arrays every sample
+
 int i;
 for (i = 0 to 10000) {
     bigArray[i] = bigArray[i] * 2;
 }
 
-// FAST: Process smaller chunks or fewer operations
+
 ```
 
 **Unnecessary Calculations:**
 ```impala
-// SLOW: Recalculating constants
-int coefficient = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 3.14159) / 255;  // Every sample!
 
-// FAST: Calculate only when parameter changes
+int coefficient = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 3.14159) / 255;
+
+
 static int lastParam = -1;
 static int coefficient = 0;
 if ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] != lastParam) {
-    coefficient = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 314) / 255;  // Use integer approximation
+    coefficient = ((int)global params[OPERAND_1_HIGH_PARAM_INDEX] * 314) / 255;
     lastParam = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
 }
 ```

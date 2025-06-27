@@ -40,10 +40,10 @@ A plugin that:
 Create a new text file called `audio_passthrough.impala`:
 
 ```impala
-// My First Plugin - Audio Passthrough
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -62,7 +62,7 @@ function process()
 locals int inputL, int inputR
 {
     loop {
-        // Audio automatically passes through - we don't need to do anything!
+
         yield()
     }
 }
@@ -72,9 +72,9 @@ locals int inputL, int inputR
 
 **Line 1: Comment**
 ```impala
-// My First Plugin - Audio Passthrough
+
 ```
-- Comments start with `//` and help you remember what your code does
+- Comments start with `
 - Always document your plugins for future reference
 
 **Line 2: Format Declaration**
@@ -87,9 +87,9 @@ const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 **Lines 4-6: Global Variables**
 ```impala
-global array signal[2]      // Audio input and output
-global array params[PARAM_COUNT]      // Knob values from hardware
-global array displayLEDs[4] // LED display control
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
 ```
 - **REQUIRED** - these connect your plugin to Permut8 hardware
 - `signal[2]` = left and right audio channels
@@ -101,7 +101,7 @@ global array displayLEDs[4] // LED display control
 function process()
 {
     loop {
-        // Audio automatically passes through
+
         yield()
     }
 }
@@ -154,9 +154,9 @@ Audio Input → Your Plugin → Audio Output
 ### 4.2 The Real-Time Loop
 ```impala
 loop {
-    // This runs 44,100 times per second (at 44.1kHz sample rate)
-    // Each time, it processes one audio sample
-    yield()  // Give control back so next sample can be processed
+
+
+    yield()
 }
 ```
 
@@ -181,9 +181,9 @@ function process()
 locals int inputL, int inputR
 {
     loop {
-        // Reduce volume to half (simple volume control)
-        signal[0] = signal[0] / 2  // Left channel half volume
-        signal[1] = signal[1] / 2  // Right channel half volume
+
+        signal[0] = signal[0] / 2
+        signal[1] = signal[1] / 2
         
         yield()
     }
@@ -198,8 +198,8 @@ locals int inputL, int inputR
 
 ### 5.3 Understanding the Change
 ```impala
-signal[0] = signal[0] / 2  // Take left audio, divide by 2, put it back
-signal[1] = signal[1] / 2  // Take right audio, divide by 2, put it back
+signal[0] = signal[0] / 2
+signal[1] = signal[1] / 2
 ```
 
 **What this does:**
@@ -224,8 +224,8 @@ locals int inputL, int inputR
         signal[0] = signal[0] / 2
         signal[1] = signal[1] / 2
         
-        // Light up first LED to show plugin is active
-        displayLEDs[0] = 0xFF  // 0xFF = all LEDs on in first display
+
+        displayLEDs[0] = 0xFF
         
         yield()
     }
@@ -239,7 +239,7 @@ locals int inputL, int inputR
 
 ### 6.3 Understanding LED Control
 ```impala
-displayLEDs[0] = 0xFF  // First LED display, all 8 LEDs on
+displayLEDs[0] = 0xFF
 ```
 
 **LED values:**
@@ -257,10 +257,10 @@ displayLEDs[0] = 0xFF  // First LED display, all 8 LEDs on
 Here's your complete first plugin with full documentation:
 
 ```impala
-// Audio Passthrough with Volume Control - My First Plugin
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -271,24 +271,24 @@ const int SWITCHES_PARAM_INDEX
 const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
-// Required global variables that connect to Permut8 hardware
-global array signal[2]      // Audio I/O: signal[0] = left, signal[1] = right
-global array params[PARAM_COUNT]      // Knob values: params[0] through params[7] (0-255 each)
-global array displayLEDs[4] // LED displays: displayLEDs[0] through displayLEDs[3]
 
-// Main processing function - runs continuously while plugin is active
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
 function process()
 locals int inputL, int inputR
 {
     loop {
-        // Process audio: reduce volume to half
-        signal[0] = signal[0] / 2  // Left channel volume control
-        signal[1] = signal[1] / 2  // Right channel volume control
+
+        signal[0] = signal[0] / 2
+        signal[1] = signal[1] / 2
         
-        // Visual feedback: light up LED to show plugin is running
-        displayLEDs[0] = 0xFF      // All LEDs on in first display
+
+        displayLEDs[0] = 0xFF
         
-        // CRITICAL: Return control to Permut8 for next audio sample
+
         yield()
     }
 }
@@ -329,23 +329,23 @@ locals int inputL, int inputR
 ### 8.3 Experiment Ideas
 **Try these modifications:**
 ```impala
-// Different volume levels
-signal[0] = signal[0] * 2    // Double volume (be careful - can be loud!)
-signal[0] = signal[0] / 4    // Quarter volume
 
-// Mute one channel
-signal[0] = 0               // Mute left channel
-signal[1] = signal[1]       // Keep right channel
+signal[0] = signal[0] * 2
+signal[0] = signal[0] / 4
 
-// Swap left and right
+
+signal[0] = 0
+signal[1] = signal[1]
+
+
 int temp = signal[0]
-signal[0] = signal[1]       // Left gets right audio
-signal[1] = temp            // Right gets left audio
+signal[0] = signal[1]
+signal[1] = temp
 
-// Different LED patterns
-displayLEDs[0] = 0x01       // Only first LED
-displayLEDs[0] = 0xAA       // Alternating LEDs (10101010)
-displayLEDs[0] = 0x0F       // First 4 LEDs
+
+displayLEDs[0] = 0x01
+displayLEDs[0] = 0xAA
+displayLEDs[0] = 0x0F
 ```
 
 **🎉 You're now ready to start creating real audio effects!** Every complex plugin starts with these same basic concepts - you've mastered the foundation.

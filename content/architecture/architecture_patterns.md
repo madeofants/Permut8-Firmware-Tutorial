@@ -42,29 +42,29 @@ Audio Input → [Your code processes samples directly] → Audio Output
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-global array signal[2]      // Direct audio I/O
-global array params[8]      // Parameter control (custom meanings)
-global array displayLEDs[4] // Visual feedback
+global array signal[2]
+global array params[8]
+global array displayLEDs[4]
 
 readonly array panelTextRows[8] = {
     "",
     "",
     "",
     "CUSTOM |------ EFFECT CONTROL (KNOB) ------|",
-    // Override original interface with custom labels
+
 };
 
 function process() {
     loop {
-        // Complete signal processing chain
+
         int inputLeft = signal[0];
         int inputRight = signal[1];
         
-        // Your complete DSP algorithm here
+
         signal[0] = processedLeft;
         signal[1] = processedRight;
         
-        yield();  // Essential - return control
+        yield();
     }
 }
 ```
@@ -87,22 +87,22 @@ Audio Input → 128k Delay Memory → [Modified operators] → Audio Output
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-global array positions[2]   // Memory position control
-global array params[8]      // Parameter control (original meanings)
-global array displayLEDs[4] // Visual feedback
+global array positions[2]
+global array params[8]
+global array displayLEDs[4]
 
 function operate1() returns int processed {
-    // Replace Instruction 1 operator with custom behavior
+
     int delayOffset = calculateCustomDelay();
     
-    positions[0] = positions[0] + delayOffset;  // Left channel
-    positions[1] = positions[1] + delayOffset;  // Right channel
+    positions[0] = positions[0] + delayOffset;
+    positions[1] = positions[1] + delayOffset;
     
-    return 1;  // Signal that we processed the positions
+    return 1;
 }
 
 function operate2() returns int processed {
-    // Replace Instruction 2 operator with custom behavior
+
     return 1;
 }
 ```
@@ -131,17 +131,17 @@ function operate2() returns int processed {
 
 ### Initialization Phase
 ```impala
-// Called once when firmware loads
+
 function init() {
-    // Initialize lookup tables
+
     buildSineTable();
     buildFilterCoefficients();
     
-    // Set initial state
+
     resetDelayBuffers();
     initializeFilters();
     
-    // Configure defaults
+
     setDefaultParameters();
     
     trace("Firmware initialized successfully");
@@ -157,11 +157,11 @@ function init() {
 
 ### Update Phase
 ```impala
-// Called when parameters change
+
 global int lastParamValues[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
 
 function update() {
-    // Check which parameters changed
+
     int paramIndex;
     for (paramIndex = 0 to 8) {
         if (params[paramIndex] != lastParamValues[paramIndex]) {
@@ -173,13 +173,13 @@ function update() {
 
 function handleParameterChange(int index, int newValue) {
     if (index == OPERAND_1_HIGH_PARAM_INDEX) {
-        // Recalculate filter frequency
+
         updateFilterFrequency(newValue);
     } else if (index == OPERAND_1_LOW_PARAM_INDEX) {
-        // Recalculate resonance
+
         updateFilterResonance(newValue);
     }
-    // ... handle other parameters
+
 }
 ```
 
@@ -191,21 +191,21 @@ function handleParameterChange(int index, int newValue) {
 
 ### Reset Phase
 ```impala
-// Called when reset button pressed or DAW restarts
+
 function reset() {
-    // Clear all delay buffers
+
     clearAllBuffers();
     
-    // Reset filter states
+
     resetFilterMemory();
     
-    // Reset phase accumulators
+
     resetOscillatorPhases();
     
-    // Clear any accumulated state
+
     resetEnvelopeFollowers();
     
-    // Re-initialize critical state
+
     initializeProcessingState();
     
     trace("System reset completed");
@@ -221,25 +221,25 @@ function reset() {
 
 ### Processing Phase Management
 ```impala
-// Efficient processing loop structure
+
 function process() {
     loop {
-        // 1. Read inputs efficiently
+
         int inputL = signal[0];
         int inputR = signal[1];
         
-        // 2. Update time-based state
+
         updateTimeState();
         
-        // 3. Process audio
+
         processAudioSample(inputL, inputR);
         
-        // 4. Update displays (not every sample)
+
         if (shouldUpdateDisplay()) {
             updateLEDDisplays();
         }
         
-        // 5. Essential - return control
+
         yield();
     }
 }
@@ -247,7 +247,7 @@ function process() {
 int displayUpdateCounter = 0;
 function shouldUpdateDisplay() returns int update {
     displayUpdateCounter++;
-    if (displayUpdateCounter >= 1000) {  // Update every 1000 samples
+    if (displayUpdateCounter >= 1000) {
         displayUpdateCounter = 0;
         update = 1;
     } else {
@@ -260,12 +260,12 @@ function shouldUpdateDisplay() returns int update {
 
 ### Stateless Processing
 ```impala
-// Pure functions - no global state modification
+
 function pureProcessor(int input, int param1, int param2) 
 returns int output {
-    // All state passed as parameters
-    // No side effects
-    // Predictable and testable
+
+
+
     
     int processed = applyGain(input, param1);
     processed = applyFilter(processed, param2);
@@ -281,7 +281,7 @@ returns int output {
 
 ### Managed State Objects
 ```impala
-// State encapsulation pattern
+
 struct FilterState {
     int lowpass;
     int bandpass;
@@ -303,15 +303,15 @@ function initFilter(pointer filter) {
 
 function processFilter(pointer filter, int input) 
 returns int output {
-    // Process with encapsulated state
-    // All filter state kept together
-    // Easier to manage multiple instances
+
+
+
 }
 ```
 
 ### Ring Buffer Management
 ```impala
-// Efficient circular buffer pattern
+
 struct RingBuffer {
     array data[8192];
     int writePos;
@@ -326,7 +326,7 @@ function initRingBuffer(pointer buffer, int bufferSize) {
     buffer->readPos = 0;
     buffer->size = bufferSize;
     
-    // Clear buffer
+
     int i;
     for (i = 0 to bufferSize) {
         buffer->data[i] = 0;
@@ -352,35 +352,35 @@ returns int sample {
 
 #### 1. Minimize Expensive Operations
 ```impala
-// Avoid per-sample floating point when possible
-// Bad: floating point per sample
+
+
 function inefficientGain(int input) {
     float gain = itof((int)params[3]) / 255.0;
     return ftoi(itof(input) * gain);
 }
 
-// Good: pre-calculate in update()
+
 global int precalculatedGain = 256;
 
 function update() {
-    // Calculate once when parameter changes
+
     precalculatedGain = (int)params[3];
 }
 
 function efficientGain(int input) {
-    // Fast integer multiply and shift
+
     return (input * precalculatedGain) >> 8;
 }
 ```
 
 #### 2. Use Lookup Tables
 ```impala
-// Pre-computed lookup tables for expensive functions
+
 const int SINE_TABLE_SIZE = 1024;
 global int sineTable[SINE_TABLE_SIZE];
 
 function init() {
-    // Build table once at startup
+
     int i;
     for (i = 0 to SINE_TABLE_SIZE) {
         float angle = itof(i) * TWO_PI / itof(SINE_TABLE_SIZE);
@@ -389,27 +389,27 @@ function init() {
 }
 
 function fastSine(int phase) returns int value {
-    // Fast table lookup instead of sin() calculation
-    int index = (phase >> 6) & (SINE_TABLE_SIZE - 1);  // Scale and wrap
+
+    int index = (phase >> 6) & (SINE_TABLE_SIZE - 1);
     value = sineTable[index];
 }
 ```
 
 #### 3. Batch Processing
 ```impala
-// Process multiple samples efficiently
+
 const int BATCH_SIZE = 32;
 global int processingBatch[BATCH_SIZE];
 global int batchIndex = 0;
 
 function process() {
     loop {
-        // Collect samples in batch
+
         processingBatch[batchIndex] = signal[0];
         batchIndex++;
         
         if (batchIndex >= BATCH_SIZE) {
-            // Process entire batch at once
+
             processBatch(processingBatch, BATCH_SIZE);
             batchIndex = 0;
         }
@@ -421,20 +421,20 @@ function process() {
 
 #### 4. Memory Access Optimization
 ```impala
-// Sequential memory access pattern
+
 function efficientMemoryAccess() {
     const int BLOCK_SIZE = 16;
-    array audioBlock[BLOCK_SIZE * 2];  // Stereo interleaved
+    array audioBlock[BLOCK_SIZE * 2];
     
-    // Read block sequentially
+
     read(clock - 1000, BLOCK_SIZE, audioBlock);
     
-    // Process block
+
     int i;
     for (i = 0 to BLOCK_SIZE) {
         int leftSample = audioBlock[i * 2];
         int rightSample = audioBlock[i * 2 + 1];
-        // Process samples...
+
     }
 }
 ```
@@ -443,7 +443,7 @@ function efficientMemoryAccess() {
 
 #### 1. Memory Pool Management
 ```impala
-// Pre-allocate memory pools
+
 const int MAX_DELAYS = 8;
 const int DELAY_SIZE = 4096;
 
@@ -455,37 +455,37 @@ function allocateDelay(int requestedSize) returns int offset {
         offset = delayAllocator;
         delayAllocator += requestedSize;
     } else {
-        offset = -1;  // Allocation failed
+        offset = -1;
     }
 }
 ```
 
 #### 2. Stack-Based Temporary Storage
 ```impala
-// Use local arrays for temporary calculations
+
 function processWithTempStorage() {
-    array tempBuffer[64];  // Local stack allocation
-    array workspace[32];   // Another temporary buffer
+    array tempBuffer[64];
+    array workspace[32];
     
-    // Use for intermediate calculations
-    // Automatically freed when function exits
+
+
 }
 ```
 
 #### 3. Memory Layout Optimization
 ```impala
-// Group related data for cache efficiency
+
 struct ProcessingState {
-    // Frequently accessed together
+
     int sampleRate;
     int bufferSize;
     int currentSample;
     
-    // Audio buffers
+
     array leftBuffer[1024];
     array rightBuffer[1024];
     
-    // Less frequently accessed
+
     int debugFlags;
     array tempStorage[512];
 }
@@ -495,16 +495,16 @@ struct ProcessingState {
 
 ### Defensive Programming
 ```impala
-// Parameter validation
+
 function safeParameterAccess(int paramIndex) returns int value {
     if (paramIndex < 0 || paramIndex >= 8) {
         trace("Invalid parameter index");
-        return 0;  // Safe default
+        return 0;
     }
     value = params[paramIndex];
 }
 
-// Audio range validation
+
 function safeAudioOutput(int sample) returns int safeSample {
     if (sample > 2047) {
         safeSample = 2047;
@@ -515,10 +515,10 @@ function safeAudioOutput(int sample) returns int safeSample {
     }
 }
 
-// Division by zero protection
+
 function safeDivide(int numerator, int denominator) returns int result {
     if (denominator == 0) {
-        result = 0;  // Or some other safe value
+        result = 0;
     } else {
         result = numerator / denominator;
     }
@@ -527,18 +527,18 @@ function safeDivide(int numerator, int denominator) returns int result {
 
 ### Graceful Degradation
 ```impala
-// Fallback processing when resources limited
+
 function adaptiveProcessing() {
     int cpuUsage = estimateCPULoad();
     
     if (cpuUsage > 80) {
-        // Reduce quality to maintain real-time performance
+
         processLowQuality();
     } else if (cpuUsage > 60) {
-        // Medium quality
+
         processMediumQuality();
     } else {
-        // Full quality
+
         processHighQuality();
     }
 }
@@ -552,17 +552,17 @@ const int ERROR_OVERFLOW = 1;
 const int ERROR_UNDERFLOW = 2;
 
 function detectAndRecoverFromError() {
-    // Check for audio overflow
+
     if (signal[0] > 3000 || signal[0] < -3000) {
         errorState = ERROR_OVERFLOW;
-        signal[0] = 0;  // Mute to prevent speaker damage
+        signal[0] = 0;
         signal[1] = 0;
         trace("Audio overflow detected - muting");
     }
     
-    // Recovery after some time
+
     if (errorState != ERROR_NONE) {
-        // Gradually unmute after error condition clears
+
         recoverFromError();
     }
 }
@@ -572,7 +572,7 @@ function detectAndRecoverFromError() {
 
 ### Trace-Based Debugging
 ```impala
-// Conditional debug output
+
 const int DEBUG_LEVEL_NONE = 0;
 const int DEBUG_LEVEL_ERROR = 1;
 const int DEBUG_LEVEL_INFO = 2;
@@ -590,7 +590,7 @@ function process() {
     loop {
         debugTrace(DEBUG_LEVEL_VERBOSE, "Processing sample");
         
-        // Your processing...
+
         
         if (errorCondition) {
             debugTrace(DEBUG_LEVEL_ERROR, "Error in processing");
@@ -603,15 +603,15 @@ function process() {
 
 ### State Inspection
 ```impala
-// Periodic state dumps
+
 global int debugCounter = 0;
 
 function process() {
     loop {
-        // Process audio...
+
         
         debugCounter++;
-        if (debugCounter >= 48000) {  // Once per second at 48kHz
+        if (debugCounter >= 48000) {
             debugDumpState();
             debugCounter = 0;
         }
@@ -630,28 +630,28 @@ function debugDumpState() {
 
 ### Visual Debugging with LEDs
 ```impala
-// Use LEDs for real-time debugging
+
 function debugWithLEDs() {
-    // Show parameter values
-    displayLEDs[0] = params[3];  // Show knob position
+
+    displayLEDs[0] = params[3];
     
-    // Show processing state
+
     if (isClipping) {
-        displayLEDs[1] = 0xFF;  // All LEDs for clipping
+        displayLEDs[1] = 0xFF;
     } else {
-        displayLEDs[1] = currentLevel >> 3;  // Level meter
+        displayLEDs[1] = currentLevel >> 3;
     }
     
-    // Show error conditions
+
     if (errorState != 0) {
-        displayLEDs[2] = 0xAA;  // Alternating pattern for errors
+        displayLEDs[2] = 0xAA;
     }
 }
 ```
 
 ### Performance Monitoring
 ```impala
-// Simple performance measurement
+
 global int processStartTime = 0;
 global int maxProcessTime = 0;
 
@@ -659,15 +659,15 @@ function process() {
     loop {
         processStartTime = getSampleTime();
         
-        // Your processing here...
+
         
         int processTime = getSampleTime() - processStartTime;
         if (processTime > maxProcessTime) {
             maxProcessTime = processTime;
         }
         
-        // Report if processing takes too long
-        if (processTime > 100) {  // Threshold in samples
+
+        if (processTime > 100) {
             trace("Processing overrun detected");
         }
         
@@ -680,14 +680,14 @@ function process() {
 
 ### 1. State Corruption
 ```impala
-// Problem: Uncontrolled global state modification
+
 global int sharedCounter = 0;
 
 function badFunction1() {
-    sharedCounter++;  // Can conflict with other functions
+    sharedCounter++;
 }
 
-// Solution: Controlled state access
+
 function goodFunction1() {
     int newValue = getSharedCounter() + 1;
     setSharedCounter(newValue);
@@ -696,15 +696,15 @@ function goodFunction1() {
 
 ### 2. Resource Leaks
 ```impala
-// Problem: Unbounded memory growth
+
 global int bufferAllocated = 0;
 
 function badAllocation() {
-    // Keeps allocating without freeing
+
     bufferAllocated += 1024;
 }
 
-// Solution: Bounded resource management
+
 const int MAX_BUFFER_SIZE = 65536;
 
 function goodAllocation(int requestedSize) returns int success {
@@ -712,29 +712,29 @@ function goodAllocation(int requestedSize) returns int success {
         bufferAllocated += requestedSize;
         success = 1;
     } else {
-        success = 0;  // Allocation denied
+        success = 0;
     }
 }
 ```
 
 ### 3. Timing Assumptions
 ```impala
-// Problem: Assuming fixed timing relationships
+
 global int sampleCounter = 0;
 
 function badTiming() {
     sampleCounter++;
-    if (sampleCounter == 48000) {  // Assumes 48kHz!
-        // Do something once per second
+    if (sampleCounter == 48000) {
+
         sampleCounter = 0;
     }
 }
 
-// Solution: Sample-rate independent timing
+
 function goodTiming() {
     float samplesPerSecond = getSampleRate();
     if (sampleCounter >= ftoi(samplesPerSecond)) {
-        // Correctly handles any sample rate
+
         sampleCounter = 0;
     }
 }

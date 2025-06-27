@@ -27,7 +27,7 @@ Provides comprehensive LED control for creating visual feedback systems, paramet
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -38,30 +38,30 @@ const int SWITCHES_PARAM_INDEX
 const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
-// Required native function declarations
+
 extern native yield
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
 
-// LED control state
-global int animation_counter = 0    // Animation timing
-global int led_phase = 0           // Animation phase
-global int brightness_envelope = 255  // Brightness modulation
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global int animation_counter = 0
+global int led_phase = 0
+global int brightness_envelope = 255
 
 function process()
 locals int pattern_mode, brightness, animation_speed, pattern_modifier, i, led_value, chase_position, fade_amount, audio_level, ring_pattern, bit_pattern, wave_position
 {
     loop {
-        // Read control parameters
-        pattern_mode = params[CLOCK_FREQ_PARAM_INDEX] >> 5;      // 0-7 pattern modes
-        brightness = params[SWITCHES_PARAM_INDEX];              // 0-255 brightness
-        animation_speed = (params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;  // 1-16 speed
-        pattern_modifier = params[OPERAND_1_HIGH_PARAM_INDEX];      // 0-255 modifier
+
+        pattern_mode = params[CLOCK_FREQ_PARAM_INDEX] >> 5;
+        brightness = params[SWITCHES_PARAM_INDEX];
+        animation_speed = (params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;
+        pattern_modifier = params[OPERAND_1_HIGH_PARAM_INDEX];
         
-        // Update animation timing
+
         global animation_counter = global animation_counter + 1;
         if (global animation_counter >= (17 - animation_speed) * 32) {
             global animation_counter = 0;
@@ -69,45 +69,45 @@ locals int pattern_mode, brightness, animation_speed, pattern_modifier, i, led_v
             if (global led_phase >= 256) global led_phase = 0;
         }
         
-        // Get audio level for reactive displays
+
         audio_level = (int)global signal[0];
         if (audio_level < 0) audio_level = -audio_level;
-        audio_level = audio_level >> 3;  // Scale to 0-255 range
+        audio_level = audio_level >> 3;
         
-        // === LED PATTERN SELECTION ===
+
         if (pattern_mode == 0) {
-            // Static parameter display
+
             global displayLEDs[0] = params[CLOCK_FREQ_PARAM_INDEX];
             global displayLEDs[1] = params[SWITCHES_PARAM_INDEX];
             global displayLEDs[2] = params[OPERATOR_1_PARAM_INDEX];
             global displayLEDs[3] = params[OPERAND_1_HIGH_PARAM_INDEX];
             
         } else if (pattern_mode == 1) {
-            // Chase pattern (rotating light)
-            chase_position = global led_phase >> 5;  // 0-7 position
+
+            chase_position = global led_phase >> 5;
             for (i = 0; i < 4; i = i + 1) {
                 if ((chase_position + i) & 7 < 2) {
                     global displayLEDs[i] = brightness;
                 } else {
-                    global displayLEDs[i] = brightness >> 3;  // Dim trail
+                    global displayLEDs[i] = brightness >> 3;
                 }
             }
             
         } else if (pattern_mode == 2) {
-            // Audio-reactive level meters
-            // Ring 0: Left channel level
+
+
             led_value = audio_level;
             if (led_value > brightness) led_value = brightness;
             global displayLEDs[0] = led_value;
             
-            // Ring 1: Right channel level
+
             audio_level = (int)global signal[1];
             if (audio_level < 0) audio_level = -audio_level;
             audio_level = audio_level >> 3;
             if (audio_level > brightness) audio_level = brightness;
             global displayLEDs[1] = audio_level;
             
-            // Ring 2: Peak hold
+
             if (audio_level > global displayLEDs[2]) {
                 global displayLEDs[2] = audio_level;
             } else {
@@ -115,7 +115,7 @@ locals int pattern_mode, brightness, animation_speed, pattern_modifier, i, led_v
                 if (global displayLEDs[2] < 0) global displayLEDs[2] = 0;
             }
             
-            // Ring 3: Activity indicator
+
             if (audio_level > 32) {
                 global displayLEDs[3] = brightness;
             } else {
@@ -123,10 +123,10 @@ locals int pattern_mode, brightness, animation_speed, pattern_modifier, i, led_v
             }
             
         } else if (pattern_mode == 3) {
-            // Breathing pattern (sine wave brightness)
+
             fade_amount = (global led_phase * brightness) >> 8;
             
-            // Create breathing effect using triangle wave
+
             if (global led_phase < 128) {
                 fade_amount = global led_phase * 2;
             } else {
@@ -139,8 +139,8 @@ locals int pattern_mode, brightness, animation_speed, pattern_modifier, i, led_v
             }
             
         } else if (pattern_mode == 4) {
-            // Wave pattern (propagating across rings)
-            wave_position = global led_phase >> 6;  // 0-3 wave position
+
+            wave_position = global led_phase >> 6;
             
             for (i = 0; i < 4; i = i + 1) {
                 if (i == wave_position) {
@@ -153,8 +153,8 @@ locals int pattern_mode, brightness, animation_speed, pattern_modifier, i, led_v
             }
             
         } else if (pattern_mode == 5) {
-            // Binary counter display
-            bit_pattern = global led_phase >> 4;  // 0-15 counter
+
+            bit_pattern = global led_phase >> 4;
             
             global displayLEDs[0] = (bit_pattern & 1) ? brightness : 0;
             global displayLEDs[1] = (bit_pattern & 2) ? brightness : 0;
@@ -162,24 +162,24 @@ locals int pattern_mode, brightness, animation_speed, pattern_modifier, i, led_v
             global displayLEDs[3] = (bit_pattern & 8) ? brightness : 0;
             
         } else if (pattern_mode == 6) {
-            // Parameter interaction display
-            // Show parameter relationships with visual feedback
+
+
             ring_pattern = (params[CLOCK_FREQ_PARAM_INDEX] + params[SWITCHES_PARAM_INDEX]) >> 1;
             global displayLEDs[0] = ring_pattern;
             
             ring_pattern = (params[OPERATOR_1_PARAM_INDEX] + params[OPERAND_1_HIGH_PARAM_INDEX]) >> 1;
             global displayLEDs[1] = ring_pattern;
             
-            // Cross-modulation display
+
             ring_pattern = ((int)params[CLOCK_FREQ_PARAM_INDEX] * (int)params[SWITCHES_PARAM_INDEX]) >> 8;
             global displayLEDs[2] = ring_pattern;
             
-            // Activity indicator with modifier
+
             global displayLEDs[3] = (audio_level + pattern_modifier) >> 1;
             
         } else {
-            // Pattern mode 7: Custom pattern with modifier
-            // User-defined pattern using pattern_modifier
+
+
             for (i = 0; i < 4; i = i + 1) {
                 ring_pattern = ((global led_phase + (i * 64)) & 255);
                 ring_pattern = (ring_pattern * pattern_modifier) >> 8;
@@ -188,7 +188,7 @@ locals int pattern_mode, brightness, animation_speed, pattern_modifier, i, led_v
             }
         }
         
-        // Pass audio through unchanged
+
         global signal[0] = (int)global signal[0];
         global signal[1] = (int)global signal[1];
         
@@ -225,46 +225,46 @@ locals int pattern_mode, brightness, animation_speed, pattern_modifier, i, led_v
 ## Try These Settings
 
 ```impala
-// Audio-reactive level meters
-params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Mode 2 (level meters)
-params[SWITCHES_PARAM_INDEX] = 200;   // High brightness
-params[OPERATOR_1_PARAM_INDEX] = 128;  // Medium speed
-params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Good sensitivity
 
-// Smooth breathing pattern
-params[CLOCK_FREQ_PARAM_INDEX] = 96;   // Mode 3 (breathing)
-params[SWITCHES_PARAM_INDEX] = 150;   // Moderate brightness
-params[OPERATOR_1_PARAM_INDEX] = 64;   // Slow breathing
-params[OPERAND_1_HIGH_PARAM_INDEX] = 255; // Full modulation
+params[CLOCK_FREQ_PARAM_INDEX] = 64;
+params[SWITCHES_PARAM_INDEX] = 200;
+params[OPERATOR_1_PARAM_INDEX] = 128;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 180;
 
-// Fast chase pattern
-params[CLOCK_FREQ_PARAM_INDEX] = 32;   // Mode 1 (chase)
-params[SWITCHES_PARAM_INDEX] = 255;   // Maximum brightness
-params[OPERATOR_1_PARAM_INDEX] = 240;  // Very fast
-params[OPERAND_1_HIGH_PARAM_INDEX] = 128; // Standard modifier
+
+params[CLOCK_FREQ_PARAM_INDEX] = 96;
+params[SWITCHES_PARAM_INDEX] = 150;
+params[OPERATOR_1_PARAM_INDEX] = 64;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 255;
+
+
+params[CLOCK_FREQ_PARAM_INDEX] = 32;
+params[SWITCHES_PARAM_INDEX] = 255;
+params[OPERATOR_1_PARAM_INDEX] = 240;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 128;
 ```
 
 ## LED Display Techniques
 
 **Bit Manipulation for Patterns**:
 ```impala
-// Set specific LED positions
+
 led_pattern = 0;
-led_pattern = led_pattern | (1 << position);  // Turn on LED at position
+led_pattern = led_pattern | (1 << position);
 
-// Create walking patterns
-walking_bit = 1 << (counter & 7);  // Moves bit 0-7
 
-// Combine multiple patterns
+walking_bit = 1 << (counter & 7);
+
+
 combined = pattern1 | pattern2;
 ```
 
 **Brightness Modulation**:
 ```impala
-// Fade effects
+
 faded_brightness = (base_brightness * fade_factor) >> 8;
 
-// Pulse effects using triangle waves
+
 if (phase < 128) {
     pulse_brightness = phase * 2;
 } else {

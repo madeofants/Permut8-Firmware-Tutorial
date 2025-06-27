@@ -26,7 +26,7 @@ Gain and volume control scales audio levels with smooth parameter changes to pre
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -37,73 +37,73 @@ const int SWITCHES_PARAM_INDEX
 const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global int clock                 // Sample counter for timing
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT] // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
-global int clockFreqLimit        // Current clock frequency limit
+extern native yield
 
-// Volume control state
-global int smooth_volume = 1024   // Current volume level
-global int smooth_balance = 128   // Current balance setting
-global int left_gain = 1024       // Left channel gain
-global int right_gain = 1024      // Right channel gain
+
+global int clock
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global int clockFreqLimit
+
+
+global int smooth_volume = 1024
+global int smooth_balance = 128
+global int left_gain = 1024
+global int right_gain = 1024
 
 function process()
 locals int volume_target, int balance_target, int smoothing_speed, int left_sample, int right_sample, int output_left, int output_right
 {
     loop {
-        // Read parameters
-        volume_target = ((int)global params[CLOCK_FREQ_PARAM_INDEX] << 3);        // 0-255 → 0-2040
-        balance_target = (int)global params[SWITCHES_PARAM_INDEX];              // 0-255 balance
-        smoothing_speed = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;  // 1-16 smoothing rate
+
+        volume_target = ((int)global params[CLOCK_FREQ_PARAM_INDEX] << 3);
+        balance_target = (int)global params[SWITCHES_PARAM_INDEX];
+        smoothing_speed = ((int)global params[OPERATOR_1_PARAM_INDEX] >> 4) + 1;
         
-        // Smooth volume changes to prevent clicks
+
         global smooth_volume = global smooth_volume + 
             ((volume_target - global smooth_volume) >> smoothing_speed);
         
-        // Smooth balance changes
+
         global smooth_balance = global smooth_balance + 
             ((balance_target - global smooth_balance) >> smoothing_speed);
         
-        // Calculate stereo balance gains
+
         if (global smooth_balance < 128) {
-            // Balance towards left
+
             global left_gain = global smooth_volume;
             global right_gain = (global smooth_volume * global smooth_balance) >> 7;
         } else {
-            // Balance towards right
+
             global left_gain = (global smooth_volume * (255 - global smooth_balance)) >> 7;
             global right_gain = global smooth_volume;
         }
         
-        // Read input samples
+
         left_sample = (int)global signal[0];
         right_sample = (int)global signal[1];
         
-        // Apply gain to each channel
+
         output_left = (left_sample * global left_gain) >> 11;
         output_right = (right_sample * global right_gain) >> 11;
         
-        // Prevent clipping
+
         if (output_left > 2047) output_left = 2047;
         if (output_left < -2047) output_left = -2047;
         if (output_right > 2047) output_right = 2047;
         if (output_right < -2047) output_right = -2047;
         
-        // Output processed signals
+
         global signal[0] = output_left;
         global signal[1] = output_right;
         
-        // Display volume and balance on LEDs
-        global displayLEDs[0] = global smooth_volume >> 3;    // Volume level
-        global displayLEDs[1] = global smooth_balance;        // Balance position
-        global displayLEDs[2] = global left_gain >> 3;       // Left gain
-        global displayLEDs[3] = global right_gain >> 3;      // Right gain
+
+        global displayLEDs[0] = global smooth_volume >> 3;
+        global displayLEDs[1] = global smooth_balance;
+        global displayLEDs[2] = global left_gain >> 3;
+        global displayLEDs[3] = global right_gain >> 3;
         
         yield();
     }
@@ -128,25 +128,25 @@ locals int volume_target, int balance_target, int smoothing_speed, int left_samp
 ## Try These Settings
 
 ```impala
-// Unity gain, centered
-global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Half volume
-global params[SWITCHES_PARAM_INDEX] = 128;  // Center balance
-global params[OPERATOR_1_PARAM_INDEX] = 64;   // Medium smoothing
 
-// Left-heavy mix
-global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Loud volume
-global params[SWITCHES_PARAM_INDEX] = 80;   // Left balance
-global params[OPERATOR_1_PARAM_INDEX] = 32;   // Slow smoothing
+global params[CLOCK_FREQ_PARAM_INDEX] = 128;
+global params[SWITCHES_PARAM_INDEX] = 128;
+global params[OPERATOR_1_PARAM_INDEX] = 64;
 
-// Quick response
-global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Moderate volume
-global params[SWITCHES_PARAM_INDEX] = 150;  // Right balance
-global params[OPERATOR_1_PARAM_INDEX] = 200;  // Fast smoothing
 
-// Background level
-global params[CLOCK_FREQ_PARAM_INDEX] = 40;   // Quiet volume
-global params[SWITCHES_PARAM_INDEX] = 128;  // Center balance
-global params[OPERATOR_1_PARAM_INDEX] = 16;   // Very slow smoothing
+global params[CLOCK_FREQ_PARAM_INDEX] = 200;
+global params[SWITCHES_PARAM_INDEX] = 80;
+global params[OPERATOR_1_PARAM_INDEX] = 32;
+
+
+global params[CLOCK_FREQ_PARAM_INDEX] = 100;
+global params[SWITCHES_PARAM_INDEX] = 150;
+global params[OPERATOR_1_PARAM_INDEX] = 200;
+
+
+global params[CLOCK_FREQ_PARAM_INDEX] = 40;
+global params[SWITCHES_PARAM_INDEX] = 128;
+global params[OPERATOR_1_PARAM_INDEX] = 16;
 ```
 
 ## Understanding Volume Control

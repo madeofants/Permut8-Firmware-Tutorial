@@ -4,14 +4,14 @@
 
 **NEVER use raw indices** - these will cause compilation errors:
 ```impala
-// ❌ WRONG - Will not compile
+
 volume = params[3] * 2;
 int knobValue = params[7];
 ```
 
 **ALWAYS use parameter constants** - verified from all official firmware:
 ```impala
-// ✅ CORRECT - Required for compilation
+
 volume = (int)global params[OPERAND_2_HIGH_PARAM_INDEX] * 2;
 int knobValue = (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
 ```
@@ -119,21 +119,21 @@ Retains original meanings but with enhanced functionality:
 
 ### Array Structure
 ```impala
-global array params[8]  // 8-bit values (0-255)
+global array params[8]
 ```
 
 **All parameters are integers from 0 to 255**, representing the full range of each physical control.
 
 ### Parameter Indices
 ```impala
-params[0] = CLOCK_FREQ_PARAM_INDEX      // Clock frequency knob
-params[1] = SWITCHES_PARAM_INDEX        // Bit mask of switch states  
-params[2] = OPERATOR_1_PARAM_INDEX      // Instruction 1 operator type
-params[3] = OPERAND_1_HIGH_PARAM_INDEX  // Instruction 1 High Operand (LED display)
-params[4] = OPERAND_1_LOW_PARAM_INDEX   // Instruction 1 Low Operand (LED display)
-params[5] = OPERATOR_2_PARAM_INDEX      // Instruction 2 operator type
-params[6] = OPERAND_2_HIGH_PARAM_INDEX  // Instruction 2 High Operand (LED display)
-params[7] = OPERAND_2_LOW_PARAM_INDEX   // Instruction 2 Low Operand (LED display)
+params[0] = CLOCK_FREQ_PARAM_INDEX
+params[1] = SWITCHES_PARAM_INDEX
+params[2] = OPERATOR_1_PARAM_INDEX
+params[3] = OPERAND_1_HIGH_PARAM_INDEX
+params[4] = OPERAND_1_LOW_PARAM_INDEX
+params[5] = OPERATOR_2_PARAM_INDEX
+params[6] = OPERAND_2_HIGH_PARAM_INDEX
+params[7] = OPERAND_2_LOW_PARAM_INDEX
 ```
 
 ## Reading Parameters
@@ -141,25 +141,25 @@ params[7] = OPERAND_2_LOW_PARAM_INDEX   // Instruction 2 Low Operand (LED displa
 ### Basic Access
 ```impala
 function update() {
-    int control1 = (int)params[OPERAND_1_HIGH_PARAM_INDEX];  // Control 1 (custom firmware)
+    int control1 = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
     int switches = (int)params[SWITCHES_PARAM_INDEX];
     
-    // Always cast to int for calculations
+
     if (control1 > 127) {
-        // Do something when Control 1 is past halfway
+
     }
 }
 ```
 
 ### Switch State Testing
 ```impala
-// Test individual switches using bit masks
+
 if ((int)params[SWITCHES_PARAM_INDEX] & SWITCHES_SYNC_MASK) {
-    // Sync switch is ON
+
 }
 
 if ((int)params[SWITCHES_PARAM_INDEX] & SWITCHES_REVERSE_MASK) {
-    // Reverse switch is ON
+
 }
 ```
 
@@ -173,11 +173,11 @@ if ((int)params[SWITCHES_PARAM_INDEX] & SWITCHES_REVERSE_MASK) {
 ### Operator Selection
 ```impala
 if ((int)params[OPERATOR_1_PARAM_INDEX] == OPERATOR_1_MUL) {
-    // Operator 1 is set to multiply
+
 }
 
 if ((int)params[OPERATOR_2_PARAM_INDEX] == OPERATOR_2_SUB) {
-    // Operator 2 is set to subtract
+
 }
 ```
 
@@ -192,31 +192,31 @@ if ((int)params[OPERATOR_2_PARAM_INDEX] == OPERATOR_2_SUB) {
 ### Knob to Percentage
 ```impala
 int percent = (int)params[OPERAND_1_HIGH_PARAM_INDEX] * 100 / 255;
-// Result: 0% to 100%
+
 ```
 
 ### Knob to Float Range
 ```impala
 float mix = itof((int)params[OPERAND_1_HIGH_PARAM_INDEX]) / 255.0;
-// Result: 0.0 to 1.0
+
 ```
 
 ### Knob to Bit Depth
 ```impala
 int bits = ((int)params[OPERAND_1_HIGH_PARAM_INDEX] >> 5) + 1;
-// Result: 1 to 8 bits
+
 ```
 
 ### Combine Two Knobs (16-bit Value)
 ```impala
 int combined = ((int)params[OPERAND_1_HIGH_PARAM_INDEX] << 8) | 
                (int)params[OPERAND_1_LOW_PARAM_INDEX];
-// Result: 0 to 65535
+
 ```
 
 ### Knob to Exponential Scale
 ```impala
-// Use lookup table for exponential response
+
 readonly array EIGHT_BIT_EXP_TABLE[256] = { /* values */ };
 
 int expValue = (int)EIGHT_BIT_EXP_TABLE[(int)params[OPERAND_1_HIGH_PARAM_INDEX]];
@@ -227,8 +227,8 @@ int expValue = (int)EIGHT_BIT_EXP_TABLE[(int)params[OPERAND_1_HIGH_PARAM_INDEX]]
 ### Basic Update Function
 ```impala
 function update() {
-    // Called whenever params[] changes
-    // Update your global variables here
+
+
     
     global myDelay = (int)params[OPERAND_1_HIGH_PARAM_INDEX] * 1000;
     global myGain = itof((int)params[OPERAND_1_LOW_PARAM_INDEX]) / 255.0;
@@ -237,7 +237,7 @@ function update() {
 
 ### Filtering Updates
 ```impala
-// Only trigger update() for specific parameters
+
 readonly int updateMask = 
     (1 << OPERAND_1_HIGH_PARAM_INDEX) | 
     (1 << OPERAND_1_LOW_PARAM_INDEX) |
@@ -253,9 +253,9 @@ This prevents `update()` from being called when clock frequency or operators cha
 function update() {
     int controlValue = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
     
-    // Convert to LED pattern (0-7 LEDs)
-    int ledCount = controlValue >> 5;  // Divide by 32
-    displayLEDs[0] = (1 << ledCount) - 1;  // Light up 'ledCount' LEDs
+
+    int ledCount = controlValue >> 5;
+    displayLEDs[0] = (1 << ledCount) - 1;
 }
 ```
 
@@ -264,8 +264,8 @@ function update() {
 function update() {
     int value = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
     
-    // Show binary representation
-    displayLEDs[0] = value;  // Direct 8-bit pattern
+
+    displayLEDs[0] = value;
 }
 ```
 
@@ -274,31 +274,31 @@ function update() {
 ### Copy to Locals for Speed
 ```impala
 function process() {
-    // Globals are slow - copy to locals for repeated use
+
     array localParams[PARAM_COUNT];
     copy(PARAM_COUNT from params to localParams);
     
     int control1 = localParams[OPERAND_1_HIGH_PARAM_INDEX];
     int control2 = localParams[OPERAND_1_LOW_PARAM_INDEX];
     
-    // Use local copies in calculations
+
 }
 ```
 
 ### Cache Calculated Values
 ```impala
-// Calculate expensive conversions in update(), not process()
+
 global float gain;
 global int delayTime;
 
 function update() {
-    // Do heavy math once when parameters change
+
     gain = itof((int)params[OPERAND_1_HIGH_PARAM_INDEX]) / 255.0;
     delayTime = (int)params[OPERAND_1_LOW_PARAM_INDEX] * 100;
 }
 
 function process() {
-    // Use pre-calculated values
+
     signal[0] = ftoi(itof(signal[0]) * gain);
 }
 ```
@@ -306,29 +306,29 @@ function process() {
 ## Complete Example
 
 ```impala
-// Global variables updated by parameters
+
 global int mixAmount;
 global float feedback;
 global int isReversed;
 
 function update() {
-    // Convert Control 1 to mix amount (0-255)
+
     mixAmount = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
     
-    // Convert Control 2 to feedback (0.0-0.95)
+
     feedback = itof((int)params[OPERAND_1_LOW_PARAM_INDEX]) * 0.95 / 255.0;
     
-    // Check reverse switch
+
     isReversed = ((int)params[SWITCHES_PARAM_INDEX] & SWITCHES_REVERSE_MASK) != 0;
     
-    // LED feedback - show mix amount
+
     displayLEDs[0] = mixAmount;
     displayLEDs[1] = (int)(feedback * 255.0);
     
     if (isReversed) {
-        displayLEDs[2] = 0xFF;  // All LEDs on when reversed
+        displayLEDs[2] = 0xFF;
     } else {
-        displayLEDs[2] = 0x00;  // All LEDs off
+        displayLEDs[2] = 0x00;
     }
 }
 ```

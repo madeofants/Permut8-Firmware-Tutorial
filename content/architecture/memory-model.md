@@ -68,12 +68,12 @@ Impala organizes memory into distinct regions, each optimized for specific usage
 Impala allocates global variables in the Global Data Region at compile time, ensuring predictable memory layout:
 
 ```impala
-// Global arrays - allocated at compile time in Global Data Region
+
 global array delayBuffer[1024];
 global array filterCoefficients[128];
 global array lookupTable[256];
 
-// Global state variables
+
 global int sampleRate = 48000;
 global int bufferIndex = 0;
 global int currentGain = 128;
@@ -83,38 +83,38 @@ global int currentGain = 128;
 
 **Fixed-Size Arrays (Recommended):**
 ```impala
-// Compile-time size determination - optimal for real-time audio
+
 global array delayLine[2048];
 global array windowFunction[512];
 global array frequencyBins[256];
 
 function initializeArrays() {
-    // Initialize delay line to zero
+
     int i;
     for (i = 0 to 2048) {
         delayLine[i] = 0;
     }
     
-    // Pre-calculate window function (Hanning window)
+
     for (i = 0 to 512) {
         int n = i;
         int N = 512;
-        // Fixed-point calculation: 0.5 * (1 - cos(2*pi*n/(N-1)))
-        int angle = (n * 6283) / (N - 1);  // 2*pi scaled by 1000
-        int cosValue = fastCos(angle);     // Returns -1000 to 1000
-        windowFunction[i] = 500 - (cosValue >> 1);  // Scale to 0-1000
+
+        int angle = (n * 6283) / (N - 1);
+        int cosValue = fastCos(angle);
+        windowFunction[i] = 500 - (cosValue >> 1);
     }
 }
 
-// Fast cosine approximation using lookup table
+
 readonly array cosineTable[360] = {
     1000, 999, 996, 991, 985, 978, 970, 961, 951, 940,
-    // ... complete 360-value cosine table scaled by 1000
+
 };
 
 function fastCos(int scaledAngle) returns int result {
-    int degrees = (scaledAngle * 360) / 6283;  // Convert to degrees
-    degrees = degrees % 360;  // Wrap to 0-359
+    int degrees = (scaledAngle * 360) / 6283;
+    degrees = degrees % 360;
     if (degrees < 0) degrees = degrees + 360;
     result = cosineTable[degrees];
 }
@@ -122,21 +122,21 @@ function fastCos(int scaledAngle) returns int result {
 
 **Pre-allocated Buffers (Best Practice):**
 ```impala
-// Pre-allocated with maximum expected size
+
 global array maxTempBuffer[4096];
 global int tempBufferInUse = 0;
 
 function getTempBuffer(int neededSize) returns array result[4096] {
     if (neededSize <= 4096 && tempBufferInUse == 0) {
-        tempBufferInUse = 1;  // Mark as in use
+        tempBufferInUse = 1;
         return maxTempBuffer;
     }
-    // Handle error case - return smaller safe buffer
-    return maxTempBuffer;  // Caller must check size
+
+    return maxTempBuffer;
 }
 
 function releaseTempBuffer() {
-    tempBufferInUse = 0;  // Mark as available
+    tempBufferInUse = 0;
 }
 ```
 
@@ -147,13 +147,13 @@ function releaseTempBuffer() {
 Impala manages function parameters efficiently on the stack:
 
 ```impala
-// Pass by value - copies data to stack (fast for small types)
+
 function processSample(int input, int gain) returns int result {
-    int processed = (input * gain) >> 8;  // Fixed-point multiplication
+    int processed = (input * gain) >> 8;
     result = processed;
 }
 
-// Pass arrays by reference - efficient for large data
+
 function processBuffer(array buffer[1024], int length) {
     int i;
     for (i = 0 to length) {
@@ -161,11 +161,11 @@ function processBuffer(array buffer[1024], int length) {
     }
 }
 
-// Process array sections efficiently
+
 function processSection(array samples[512], int startIndex, int endIndex) {
     int i;
     for (i = startIndex to endIndex) {
-        samples[i] = saturate(samples[i] * 3 >> 1);  // 1.5x gain
+        samples[i] = saturate(samples[i] * 3 >> 1);
     }
 }
 ```
@@ -175,18 +175,18 @@ function processSection(array samples[512], int startIndex, int endIndex) {
 **Stack-Friendly Patterns:**
 ```impala
 function efficientProcessing() {
-    // Small local variables - minimal stack impact
+
     int gain = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
     int feedback = (int)params[OPERAND_1_LOW_PARAM_INDEX];
     int mix = (int)params[SWITCHES_PARAM_INDEX];
     
-    // Local arrays - use sparingly, prefer global allocation
+
     array tempCoeffs[8];
     calculateFilterCoeffs(tempCoeffs, gain);
     
-    // Process using efficient local variables
+
     int i;
-    for (i = 0 to 2) {  // Process stereo
+    for (i = 0 to 2) {
         int input = signal[i];
         int filtered = applyBiquad(input, tempCoeffs);
         signal[i] = (input * (255 - mix) + filtered * mix) >> 8;
@@ -196,20 +196,20 @@ function efficientProcessing() {
 
 **Stack Overflow Prevention:**
 ```impala
-// Avoid large local arrays - causes stack overflow
+
 function badStackUsage() {
-    // DON'T DO THIS - 8KB array overflows 4KB stack
-    array hugeBuffer[4096];  // STACK OVERFLOW!
-    // ... processing
+
+    array hugeBuffer[4096];
+
 }
 
-// Instead, use global allocation
+
 global array largeWorkBuffer[4096];
 
 function goodStackUsage() {
-    // Use pre-allocated global buffer
+
     clearBuffer(largeWorkBuffer);
-    // ... processing using largeWorkBuffer
+
 }
 
 function clearBuffer(array buffer[4096]) {
@@ -231,11 +231,11 @@ global array delayBuffer[1024];
 global int delayIndex = 0;
 
 function safeDelayAccess() {
-    // Compile-time bounds checking - array size known
-    delayBuffer[512] = signal[0];  // OK - within bounds
-    // delayBuffer[1024] = signal[0];  // COMPILE ERROR - out of bounds
+
+    delayBuffer[512] = signal[0];
+
     
-    // Runtime bounds checking for dynamic indices
+
     if (delayIndex < 1024) {
         int delayedSample = delayBuffer[delayIndex];
         delayBuffer[delayIndex] = signal[0];
@@ -248,20 +248,20 @@ function safeDelayAccess() {
 ### Safe Array Access Patterns
 
 ```impala
-// Safe array access with bounds validation
+
 function safeArrayAccess(array buffer[1024], int index, int value) {
-    // Always validate index before access
+
     if (index >= 0 && index < 1024) {
         buffer[index] = value;
     } else {
         trace("ERROR: Array index out of bounds");
-        // Handle error gracefully
+
     }
 }
 
-// Circular buffer with automatic wrapping
+
 function circularBufferAccess(array buffer[512], int index, int value) {
-    // Ensure positive index and wrap
+
     int safeIndex = index % 512;
     if (safeIndex < 0) safeIndex = safeIndex + 512;
     buffer[safeIndex] = value;
@@ -274,20 +274,20 @@ function circularBufferAccess(array buffer[512], int index, int value) {
 
 **Structure of Arrays (SoA) Pattern:**
 ```impala
-// Efficient for sequential processing and cache locality
+
 global array leftSamples[512];
 global array rightSamples[512];
 global array leftHistory[64];
 global array rightHistory[64];
 
 function processStereoSoA() {
-    // Process left channel with good cache locality
+
     int i;
     for (i = 0 to 512) {
         leftSamples[i] = applyFilter(leftSamples[i], leftHistory);
     }
     
-    // Process right channel with good cache locality
+
     for (i = 0 to 512) {
         rightSamples[i] = applyFilter(rightSamples[i], rightHistory);
     }
@@ -296,22 +296,22 @@ function processStereoSoA() {
 
 **Interleaved Stereo Processing:**
 ```impala
-// Efficient when processing samples together
-global array stereoBuffer[1024];  // Interleaved L,R,L,R...
+
+global array stereoBuffer[1024];
 
 function processStereoInterleaved() {
-    int frameCount = 512;  // 512 stereo frames = 1024 samples
+    int frameCount = 512;
     int i;
     for (i = 0 to frameCount) {
         int leftIndex = i * 2;
         int rightIndex = i * 2 + 1;
         
-        // Process left and right together
+
         int processedLeft = applyLeftEffect(stereoBuffer[leftIndex]);
         int processedRight = applyRightEffect(stereoBuffer[rightIndex]);
         
-        // Apply cross-channel effects
-        stereoBuffer[leftIndex] = processedLeft + (processedRight >> 4);  // 6% crosstalk
+
+        stereoBuffer[leftIndex] = processedLeft + (processedRight >> 4);
         stereoBuffer[rightIndex] = processedRight + (processedLeft >> 4);
     }
 }
@@ -320,25 +320,25 @@ function processStereoInterleaved() {
 ### Memory Alignment and Access Patterns
 
 ```impala
-// Sequential Access (Fastest)
+
 function sequentialProcessing(array buffer[1024]) {
-    // Optimal memory access pattern
+
     int i;
     for (i = 0 to 1024) {
         buffer[i] = applyProcessing(buffer[i]);
     }
 }
 
-// Block Processing (Optimal for Complex Operations)
+
 function blockProcessing(array buffer[1024]) {
     const int BLOCK_SIZE = 64;
-    int blockCount = 1024 / BLOCK_SIZE;  // 16 blocks
+    int blockCount = 1024 / BLOCK_SIZE;
     
     int blockIdx;
     for (blockIdx = 0 to blockCount) {
         int blockStart = blockIdx * BLOCK_SIZE;
         
-        // Process entire block with good cache locality
+
         applyComplexProcessing(buffer, blockStart, BLOCK_SIZE);
     }
 }
@@ -346,7 +346,7 @@ function blockProcessing(array buffer[1024]) {
 function applyComplexProcessing(array buffer[1024], int start, int length) {
     int i;
     for (i = start to start + length) {
-        // Complex processing on contiguous memory block
+
         buffer[i] = complexAlgorithm(buffer[i]);
     }
 }
@@ -357,35 +357,35 @@ function applyComplexProcessing(array buffer[1024], int start, int length) {
 ### Memory Pool Implementation
 
 ```impala
-// Custom memory pool for temporary allocations
+
 global array memoryPool[8192];
-global array freeBlocks[32];  // Track which blocks are free
-global int blockSize = 256;   // Each block is 256 bytes
-global int blockCount = 32;   // 8192 / 256 = 32 blocks
+global array freeBlocks[32];
+global int blockSize = 256;
+global int blockCount = 32;
 
 function initMemoryPool() {
     int i;
-    // Mark all blocks as free
+
     for (i = 0 to 32) {
-        freeBlocks[i] = 1;  // 1 = free, 0 = allocated
+        freeBlocks[i] = 1;
     }
 }
 
 function allocateFromPool() returns int blockIndex {
-    // Find first free block
+
     int i;
     for (i = 0 to 32) {
         if (freeBlocks[i] == 1) {
-            freeBlocks[i] = 0;  // Mark as allocated
+            freeBlocks[i] = 0;
             return i;
         }
     }
-    return -1;  // Pool exhausted
+    return -1;
 }
 
 function freeToPool(int blockIndex) {
     if (blockIndex >= 0 && blockIndex < 32) {
-        freeBlocks[blockIndex] = 1;  // Mark as free
+        freeBlocks[blockIndex] = 1;
     }
 }
 
@@ -405,7 +405,7 @@ function getPoolBlock(int blockIndex, array result[256]) {
 ### Lock-Free Circular Buffers
 
 ```impala
-// Single-producer, single-consumer lock-free buffer
+
 global array circularData[2048];
 global int writeIndex = 0;
 global int readIndex = 0;
@@ -413,20 +413,20 @@ global int readIndex = 0;
 function writeSample(int sample) returns int success {
     int nextWrite = (writeIndex + 1) % 2048;
     
-    // Check if buffer is full (would overwrite unread data)
+
     if (nextWrite == readIndex) {
-        return 0;  // Buffer full
+        return 0;
     }
     
     circularData[writeIndex] = sample;
-    writeIndex = nextWrite;  // Atomic on Permut8
-    return 1;  // Success
+    writeIndex = nextWrite;
+    return 1;
 }
 
 function readSample() returns int sample {
-    // Check if buffer is empty
+
     if (readIndex == writeIndex) {
-        return 0;  // Buffer empty - return silence
+        return 0;
     }
     
     int sample = circularData[readIndex];
@@ -446,18 +446,18 @@ function getBufferLevel() returns int level {
 ### Zero-Copy Buffer Management
 
 ```impala
-// Efficient buffer passing without copying
+
 global array inputBuffer[512];
 global array outputBuffer[512];
 global int processingComplete = 0;
 
 function setupZeroCopy() {
-    // Just mark buffers as ready - no data copying
+
     processingComplete = 0;
 }
 
 function processZeroCopy() {
-    // Process directly from input to output
+
     int i;
     for (i = 0 to 512) {
         outputBuffer[i] = applyEffect(inputBuffer[i]);
@@ -466,21 +466,21 @@ function processZeroCopy() {
 }
 
 function swapBuffers() {
-    // Swap input and output for ping-pong processing
+
     array tempBuffer[512];
     int i;
     
-    // Copy output to temp
+
     for (i = 0 to 512) {
         tempBuffer[i] = outputBuffer[i];
     }
     
-    // Copy input to output
+
     for (i = 0 to 512) {
         outputBuffer[i] = inputBuffer[i];
     }
     
-    // Copy temp to input
+
     for (i = 0 to 512) {
         inputBuffer[i] = tempBuffer[i];
     }
@@ -492,41 +492,41 @@ function swapBuffers() {
 ### Memory Usage Monitoring
 
 ```impala
-// Runtime memory usage tracking
+
 global int stackHighWaterMark = 0;
 global int poolAllocations = 0;
 global int poolDeallocations = 0;
 global int bufferOverrunCount = 0;
 
 function checkStackUsage() returns int usage {
-    // Estimate stack usage (platform-specific implementation)
+
     int currentUsage = getApproximateStackUsage();
     
     if (currentUsage > stackHighWaterMark) {
         stackHighWaterMark = currentUsage;
     }
     
-    // Alert if approaching stack limit (4KB = 4096 bytes)
-    if (currentUsage > 3276) {  // 80% usage warning
-        displayLEDs[0] = 0xFF;  // Red LED warning
+
+    if (currentUsage > 3276) {
+        displayLEDs[0] = 0xFF;
         trace("WARNING: High stack usage detected");
     }
     
     return currentUsage;
 }
 
-// Platform-specific stack usage estimation
+
 function getApproximateStackUsage() returns int estimation {
-    // This is a simplified estimation
-    // Actual implementation would use platform-specific methods
-    return 1024;  // Placeholder value
+
+
+    return 1024;
 }
 ```
 
 ### Buffer Overflow Detection
 
 ```impala
-// Guard pattern implementation
+
 global int guardPrefix = 0xDEAD;
 global array protectedData[1024];
 global int guardSuffix = 0xBEEF;
@@ -535,7 +535,7 @@ function initGuardedBuffer() {
     guardPrefix = 0xDEAD;
     guardSuffix = 0xBEEF;
     
-    // Initialize data to zero
+
     int i;
     for (i = 0 to 1024) {
         protectedData[i] = 0;
@@ -545,26 +545,26 @@ function initGuardedBuffer() {
 function checkBufferIntegrity() returns int isValid {
     if (guardPrefix != 0xDEAD) {
         bufferOverrunCount = bufferOverrunCount + 1;
-        displayLEDs[1] = 0xFF;  // Orange LED - prefix corruption
+        displayLEDs[1] = 0xFF;
         trace("ERROR: Buffer prefix corrupted");
         return 0;
     }
     
     if (guardSuffix != 0xBEEF) {
         bufferOverrunCount = bufferOverrunCount + 1;
-        displayLEDs[2] = 0xFF;  // Yellow LED - suffix corruption
+        displayLEDs[2] = 0xFF;
         trace("ERROR: Buffer suffix corrupted");
         return 0;
     }
     
-    return 1;  // Buffer is intact
+    return 1;
 }
 ```
 
 ### Memory Leak Detection
 
 ```impala
-// Allocation tracking for debugging
+
 global int totalAllocations = 0;
 global int totalDeallocations = 0;
 global int currentAllocations = 0;
@@ -578,7 +578,7 @@ function trackAllocation() {
         peakAllocations = currentAllocations;
     }
     
-    // Update LED display with allocation count
+
     displayLEDs[3] = currentAllocations;
 }
 
@@ -594,10 +594,10 @@ function checkMemoryLeaks() returns int hasLeaks {
     
     if (leakedAllocations > 0) {
         trace("WARNING: Memory leaks detected");
-        return 1;  // Has leaks
+        return 1;
     }
     
-    return 0;  // No leaks
+    return 0;
 }
 ```
 

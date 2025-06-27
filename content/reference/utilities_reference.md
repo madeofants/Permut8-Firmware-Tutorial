@@ -13,8 +13,8 @@ write(int offset, int frameCount, pointer values)
 
 **Read from delay memory:**
 ```impala
-array buffer[2];  // For stereo pair
-read(1000, 1, buffer);  // Read 1 frame at offset 1000
+array buffer[2];
+read(1000, 1, buffer);
 int leftSample = buffer[0];
 int rightSample = buffer[1];
 ```
@@ -22,7 +22,7 @@ int rightSample = buffer[1];
 **Write to delay memory:**
 ```impala
 array samples[2] = {signal[0], signal[1]};
-write(clock, 1, samples);  // Write current samples at clock position
+write(clock, 1, samples);
 ```
 
 **Frame format:** Interleaved stereo (left, right, left, right...)  
@@ -31,8 +31,8 @@ write(clock, 1, samples);  // Write current samples at clock position
 
 ### Control Flow
 ```impala
-yield()  // Return control to audio engine
-abort()  // Kill firmware, restore normal operation
+yield()
+abort()
 ```
 
 #### yield() - Real-time Cooperative Processing
@@ -48,21 +48,21 @@ abort()  // Kill firmware, restore normal operation
 ```impala
 function process() {
     loop {
-        // Process exactly one audio sample per yield
+
         signal[0] = processLeft(signal[0]);
         signal[1] = processRight(signal[1]);
         
-        yield();  // REQUIRED: Return control every sample
+        yield();
     }
 }
 
-// WRONG: This will cause audio dropouts
+
 function process() {
     int i;
     for (i = 0 to 1000) {
-        // Processing 1000 samples without yield = 20ms gap!
+
         signal[0] = signal[0] >> 1;
-        // yield(); // MISSING - audio engine will timeout
+
     }
 }
 ```
@@ -83,17 +83,17 @@ function process() {
 **Usage Scenarios**:
 ```impala
 function process() {
-    // Safety check for runaway feedback
+
     if (signal[0] > 4000 || signal[0] < -4000) {
         trace("EMERGENCY: Audio overflow detected!");
-        abort();  // Immediately stop firmware
+        abort();
     }
     
-    // Emergency user override (both switches pressed)
+
     int switches = (int)params[SWITCHES_PARAM_INDEX];
     if ((switches & 0x03) == 0x03) {
         trace("User emergency stop activated");
-        abort();  // User requested immediate stop
+        abort();
     }
     
     yield();
@@ -103,7 +103,7 @@ function safeDivide(float a, float b)
 returns float result {
     if ((b < SMALL_FLOAT && b > -SMALL_FLOAT)) {
         trace("ERROR: Division by zero prevented");
-        abort();  // Terminate rather than crash
+        abort();
     }
     result = a / b;
 }
@@ -117,7 +117,7 @@ returns float result {
 
 ### Debugging
 ```impala
-trace(pointer string)  // Output debug message
+trace(pointer string)
 ```
 
 #### trace() - Debug Output and Development Logging
@@ -136,7 +136,7 @@ function update() {
     array buffer[64];
     array message[128];
     
-    // Monitor control changes
+
     strcpy(message, "Knob1=");
     strcat(message, intToString((int)params[OPERAND_1_HIGH_PARAM_INDEX], 10, 1, buffer));
     strcat(message, " Knob2=");
@@ -152,7 +152,7 @@ global int debugCounter = 0;
 function process() {
     debugCounter = debugCounter + 1;
     
-    // Trace every 4800 samples (10x per second at 48kHz)
+
     if ((debugCounter % 4800) == 0) {
         array msg[128];
         array temp[32];
@@ -174,7 +174,7 @@ global int currentState = 0;
 global int lastState = -1;
 
 function process() {
-    // Only trace on state changes
+
     if (currentState != lastState) {
         array stateMsg[64];
         array numBuf[16];
@@ -220,7 +220,7 @@ global int maxProcessingTime = 0;
 function process() {
     int startTime = clock;
     
-    // Your processing code here
+
     doAudioProcessing();
     
     processingTime = clock - startTime;
@@ -256,31 +256,31 @@ function process() {
 
 ### Trigonometric Functions
 ```impala
-// These functions may not be available in basic Impala:
-float cos(float x)    // Cosine - use lookup table alternative
-float sin(float x)    // Sine - use lookup table alternative
-float tan(float x)    // Tangent - use lookup table alternative
+
+float cos(float x)
+float sin(float x)
+float tan(float x)
 ```
 
 **Generate oscillator (compatible version):**
 ```impala
-const int TWO_PI_SCALED = 6283;  // 2π * 1000 for fixed-point math
-global int phase = 0;            // Integer phase 0-999
+const int TWO_PI_SCALED = 6283;
+global int phase = 0;
 
 function process() {
-    // Create triangle wave (guaranteed to work)
+
     int sineOut;
     if (phase < 500) {
-        sineOut = (phase * 4094) / 500 - 2047;  // Rising edge
+        sineOut = (phase * 4094) / 500 - 2047;
     } else {
-        sineOut = 2047 - ((phase - 500) * 4094) / 500;  // Falling edge
+        sineOut = 2047 - ((phase - 500) * 4094) / 500;
     }
     
     signal[0] = sineOut;
     signal[1] = sineOut;
     
-    // Advance phase (440Hz at 48kHz approximation)
-    phase += 9;  // Approximation for 440Hz
+
+    phase += 9;
     if (phase >= 1000) phase = 0;
     
     yield();
@@ -289,22 +289,22 @@ function process() {
 
 ### Exponential and Logarithmic
 ```impala
-// These functions may not be available in basic Impala:
-float exp(float x)     // e^x - use fixed-point approximation
-float log(float x)     // Natural log - use lookup table
-float log2(float x)    // Base-2 log - use lookup table
-float log10(float x)   // Base-10 log - use lookup table
-float pow(float x, float y) // x^y - use repeated multiplication
-float sqrt(float x)    // Square root - use approximation
+
+float exp(float x)
+float log(float x)
+float log2(float x)
+float log10(float x)
+float pow(float x, float y)
+float sqrt(float x)
 ```
 
 **Exponential envelope (compatible version):**
 ```impala
-global int envelope = 1000;  // Fixed-point: 1000 = 1.0
+global int envelope = 1000;
 
 function process() {
-    // Fixed-point exponential decay approximation
-    envelope = (envelope * 999) >> 10;  // Decay rate approximation
+
+    envelope = (envelope * 999) >> 10;
     
     int enveloped = (signal[0] * envelope) >> 10;
     signal[0] = enveloped;
@@ -316,12 +316,12 @@ function process() {
 
 ### Number Manipulation
 ```impala
-// These functions may not be available in basic Impala:
-float floor(float x)   // Round down - use integer division
-float ceil(float x)    // Round up - use integer math
-float round(float x)   // Round to nearest - use (x + 0.5) cast
-float trunc(float x)   // Remove fractional part - use ftoi()
-float fmod(float x, float y) // Floating point modulo - use % operator
+
+float floor(float x)
+float ceil(float x)
+float round(float x)
+float trunc(float x)
+float fmod(float x, float y)
 ```
 
 **Quantize to steps:**
@@ -330,7 +330,7 @@ float quantize(float input, int steps) {
     return round(input * itof(steps)) / itof(steps);
 }
 
-// Usage: quantize control to 8 steps
+
 float controlValue = itof((int)params[OPERAND_1_HIGH_PARAM_INDEX]) / 255.0;
 float stepped = quantize(controlValue, 8);
 ```
@@ -353,13 +353,13 @@ returns int clipped {
 
 ### Random Number Generation
 ```impala
-int xorShiftRandom()  // Returns random integer
+int xorShiftRandom()
 ```
 
 **Setup random seed:**
 ```impala
 function init() {
-    // Use instance for unique seed per plugin
+
     xorShiftRandomSeedX = instance * 1234567;
     xorShiftRandomSeedY = instance * 7654321;
 }
@@ -368,9 +368,9 @@ function init() {
 **Random effects:**
 ```impala
 function process() {
-    // Random bit crushing
-    int randomBits = (xorShiftRandom() & 0xFF) + 1;  // 1-256
-    int reduction = 8 - (randomBits >> 5);           // 1-8 bits
+
+    int randomBits = (xorShiftRandom() & 0xFF) + 1;
+    int reduction = 8 - (randomBits >> 5);
     
     signal[0] = signal[0] >> reduction << reduction;
     signal[1] = signal[1] >> reduction << reduction;
@@ -383,12 +383,12 @@ function process() {
 
 ### Basic String Operations
 ```impala
-int strlen(pointer s)                    // String length
-pointer strcpy(pointer dest, pointer src) // Copy string
-pointer strcat(pointer dest, pointer src) // Concatenate
-int strcmp(pointer s1, pointer s2)       // Compare strings
-int strncmp(pointer s1, pointer s2, int n) // Compare n chars
-pointer stpcpy(pointer dest, pointer src)  // Copy, return end pointer
+int strlen(pointer s)
+pointer strcpy(pointer dest, pointer src)
+pointer strcat(pointer dest, pointer src)
+int strcmp(pointer s1, pointer s2)
+int strncmp(pointer s1, pointer s2, int n)
+pointer stpcpy(pointer dest, pointer src)
 ```
 
 ### Number Conversion
@@ -416,7 +416,7 @@ void traceInt(pointer text, int value)
 void traceInts(pointer text, int count, pointer values)
 void traceFloat(pointer text, float value)  
 void traceFloats(pointer text, int count, pointer values)
-void error(pointer message)  // Trace message and abort
+void error(pointer message)
 ```
 
 **Trace arrays:**
@@ -433,7 +433,7 @@ function update() {
 For guaranteed compatibility, use these integer-based implementations:
 
 ```impala
-// Integer absolute value
+
 function intAbs(int value) returns int result {
     if (value < 0) {
         result = -value;
@@ -442,29 +442,29 @@ function intAbs(int value) returns int result {
     }
 }
 
-// Integer square root approximation
+
 function intSqrt(int x) returns int result {
     if (x <= 1) return x;
     
-    int guess = x >> 1;  // Start with x/2
+    int guess = x >> 1;
     int i;
-    for (i = 0 to 8) {  // 8 iterations for convergence
+    for (i = 0 to 8) {
         guess = (guess + x / guess) >> 1;
     }
     result = guess;
 }
 
-// Fixed-point sine approximation (input: 0-999, output: -1000 to 1000)
+
 function intSine(int angle) returns int result {
-    angle = angle % 1000;  // Wrap to 0-999
+    angle = angle % 1000;
     
-    if (angle < 250) {  // 0-90 degrees
-        result = (angle * 4000) / 250;  // Linear approximation
-    } else if (angle < 500) {  // 90-180 degrees
+    if (angle < 250) {
+        result = (angle * 4000) / 250;
+    } else if (angle < 500) {
         result = 1000 - ((angle - 250) * 4000) / 250;
-    } else if (angle < 750) {  // 180-270 degrees
+    } else if (angle < 750) {
         result = -((angle - 500) * 4000) / 250;
-    } else {  // 270-360 degrees
+    } else {
         result = -1000 + ((angle - 750) * 4000) / 250;
     }
 }
@@ -486,11 +486,11 @@ function update() {
     int controlRaw = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
     int expValue = (int)EIGHT_BIT_EXP_TABLE[controlRaw];
     
-    // expValue now ranges from 0x0 to 0xFFFF with exponential curve
+
     global delayTime = expValue;
     
-    // LED feedback shows exponential response
-    displayLEDs[0] = expValue >> 8;  // High byte for LED display
+
+    displayLEDs[0] = expValue >> 8;
 }
 ```
 
@@ -498,7 +498,7 @@ function update() {
 ```impala
 function update() {
     int knobRaw = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
-    int index = knobRaw >> 1;  // Convert 8-bit to 7-bit index
+    int index = knobRaw >> 1;
     int expValue = (int)SEVEN_BIT_EXP_TABLE[index];
     
     global feedbackAmount = expValue;
@@ -508,23 +508,23 @@ function update() {
 ## Mathematical Constants
 
 ```impala
-// Fixed-point mathematical constants (scaled by 1000)
-const int LOG2_SCALED = 693;           // ln(2) * 1000
-const int LOG2R_SCALED = 1443;         // 1/ln(2) * 1000
-const int LOG10R_SCALED = 434;         // 1/ln(10) * 1000
-const int E_SCALED = 2718;             // e * 1000
-const int HALF_PI_SCALED = 1571;       // π/2 * 1000
-const int PI_SCALED = 3142;            // π * 1000
-const int TWO_PI_SCALED = 6283;        // 2π * 1000
-const int COS_EPSILON_SCALED = 1;      // Small value for comparisons
+
+const int LOG2_SCALED = 693;
+const int LOG2R_SCALED = 1443;
+const int LOG10R_SCALED = 434;
+const int E_SCALED = 2718;
+const int HALF_PI_SCALED = 1571;
+const int PI_SCALED = 3142;
+const int TWO_PI_SCALED = 6283;
+const int COS_EPSILON_SCALED = 1;
 ```
 
 ```impala
-// Fixed-point threshold constants
-const int EPSILON_SCALED = 1;          // Smallest comparison value
-const int SMALL_SCALED = 10;           // Small threshold * 1000000
-const int LARGE_SCALED = 10000000;     // Large threshold scaled
-const int HUGE_SCALED = 2000000000;    // Large integer value
+
+const int EPSILON_SCALED = 1;
+const int SMALL_SCALED = 10;
+const int LARGE_SCALED = 10000000;
+const int HUGE_SCALED = 2000000000;
 ```
 
 ## Performance Tips
@@ -540,7 +540,7 @@ function init() {
     for (i = 0 to COS_TABLE_SIZE) {
         cosTable[i] = ftoi(cos((TWO_PI_SCALED / itof(COS_TABLE_SIZE * 1000)) * itof(i)) * 2047.0);
     }
-    cosTable[COS_TABLE_SIZE] = cosTable[0];  // Wrap for interpolation
+    cosTable[COS_TABLE_SIZE] = cosTable[0];
 }
 
 function fastCos(int phase) 
@@ -584,17 +584,17 @@ returns float result {
 ### Parameter-Driven Oscillator (Compatible Version)
 ```impala
 global int oscPhase = 0;
-global int oscFreq = 9;  // Frequency increment
+global int oscFreq = 9;
 
 function update() {
-    // Convert control to frequency increment (1Hz - 1000Hz)
+
     int freqIndex = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
     int expValue = (int)EIGHT_BIT_EXP_TABLE[freqIndex];
-    oscFreq = 1 + (expValue >> 7);  // Scale to 1-500 increment range
+    oscFreq = 1 + (expValue >> 7);
 }
 
 function process() {
-    // Generate triangle wave
+
     int oscOut;
     if (oscPhase < 500) {
         oscOut = (oscPhase * 4094) / 500 - 2047;
@@ -602,7 +602,7 @@ function process() {
         oscOut = 2047 - ((oscPhase - 500) * 4094) / 500;
     }
     
-    signal[0] = (signal[0] + oscOut) >> 1;  // Mix with input
+    signal[0] = (signal[0] + oscOut) >> 1;
     signal[1] = (signal[1] + oscOut) >> 1;
     
     oscPhase += oscFreq;
@@ -615,17 +615,17 @@ function process() {
 ### Random Modulation (Compatible Version)
 ```impala
 global int randomCounter = 0;
-global int currentRandom = 256;  // Fixed-point: 256 = 1.0
+global int currentRandom = 256;
 
 function process() {
-    // Update random value every 1000 samples
+
     randomCounter = randomCounter + 1;
     if (randomCounter >= 1000) {
         randomCounter = 0;
-        currentRandom = (xorShiftRandom() & 0xFF) + 1;  // 1-256 range
+        currentRandom = (xorShiftRandom() & 0xFF) + 1;
     }
     
-    // Apply random modulation to input (fixed-point)
+
     signal[0] = (signal[0] * currentRandom) >> 8;
     signal[1] = (signal[1] * currentRandom) >> 8;
     

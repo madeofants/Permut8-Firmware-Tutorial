@@ -80,16 +80,16 @@ firmware-project/
 Organize code into well-defined modules with clear interfaces and minimal coupling.
 
 ```c
-// Module: audio/dsp/filters.h - Public interface
+
 #ifndef FILTERS_H
 #define FILTERS_H
 
 #include "audio_types.h"
 
-// Opaque handle for filter instances
+
 typedef struct filter_state* filter_handle_t;
 
-// Filter type enumeration
+
 typedef enum {
     FILTER_LOWPASS,
     FILTER_HIGHPASS,
@@ -97,7 +97,7 @@ typedef enum {
     FILTER_NOTCH
 } filter_type_t;
 
-// Filter configuration structure
+
 typedef struct {
     filter_type_t type;
     float cutoff_hz;
@@ -105,7 +105,7 @@ typedef struct {
     float sample_rate;
 } filter_config_t;
 
-// Public API functions
+
 filter_handle_t filter_create(const filter_config_t* config);
 void filter_destroy(filter_handle_t filter);
 float filter_process(filter_handle_t filter, float input);
@@ -113,25 +113,25 @@ void filter_set_cutoff(filter_handle_t filter, float cutoff_hz);
 void filter_set_resonance(filter_handle_t filter, float resonance);
 void filter_reset(filter_handle_t filter);
 
-#endif // FILTERS_H
+#endif
 ```
 
 ```c
-// Module: audio/dsp/filters.c - Implementation
+
 #include "filters.h"
 #include "shared/math.h"
 #include <stdlib.h>
 #include <string.h>
 
-// Private filter state structure
+
 struct filter_state {
     filter_config_t config;
-    float x1, x2;  // Input history
-    float y1, y2;  // Output history
-    float a0, a1, a2, b1, b2;  // Filter coefficients
+    float x1, x2;
+    float y1, y2;
+    float a0, a1, a2, b1, b2;
 };
 
-// Private helper functions
+
 static void calculate_coefficients(struct filter_state* filter);
 static void validate_config(const filter_config_t* config);
 
@@ -157,14 +157,14 @@ void filter_destroy(filter_handle_t filter) {
 float filter_process(filter_handle_t filter, float input) {
     if (!filter) return input;
     
-    // Biquad filter implementation
+
     float output = filter->a0 * input + 
                    filter->a1 * filter->x1 + 
                    filter->a2 * filter->x2 -
                    filter->b1 * filter->y1 - 
                    filter->b2 * filter->y2;
     
-    // Update history
+
     filter->x2 = filter->x1;
     filter->x1 = input;
     filter->y2 = filter->y1;
@@ -173,7 +173,7 @@ float filter_process(filter_handle_t filter, float input) {
     return output;
 }
 
-// Private implementation details
+
 static void calculate_coefficients(struct filter_state* filter) {
     float omega = 2.0f * M_PI * filter->config.cutoff_hz / filter->config.sample_rate;
     float sin_omega = sin(omega);
@@ -186,10 +186,10 @@ static void calculate_coefficients(struct filter_state* filter) {
             filter->a1 = 1.0f - cos_omega;
             filter->a2 = (1.0f - cos_omega) / 2.0f;
             break;
-        // ... other filter types
+
     }
     
-    // Normalize coefficients
+
     float norm = 1.0f + alpha;
     filter->a0 /= norm;
     filter->a1 /= norm;
@@ -206,17 +206,17 @@ static void calculate_coefficients(struct filter_state* filter) {
 Design header files following the Interface Segregation Principle to minimize compilation dependencies.
 
 ```c
-// audio_types.h - Fundamental type definitions
+
 #ifndef AUDIO_TYPES_H
 #define AUDIO_TYPES_H
 
 #include <stdint.h>
 #include <stdbool.h>
 
-// Audio sample type
+
 typedef float audio_sample_t;
 
-// Audio buffer structure
+
 typedef struct {
     audio_sample_t* data;
     uint32_t size;
@@ -224,10 +224,10 @@ typedef struct {
     uint32_t sample_rate;
 } audio_buffer_t;
 
-// Audio processing callback type
+
 typedef void (*audio_process_func_t)(audio_buffer_t* input, audio_buffer_t* output);
 
-// Parameter value type
+
 typedef struct {
     float value;
     float min;
@@ -236,29 +236,29 @@ typedef struct {
     const char* units;
 } parameter_t;
 
-#endif // AUDIO_TYPES_H
+#endif
 ```
 
 ```c
-// system_config.h - System-wide configuration
+
 #ifndef SYSTEM_CONFIG_H
 #define SYSTEM_CONFIG_H
 
-// Audio configuration
+
 #define AUDIO_SAMPLE_RATE    48000
 #define AUDIO_BLOCK_SIZE     64
 #define AUDIO_CHANNELS       2
 
-// Memory configuration
-#define MAX_DELAY_SAMPLES    (AUDIO_SAMPLE_RATE * 2)  // 2 seconds
+
+#define MAX_DELAY_SAMPLES    (AUDIO_SAMPLE_RATE * 2)
 #define MAX_VOICES           16
 #define PARAMETER_COUNT      32
 
-// Performance limits
+
 #define MAX_CPU_USAGE_PERCENT 80.0f
 #define MAX_MEMORY_USAGE_KB   256
 
-// Debug configuration
+
 #ifdef DEBUG
     #define ENABLE_TIMING_CHECKS    1
     #define ENABLE_MEMORY_TRACKING  1
@@ -269,7 +269,7 @@ typedef struct {
     #define ENABLE_ASSERT           0
 #endif
 
-#endif // SYSTEM_CONFIG_H
+#endif
 ```
 
 ### Forward Declaration Patterns
@@ -277,24 +277,24 @@ typedef struct {
 Use forward declarations to minimize header dependencies and reduce compilation times.
 
 ```c
-// ui/parameters.h - Using forward declarations
+
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
 #include "audio_types.h"
 
-// Forward declarations to avoid including heavy headers
+
 struct preset_manager;
 struct midi_controller;
 struct display_manager;
 
-// Parameter manager handle
+
 typedef struct parameter_manager parameter_manager_t;
 
-// Parameter update callback
+
 typedef void (*parameter_update_callback_t)(int param_id, float value, void* user_data);
 
-// Public API
+
 parameter_manager_t* parameter_manager_create(void);
 void parameter_manager_destroy(parameter_manager_t* pm);
 
@@ -309,15 +309,15 @@ void parameter_register_callback(parameter_manager_t* pm,
                                 parameter_update_callback_t callback, 
                                 void* user_data);
 
-#endif // PARAMETERS_H
+#endif
 ```
 
 ```c
-// ui/parameters.c - Implementation includes full headers
+
 #include "parameters.h"
-#include "presets.h"      // Full header only in implementation
-#include "midi.h"         // Full header only in implementation
-#include "display.h"      // Full header only in implementation
+#include "presets.h"
+#include "midi.h"
+#include "display.h"
 #include "shared/math.h"
 #include <stdlib.h>
 #include <string.h>
@@ -331,10 +331,10 @@ struct parameter_manager {
     void* callback_data;
 };
 
-// Implementation can use full interfaces
+
 void parameter_bind_preset_manager(parameter_manager_t* pm, struct preset_manager* presets) {
     pm->preset_mgr = presets;
-    preset_manager_set_parameter_source(presets, pm);  // Full API available
+    preset_manager_set_parameter_source(presets, pm);
 }
 ```
 
@@ -469,11 +469,11 @@ LDFLAGS += -T$(BUILD_DIR)/linker_release.ld -flto
 Implement systematic dependency tracking and management.
 
 ```c
-// shared/dependencies.h - Dependency management
+
 #ifndef DEPENDENCIES_H
 #define DEPENDENCIES_H
 
-// Dependency tracking for modules
+
 typedef struct module_info {
     const char* name;
     const char* version;
@@ -482,7 +482,7 @@ typedef struct module_info {
     void (*cleanup_func)(void);
 } module_info_t;
 
-// Module registration macro
+
 #define REGISTER_MODULE(name, version, deps, init, cleanup) \
     static const char* name##_deps[] = deps; \
     static const module_info_t name##_module_info = { \
@@ -497,33 +497,33 @@ typedef struct module_info {
         module_system_register(&name##_module_info); \
     }
 
-// Module system API
+
 void module_system_init(void);
 void module_system_cleanup(void);
 int module_system_register(const module_info_t* module);
 int module_system_initialize_all(void);
 void module_system_print_dependency_graph(void);
 
-#endif // DEPENDENCIES_H
+#endif
 ```
 
 ```c
-// Example module registration
-// audio/dsp/filters.c
+
+
 #include "shared/dependencies.h"
 
 static int filters_init(void) {
-    // Initialize filter subsystem
-    return 0;  // Success
+
+    return 0;
 }
 
 static void filters_cleanup(void) {
-    // Cleanup filter subsystem
+
 }
 
-// Register module with dependencies
+
 REGISTER_MODULE(filters, "1.0.0", 
-                {"math", "memory", NULL},  // Dependencies
+                {"math", "memory", NULL},
                 filters_init, 
                 filters_cleanup);
 ```
@@ -712,8 +712,8 @@ temp/
 ```
 
 ```c
-// Automated version generation
-// tools/generate_version.c
+
+
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
@@ -725,7 +725,7 @@ int main(int argc, char* argv[]) {
     time_t t = time(NULL);
     struct tm* tm = localtime(&t);
     
-    fprintf(f, "// Auto-generated version file\n");
+    fprintf(f, "
     fprintf(f, "#ifndef VERSION_H\n");
     fprintf(f, "#define VERSION_H\n\n");
     
@@ -740,7 +740,7 @@ int main(int argc, char* argv[]) {
     fprintf(f, "#define BUILD_TIME \"%02d:%02d:%02d\"\n",
             tm->tm_hour, tm->tm_min, tm->tm_sec);
     
-    fprintf(f, "\n#endif // VERSION_H\n");
+    fprintf(f, "\n#endif
     fclose(f);
     
     return 0;
@@ -826,55 +826,55 @@ jobs:
 Create extensible plugin systems for modular firmware.
 
 ```c
-// core/plugin_system.h - Plugin framework
+
 #ifndef PLUGIN_SYSTEM_H
 #define PLUGIN_SYSTEM_H
 
 #include "audio_types.h"
 
-// Plugin interface
+
 typedef struct plugin_interface {
     const char* name;
     const char* version;
     
-    // Lifecycle functions
+
     int (*init)(void** instance_data);
     void (*cleanup)(void* instance_data);
     
-    // Processing functions
+
     void (*process)(void* instance_data, audio_buffer_t* input, audio_buffer_t* output);
     
-    // Parameter functions
+
     void (*set_parameter)(void* instance_data, int param_id, float value);
     float (*get_parameter)(void* instance_data, int param_id);
     int (*get_parameter_count)(void);
     const char* (*get_parameter_name)(int param_id);
     
-    // Preset functions
+
     int (*save_preset)(void* instance_data, void* preset_data, int max_size);
     int (*load_preset)(void* instance_data, const void* preset_data, int size);
 } plugin_interface_t;
 
-// Plugin registration
+
 int register_plugin(const plugin_interface_t* plugin);
 const plugin_interface_t* find_plugin(const char* name);
 void list_plugins(void);
 
-#endif // PLUGIN_SYSTEM_H
+#endif
 ```
 
 ```c
-// audio/effects/reverb_plugin.c - Example plugin implementation
+
 #include "core/plugin_system.h"
 #include <stdlib.h>
 #include <string.h>
 
-// Private plugin state
+
 typedef struct {
     float room_size;
     float damping;
     float wet_level;
-    // ... reverb algorithm state ...
+
 } reverb_state_t;
 
 static int reverb_init(void** instance_data) {
@@ -901,14 +901,14 @@ static void reverb_process(void* instance_data, audio_buffer_t* input, audio_buf
     
     uint32_t i;
     for (i = 0 to input->size) {
-        // Reverb algorithm implementation
+
         float dry = input->data[i];
         float wet = apply_reverb_algorithm(state, dry);
         output->data[i] = dry * (1.0f - state->wet_level) + wet * state->wet_level;
     }
 }
 
-// Parameter handling
+
 enum reverb_params {
     PARAM_ROOM_SIZE,
     PARAM_DAMPING,
@@ -937,7 +937,7 @@ static float reverb_get_parameter(void* instance_data, int param_id) {
     }
 }
 
-// Plugin interface registration
+
 static const plugin_interface_t reverb_plugin = {
     .name = "Reverb",
     .version = "1.0.0",
@@ -957,7 +957,7 @@ static const plugin_interface_t reverb_plugin = {
     }
 };
 
-// Auto-registration using constructor attribute
+
 __attribute__((constructor))
 static void register_reverb_plugin(void) {
     register_plugin(&reverb_plugin);
@@ -969,14 +969,14 @@ static void register_reverb_plugin(void) {
 Implement centralized configuration management for complex projects.
 
 ```c
-// shared/config_manager.h - Configuration system
+
 #ifndef CONFIG_MANAGER_H
 #define CONFIG_MANAGER_H
 
 #include <stdint.h>
 #include <stdbool.h>
 
-// Configuration value types
+
 typedef enum {
     CONFIG_INT,
     CONFIG_FLOAT,
@@ -984,7 +984,7 @@ typedef enum {
     CONFIG_BOOL
 } config_type_t;
 
-// Configuration entry
+
 typedef struct {
     const char* key;
     config_type_t type;
@@ -997,7 +997,7 @@ typedef struct {
     bool is_default;
 } config_entry_t;
 
-// Configuration API
+
 int config_init(const char* config_file);
 void config_cleanup(void);
 
@@ -1014,16 +1014,16 @@ void config_set_bool(const char* key, bool value);
 int config_save(void);
 void config_print_all(void);
 
-#endif // CONFIG_MANAGER_H
+#endif
 ```
 
 ```c
-// Example configuration usage across modules
-// audio/engine.c
+
+
 #include "shared/config_manager.h"
 
 void audio_engine_init(void) {
-    // Get configuration values with sensible defaults
+
     int sample_rate = config_get_int("audio.sample_rate", 48000);
     int block_size = config_get_int("audio.block_size", 64);
     float master_volume = config_get_float("audio.master_volume", 0.8f);
@@ -1032,7 +1032,7 @@ void audio_engine_init(void) {
     setup_audio_system(sample_rate, block_size, master_volume, enable_limiter);
 }
 
-// ui/display.c
+
 #include "shared/config_manager.h"
 
 void display_init(void) {

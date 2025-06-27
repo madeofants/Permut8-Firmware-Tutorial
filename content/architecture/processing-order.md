@@ -12,18 +12,18 @@ Mod patches process individual operators within the existing engine. Your code r
 
 ```impala
 function operate1(int inSample) returns int result {
-    // Process one sample through operator 1
+
     int delayed = delayLine[delayPos];
     delayLine[delayPos] = inSample;
     delayPos = (delayPos + 1) % DELAY_LENGTH;
     
-    result = (inSample + delayed) >> 1;  // Simple echo (divide by 2)
+    result = (inSample + delayed) >> 1;
 }
 
 function operate2(int inSample) returns int result {
-    // Process one sample through operator 2
-    // Runs independently from operate1()
-    result = (inSample * feedbackAmount) >> 8;  // Fixed-point multiplication
+
+
+    result = (inSample * feedbackAmount) >> 8;
 }
 ```
 
@@ -38,18 +38,18 @@ Full patches replace the entire audio engine. Your code controls the complete si
 ```impala
 function process() {
     loop {
-        // Read input sample
+
         int input = signal[0];
         
-        // Your complete DSP algorithm here
+
         int filtered = applyLowpass(input);
         int delayed = addDelay(filtered);
         int finalOutput = applyDynamics(delayed);
         
-        // Write output sample
+
         signal[0] = finalOutput;
         
-        yield();  // Process next sample
+        yield();
     }
 }
 ```
@@ -65,9 +65,9 @@ You control every aspect of processing, from input to output.
 Both models process at audio sample rate (approximately 48kHz). Each function call processes exactly one sample:
 
 ```impala
-// This runs 48,000 times per second
+
 function operate1(int inSample) returns int result {
-    // Keep processing lightweight!
+
     result = applySimpleFilter(inSample);
 }
 ```
@@ -79,11 +79,11 @@ In full patches, `yield()` is crucial for proper timing:
 ```impala
 function process() {
     loop {
-        // Process one sample
+
         int result = complexAlgorithm(signal[0]);
         signal[0] = result;
         
-        yield();  // REQUIRED: Let system process next sample
+        yield();
     }
 }
 ```
@@ -96,12 +96,12 @@ Forgetting `yield()` breaks real-time processing.
 
 ```impala
 function operate1(int input) returns int result {
-    // Stage 1: Filter
+
     result = lowpassFilter(input);
 }
 
 function operate2(int filtered) returns int result {
-    // Stage 2: Distortion
+
     result = waveshape(filtered);
 }
 ```
@@ -113,12 +113,12 @@ function process() {
     loop {
         int input = signal[0];
         
-        // Split signal for parallel processing
+
         int dry = input;
         int wet = applyReverb(input);
         
-        // Mix parallel paths
-        signal[0] = (dry + wet) >> 1;  // Divide by 2
+
+        signal[0] = (dry + wet) >> 1;
         yield();
     }
 }
@@ -130,8 +130,8 @@ function process() {
 global int filterState = 0;
 
 function operate1(int input) returns int result {
-    // State persists between samples
-    filterState = (filterState + input) >> 1;  // Simple low-pass
+
+    filterState = (filterState + input) >> 1;
     result = filterState;
 }
 ```
@@ -140,11 +140,11 @@ function operate1(int input) returns int result {
 
 ```impala
 function operate1(int input) returns int result {
-    // Use parameter values in processing
+
     int gain = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
     int feedback = (int)params[OPERAND_1_LOW_PARAM_INDEX];
     
-    // Apply parameter-controlled processing
+
     int amplified = (input * gain) >> 8;
     result = (amplified * feedback) >> 8;
 }
@@ -154,39 +154,39 @@ function operate1(int input) returns int result {
 
 ```impala
 function operate1(int input) returns int result {
-    // Clip input to valid range
+
     if (input > 2047) input = 2047;
     else if (input < -2047) input = -2047;
     
-    // Process safely
+
     result = processWithSafety(input);
     
-    // Clip output to valid range
+
     if (result > 2047) result = 2047;
     else if (result < -2047) result = -2047;
 }
 
 function processWithSafety(int input) returns int result {
-    // Prevent overflow in calculations
-    int scaled = input >> 2;  // Scale down to prevent overflow
-    int processed = scaled * 3;  // Safe multiplication
-    result = processed << 2;  // Scale back up
+
+    int scaled = input >> 2;
+    int processed = scaled * 3;
+    result = processed << 2;
 }
 ```
 
 ### Memory Management in Processing
 
 ```impala
-// Pre-allocated buffers for processing
+
 global array delayLine[1024];
 global int delayPos = 0;
 global array tempBuffer[64];
 
 function operate1(int input) returns int result {
-    // Use pre-allocated memory efficiently
+
     delayLine[delayPos] = input;
     
-    // Calculate delay output
+
     int delayedPos = (delayPos - 500) % 1024;
     if (delayedPos < 0) delayedPos = delayedPos + 1024;
     
@@ -204,17 +204,17 @@ function process() {
     loop {
         int input = signal[0];
         
-        // Multi-tap delay with different processing
-        int tap1 = getTapDelay(input, 250);   // 250 samples delay
-        int tap2 = getTapDelay(input, 500);   // 500 samples delay
-        int tap3 = getTapDelay(input, 1000);  // 1000 samples delay
+
+        int tap1 = getTapDelay(input, 250);
+        int tap2 = getTapDelay(input, 500);
+        int tap3 = getTapDelay(input, 1000);
         
-        // Process each tap differently
+
         int processed1 = applyFilter(tap1);
         int processed2 = applyDistortion(tap2);
         int processed3 = applyModulation(tap3);
         
-        // Mix all taps with original
+
         signal[0] = (input + processed1 + processed2 + processed3) >> 2;
         
         yield();
@@ -222,8 +222,8 @@ function process() {
 }
 
 function getTapDelay(int input, int delaySamples) returns int delayed {
-    // Implementation would use appropriate delay buffer management
-    // This is a conceptual example
+
+
     delayed = readDelayLine(delaySamples);
     writeDelayLine(input);
 }
@@ -235,7 +235,7 @@ function getTapDelay(int input, int delaySamples) returns int delayed {
 global int debugCounter = 0;
 
 function operate1(int input) returns int result {
-    // Debug processing every 4800 samples (10x per second at 48kHz)
+
     debugCounter++;
     if ((debugCounter % 4800) == 0) {
         array debugMsg[64];

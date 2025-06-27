@@ -30,7 +30,7 @@ extern native yield
 extern native read
 extern native write
 
-// Audio and parameter constants
+
 const int PARAM_MAX = 255
 const int BUFFER_SIZE = 4096
 const int GRAIN_SIZE_MIN = 128
@@ -39,7 +39,7 @@ const int PITCH_MIN = 64
 const int PITCH_MULT = 2
 const int LED_MASK = 255
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX = 0
 const int OPERAND_1_LOW_PARAM_INDEX = 1
 const int OPERAND_2_LOW_PARAM_INDEX = 2
@@ -50,14 +50,14 @@ const int SWITCHES_PARAM_INDEX = 6
 const int CLOCK_FREQ_PARAM_INDEX = 7
 const int PARAM_COUNT = 8
 
-// Required global variables (but with custom meanings)
-global array signal[2]          // Audio input/output
-global array params[PARAM_COUNT]          // Hardware controls with custom meanings
-global array displayLEDs[4]     // Custom LED behaviors
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
 global clock
 global clockFreqLimit
 
-// Completely custom interface labels
+
 readonly array panelTextRows[8] = {
     "",
     "",
@@ -69,7 +69,7 @@ readonly array panelTextRows[8] = {
     "GRAIN |--- PITCH ---| |---- MIX -----|"
 }
 
-// Custom effect state (no operator concepts)
+
 global array grainBuffer[BUFFER_SIZE]
 global grainWritePos = 0
 global grainSize = 512
@@ -79,50 +79,50 @@ global wetMix = 128
 global grainPhase = 0
 global randomSeed = 12345
 
-// Custom granular processing (completely unrelated to operators)
+
 function processGranularEffect() {
     locals switches, freezeMode, reverseMode, chorusMode, glitchMode, inputLeft, inputRight
     locals baseReadPos, sprayOffset, grainReadPos, grainSample, chorusPos, chorusSample
     locals wetLeft, wetRight, outputLeft, outputRight
     
-    // === CUSTOM PARAMETER MAPPING ===
-    // These parameters have NOTHING to do with operators/operands
-    grainSize = (params[OPERAND_1_HIGH_PARAM_INDEX] * GRAIN_SIZE_MULT) + GRAIN_SIZE_MIN        // Control 1: 128-4000 samples
-    grainSpray = params[OPERAND_1_LOW_PARAM_INDEX]                    // Control 2: 0-255 randomness
-    pitchShift = (params[OPERAND_2_HIGH_PARAM_INDEX] * PITCH_MULT) + PITCH_MIN         // Control 3: 64-574 (pitch range)
-    wetMix = params[OPERAND_2_LOW_PARAM_INDEX]                        // Control 4: 0-255 dry/wet
+
+
+    grainSize = (params[OPERAND_1_HIGH_PARAM_INDEX] * GRAIN_SIZE_MULT) + GRAIN_SIZE_MIN
+    grainSpray = params[OPERAND_1_LOW_PARAM_INDEX]
+    pitchShift = (params[OPERAND_2_HIGH_PARAM_INDEX] * PITCH_MULT) + PITCH_MIN
+    wetMix = params[OPERAND_2_LOW_PARAM_INDEX]
     
-    // === CUSTOM SWITCH BEHAVIOR ===
+
     switches = params[SWITCHES_PARAM_INDEX]
-    freezeMode = (switches & 0x01) != 0        // Switch 1: Freeze grains
-    reverseMode = (switches & 0x02) != 0       // Switch 2: Reverse grains
-    chorusMode = (switches & 0x04) != 0        // Switch 3: Chorus effect
-    glitchMode = (switches & 0x08) != 0        // Switch 4: Glitch mode
+    freezeMode = (switches & 0x01) != 0
+    reverseMode = (switches & 0x02) != 0
+    chorusMode = (switches & 0x04) != 0
+    glitchMode = (switches & 0x08) != 0
     
-    // === AUDIO INPUT ===
+
     inputLeft = signal[0]
     inputRight = signal[1]
     
-    // === GRANULAR PROCESSING ===
-    // Write input to grain buffer (unless frozen)
+
+
     if (!freezeMode) {
         grainBuffer[grainWritePos] = inputLeft
         grainWritePos = (grainWritePos + 1) % BUFFER_SIZE
     }
     
-    // Calculate grain read position with randomness
+
     baseReadPos = grainWritePos - grainSize
     sprayOffset = (customRandom() * grainSpray) / PARAM_MAX
     grainReadPos = baseReadPos + sprayOffset
     
-    // Handle wrapping
+
     if (grainReadPos < 0) grainReadPos = grainReadPos + BUFFER_SIZE
     if (grainReadPos >= BUFFER_SIZE) grainReadPos = grainReadPos - BUFFER_SIZE
     
-    // Read grain with pitch shifting
+
     grainSample = grainBuffer[grainReadPos]
     
-    // Apply pitch shifting by varying read rate
+
     if (pitchShift != 256) {
         grainPhase = grainPhase + pitchShift
         if (grainPhase >= 256) {
@@ -132,83 +132,83 @@ function processGranularEffect() {
         }
     }
     
-    // Apply reverse mode
+
     if (reverseMode) {
         grainSample = -grainSample
     }
     
-    // Apply chorus mode (multiple grains)
+
     if (chorusMode) {
         chorusPos = (grainReadPos + (grainSize / 2)) % BUFFER_SIZE
         chorusSample = grainBuffer[chorusPos]
         grainSample = (grainSample + chorusSample) / 2
     }
     
-    // Apply glitch mode (sample corruption)
+
     if (glitchMode && (customRandom() < 20)) {
-        grainSample = (grainSample << 2) | (grainSample >> 10)  // Bit shift corruption
+        grainSample = (grainSample << 2) | (grainSample >> 10)
     }
     
-    // === DRY/WET MIXING ===
+
     wetLeft = grainSample
-    wetRight = grainSample  // Mono grain effect
+    wetRight = grainSample
     
     outputLeft = ((inputLeft * (PARAM_MAX - wetMix)) + (wetLeft * wetMix)) >> 8
     outputRight = ((inputRight * (PARAM_MAX - wetMix)) + (wetRight * wetMix)) >> 8
     
-    // === OUTPUT ===
+
     signal[0] = outputLeft
     signal[1] = outputRight
 }
 
-// Custom random number generator (no relation to RND operator)
+
 function customRandom() returns value {
     randomSeed = (randomSeed * 1103515245 + 12345) & 0x7FFFFFFF
     value = (randomSeed >> 16) & LED_MASK
 }
 
-// Custom LED animations (completely unrelated to operator feedback)
+
 function updateCustomLEDs() {
     locals sizePattern, ledCount, i, activityLevel, sprayPattern, pitchPattern, mixLevel, modeIndicators, switches
     
-    // === LED 1: Grain Size Visualization ===
+
     sizePattern = 0
-    ledCount = (grainSize >> 9) + 1  // 1-8 LEDs based on grain size
+    ledCount = (grainSize >> 9) + 1
     for (i = 0; i < ledCount && i < 8; i++) {
         sizePattern |= (1 << i)
     }
     displayLEDs[0] = sizePattern
     
-    // === LED 2: Activity and Spray Indicator ===
-    activityLevel = (abs(signal[0]) + abs(signal[1])) >> 6  // Audio activity
-    sprayPattern = (grainSpray >> 3) & 0x1F  // Spray amount
+
+    activityLevel = (abs(signal[0]) + abs(signal[1])) >> 6
+    sprayPattern = (grainSpray >> 3) & 0x1F
     displayLEDs[1] = (activityLevel << 5) | sprayPattern
     
-    // === LED 3: Pitch Shift Visualization ===
+
     pitchPattern = 0
     if (pitchShift < 256) {
-        // Lower pitch - LEDs from center down
+
         pitchPattern = 0x0F >> ((256 - pitchShift) >> 6)
     } else {
-        // Higher pitch - LEDs from center up  
+
         pitchPattern = 0xF0 >> ((pitchShift - 256) >> 6)
     }
     displayLEDs[2] = pitchPattern
     
-    // === LED 4: Mix Level and Mode Indicators ===
-    mixLevel = wetMix >> 3  // 0-31 for first 5 LEDs
+
+    mixLevel = wetMix >> 3
     modeIndicators = 0
     
-    // Add mode indicators to top 3 LEDs
+
     switches = params[SWITCHES_PARAM_INDEX]
-    if (switches & 0x01) modeIndicators |= 0x20  // Freeze mode
-    if (switches & 0x02) modeIndicators |= 0x40  // Reverse mode
-    if (switches & 0x04) modeIndicators |= 0x80  // Chorus mode
+    if (switches & 0x01) modeIndicators |= 0x20
+    if (switches & 0x02) modeIndicators |= 0x40
+    if (switches & 0x04) modeIndicators |= 0x80
     
     displayLEDs[3] = mixLevel | modeIndicators
 }
 
-// Main processing function
+
 function process() {
     loop {
         processGranularEffect()
@@ -217,17 +217,17 @@ function process() {
     }
 }
 
-// Custom update function (ignores operator parameter changes)
+
 function update() {
-    // Only update when OUR parameters change, ignore operator-related changes
-    // This would normally be called when operator/operand changes, but we ignore that
+
+
     
-    // Could add parameter smoothing or other custom update behavior here
-    // For example, smooth parameter changes to avoid audio artifacts:
+
+
     
-    // static lastGrainSize = 512
-    // targetGrainSize = (params[OPERAND_1_HIGH_PARAM_INDEX] * 15) + 128
-    // lastGrainSize = (lastGrainSize * 7 + targetGrainSize) / 8  // Smooth transition
+
+
+
 }
 ```
 
@@ -250,10 +250,10 @@ function update() {
 
 ```impala
 switches = params[SWITCHES_PARAM_INDEX]
-freezeMode = (switches & 0x01) != 0    // Switch 1: Freeze grain buffer
-reverseMode = (switches & 0x02) != 0   // Switch 2: Reverse grain playback
-chorusMode = (switches & 0x04) != 0    // Switch 3: Multi-grain chorus
-glitchMode = (switches & 0x08) != 0    // Switch 4: Random bit corruption
+freezeMode = (switches & 0x01) != 0
+reverseMode = (switches & 0x02) != 0
+chorusMode = (switches & 0x04) != 0
+glitchMode = (switches & 0x08) != 0
 ```
 
 **Custom Switch Behaviors**:
@@ -265,10 +265,10 @@ glitchMode = (switches & 0x08) != 0    // Switch 4: Random bit corruption
 ### **Custom LED Patterns**
 
 ```impala
-displayLEDs[0] = // Grain size as progressive LED bar
-displayLEDs[1] = // Audio activity + spray randomness
-displayLEDs[2] = // Pitch shift direction and amount
-displayLEDs[3] = // Mix level + active mode indicators
+displayLEDs[0] =
+displayLEDs[1] =
+displayLEDs[2] =
+displayLEDs[3] =
 ```
 
 **LED Behaviors**:
@@ -284,11 +284,11 @@ readonly array panelTextRows[8] = {
     "",
     "",  
     "",
-    "GRAIN |---- SIZE ---| |---- SPRAY ----|",  // Replace operator 1 display
+    "GRAIN |---- SIZE ---| |---- SPRAY ----|",
     "",
     "",
     "",
-    "GRAIN |--- PITCH ---| |---- MIX -----|"   // Replace operator 2 display
+    "GRAIN |--- PITCH ---| |---- MIX -----|"
 };
 ```
 

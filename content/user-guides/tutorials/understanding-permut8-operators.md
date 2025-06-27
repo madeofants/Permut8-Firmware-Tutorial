@@ -176,19 +176,19 @@ Result: Granular texture
 
 ### **Parameter Mapping in Code**
 ```impala
-// Original operator system:
-int operator1 = (int)params[OPERATOR_1_PARAM_INDEX];     // Instruction 1 type
-int op1_high = (int)params[OPERAND_1_HIGH_PARAM_INDEX];  // Instruction 1 high operand  
-int op1_low = (int)params[OPERAND_1_LOW_PARAM_INDEX];    // Instruction 1 low operand
 
-int operator2 = (int)params[OPERATOR_2_PARAM_INDEX];     // Instruction 2 type
-int op2_high = (int)params[OPERAND_2_HIGH_PARAM_INDEX];  // Instruction 2 high operand
-int op2_low = (int)params[OPERAND_2_LOW_PARAM_INDEX];    // Instruction 2 low operand
+int operator1 = (int)params[OPERATOR_1_PARAM_INDEX];
+int op1_high = (int)params[OPERAND_1_HIGH_PARAM_INDEX];
+int op1_low = (int)params[OPERAND_1_LOW_PARAM_INDEX];
 
-// Custom firmware can:
-// 1. Override operand parameters as direct effect controls
-// 2. Implement completely different algorithms
-// 3. Mix original operator concepts with custom processing
+int operator2 = (int)params[OPERATOR_2_PARAM_INDEX];
+int op2_high = (int)params[OPERAND_2_HIGH_PARAM_INDEX];
+int op2_low = (int)params[OPERAND_2_LOW_PARAM_INDEX];
+
+
+
+
+
 ```
 
 ### **Why This Matters for Custom Firmware**

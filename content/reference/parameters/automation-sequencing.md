@@ -27,7 +27,7 @@ Provides step-based automation sequencing for parameters, enabling complex evolv
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -39,36 +39,36 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// Automation sequencer state
-global array step_pattern[8]    // 8-step pattern values
-global int current_step = 0     // Current step position (0-7)
-global int step_counter = 0     // Sample counter for timing
-global int step_interval = 4410 // Samples per step (default ~100ms at 44.1kHz)
-global int sequence_active = 0  // Sequence on/off state
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global array step_pattern[8]
+global int current_step = 0
+global int step_counter = 0
+global int step_interval = 4410
+global int sequence_active = 0
 
 function process()
 locals int sequence_speed, int pattern_length, int pattern_type, int sequence_enable, int step_length, int pattern_value, int cutoff_freq, int resonance, int input_sample, int filtered_sample, int output_sample
 {
     loop {
-        // Read sequencer control parameters
-        sequence_speed = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];           // 0-255 speed
-        pattern_length = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 5) + 1; // 1-8 steps
-        pattern_type = (int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 6;        // 0-3 pattern types
-        sequence_enable = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];          // Enable/disable
+
+        sequence_speed = (int)global (int)global params[CLOCK_FREQ_PARAM_INDEX];
+        pattern_length = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 5) + 1;
+        pattern_type = (int)global (int)global params[OPERATOR_1_PARAM_INDEX] >> 6;
+        sequence_enable = (int)global (int)global params[OPERAND_1_HIGH_PARAM_INDEX];
         
-        // Calculate step timing based on speed
-        step_length = 11025 - ((sequence_speed * 10800) >> 8); // 225-11025 samples
-        if (step_length < 225) step_length = 225;             // Minimum ~5ms
+
+        step_length = 11025 - ((sequence_speed * 10800) >> 8);
+        if (step_length < 225) step_length = 225;
         
-        // Enable/disable sequencer
+
         if (sequence_enable > 127) {
             global sequence_active = 1;
         } else {
@@ -77,37 +77,37 @@ locals int sequence_speed, int pattern_length, int pattern_type, int sequence_en
             global step_counter = 0;
         }
         
-        // Generate step pattern based on pattern type
+
         if (pattern_type == 0) {
-            // Rising pattern
+
             global step_pattern[0] = 32;   global step_pattern[1] = 64;
             global step_pattern[2] = 96;   global step_pattern[3] = 128;
             global step_pattern[4] = 160;  global step_pattern[5] = 192;
             global step_pattern[6] = 224;  global step_pattern[7] = 255;
             
         } else if (pattern_type == 1) {
-            // Alternating pattern
+
             global step_pattern[0] = 255;  global step_pattern[1] = 64;
             global step_pattern[2] = 255;  global step_pattern[3] = 64;
             global step_pattern[4] = 255;  global step_pattern[5] = 64;
             global step_pattern[6] = 255;  global step_pattern[7] = 64;
             
         } else if (pattern_type == 2) {
-            // Random-ish pattern (pseudo-random based on step number)
+
             global step_pattern[0] = 128;  global step_pattern[1] = 200;
             global step_pattern[2] = 80;   global step_pattern[3] = 255;
             global step_pattern[4] = 32;   global step_pattern[5] = 180;
             global step_pattern[6] = 150;  global step_pattern[7] = 100;
             
         } else {
-            // Falling pattern
+
             global step_pattern[0] = 255;  global step_pattern[1] = 224;
             global step_pattern[2] = 192;  global step_pattern[3] = 160;
             global step_pattern[4] = 128;  global step_pattern[5] = 96;
             global step_pattern[6] = 64;   global step_pattern[7] = 32;
         }
         
-        // Advance sequencer timing
+
         if (global sequence_active == 1) {
             global step_counter = global step_counter + 1;
             if (global step_counter >= step_length) {
@@ -119,28 +119,28 @@ locals int sequence_speed, int pattern_length, int pattern_type, int sequence_en
             }
         }
         
-        // Get current pattern value
+
         pattern_value = (int)global step_pattern[global current_step];
         
-        // Map pattern value to filter parameters
-        cutoff_freq = 200 + ((pattern_value * 1800) >> 8);     // 200-2000 Hz
-        resonance = 256 + ((pattern_value * 1280) >> 8);       // 256-1536
+
+        cutoff_freq = 200 + ((pattern_value * 1800) >> 8);
+        resonance = 256 + ((pattern_value * 1280) >> 8);
         
-        // Read input sample
+
         input_sample = (int)global signal[0];
         
-        // Apply sequenced filter
+
         filtered_sample = cutoff_freq + 
             (((input_sample - cutoff_freq) * resonance) >> 11);
         
-        // Limit filter output
+
         if (filtered_sample > 2047) filtered_sample = 2047;
         if (filtered_sample < -2047) filtered_sample = -2047;
         
-        // Apply additional processing based on pattern
+
         output_sample = filtered_sample;
         if (pattern_value > 200) {
-            // High pattern values: add subtle distortion
+
             if (output_sample > 1536) {
                 output_sample = 1536 + ((output_sample - 1536) >> 2);
             }
@@ -149,22 +149,22 @@ locals int sequence_speed, int pattern_length, int pattern_type, int sequence_en
             }
         }
         
-        // Prevent clipping
+
         if (output_sample > 2047) output_sample = 2047;
         if (output_sample < -2047) output_sample = -2047;
         
-        // Output processed signal
+
         global signal[0] = output_sample;
         global signal[1] = output_sample;
         
-        // Display sequencer state on LEDs
-        global displayLEDs[0] = global current_step << 5;    // Current step position
-        global displayLEDs[1] = pattern_value;               // Current pattern value
-        global displayLEDs[2] = pattern_type << 6;           // Pattern type
+
+        global displayLEDs[0] = global current_step << 5;
+        global displayLEDs[1] = pattern_value;
+        global displayLEDs[2] = pattern_type << 6;
         if (global sequence_active == 1) {
-            global displayLEDs[3] = 255;  // Active indicator
+            global displayLEDs[3] = 255;
         } else {
-            global displayLEDs[3] = 0;    // Inactive indicator
+            global displayLEDs[3] = 0;
         }
         
         yield();
@@ -196,29 +196,29 @@ locals int sequence_speed, int pattern_length, int pattern_type, int sequence_en
 ## Try These Settings
 
 ```impala
-// Fast rhythmic filter
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Fast speed
-(int)global params[SWITCHES_PARAM_INDEX] = 64;   // 3-step pattern
-(int)global params[OPERATOR_1_PARAM_INDEX] = 64;   // Alternating pattern
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Sequence on
 
-// Slow evolution
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 50;   // Slow speed
-(int)global params[SWITCHES_PARAM_INDEX] = 255;  // 8-step pattern
-(int)global params[OPERATOR_1_PARAM_INDEX] = 0;    // Rising pattern
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Sequence on
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;
+(int)global params[SWITCHES_PARAM_INDEX] = 64;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 64;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;
 
-// Random variations
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium speed
-(int)global params[SWITCHES_PARAM_INDEX] = 160;  // 6-step pattern
-(int)global params[OPERATOR_1_PARAM_INDEX] = 128;  // Random pattern
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Sequence on
 
-// Sequence off (manual control)
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Any speed
-(int)global params[SWITCHES_PARAM_INDEX] = 100;  // Any length
-(int)global params[OPERATOR_1_PARAM_INDEX] = 100;  // Any pattern
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Sequence off
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 50;
+(int)global params[SWITCHES_PARAM_INDEX] = 255;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 0;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;
+(int)global params[SWITCHES_PARAM_INDEX] = 160;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 128;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 100;
+(int)global params[SWITCHES_PARAM_INDEX] = 100;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 100;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;
 ```
 
 ## Understanding Automation Sequencing

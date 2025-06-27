@@ -27,7 +27,7 @@ Adds groove and humanization to rhythmic sequences by applying swing timing and 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -39,60 +39,60 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// Swing timing system state
-global int step_counter = 0         // Current step counter
-global int base_step_time = 5512    // Base step duration (eighth notes)
-global int swing_offset = 0         // Current swing offset
-global int random_seed = 12345      // For humanization
-global int current_step = 0         // Step position (0-7)
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global int step_counter = 0
+global int base_step_time = 5512
+global int swing_offset = 0
+global int random_seed = 12345
+global int current_step = 0
 
 function process()
 locals swing_amount, humanization, groove_pattern, effect_intensity, step_time, is_offbeat, timing_offset, random_variation, input_sample, delayed_sample, output_sample, gate_state
 {
     loop {
-        // Read swing and timing parameters
-        swing_amount = params[CLOCK_FREQ_PARAM_INDEX];       // 0-255 swing amount
-        humanization = params[SWITCHES_PARAM_INDEX];      // 0-255 humanization
-        groove_pattern = params[OPERATOR_1_PARAM_INDEX] >> 6; // 0-3 groove types
-        effect_intensity = params[OPERAND_1_HIGH_PARAM_INDEX];  // 0-255 effect level
+
+        swing_amount = params[CLOCK_FREQ_PARAM_INDEX];
+        humanization = params[SWITCHES_PARAM_INDEX];
+        groove_pattern = params[OPERATOR_1_PARAM_INDEX] >> 6;
+        effect_intensity = params[OPERAND_1_HIGH_PARAM_INDEX];
         
-        // Advance step counter
+
         global step_counter = global step_counter + 1;
         
-        // Determine if current position is on off-beat
-        is_offbeat = (global current_step % 2);  // 1 for off-beats, 0 for on-beats
+
+        is_offbeat = (global current_step % 2);
         
-        // Calculate swing offset based on groove pattern
+
         if (groove_pattern == 0) {
-            // Straight timing - no swing
+
             timing_offset = 0;
             
         } else if (groove_pattern == 1) {
-            // Standard swing - delay off-beats
+
             if (is_offbeat == 1) {
-                timing_offset = ((swing_amount - 128) * 32) >> 7;  // 0-32 sample delay
+                timing_offset = ((swing_amount - 128) * 32) >> 7;
             } else {
                 timing_offset = 0;
             }
             
         } else if (groove_pattern == 2) {
-            // Shuffle/triplet feel - more extreme off-beat delay
+
             if (is_offbeat == 1) {
-                timing_offset = ((swing_amount - 128) * 64) >> 7;  // 0-64 sample delay
+                timing_offset = ((swing_amount - 128) * 64) >> 7;
             } else {
                 timing_offset = 0;
             }
             
         } else {
-            // Complex pattern - alternating swing
+
             if (global current_step == 1 || global current_step == 5) {
                 timing_offset = ((swing_amount - 128) * 24) >> 7;
             } else if (global current_step == 3 || global current_step == 7) {
@@ -102,65 +102,65 @@ locals swing_amount, humanization, groove_pattern, effect_intensity, step_time, 
             }
         }
         
-        // Add humanization (random timing variation)
+
         if (humanization > 0) {
-            // Simple pseudo-random number generator
+
             global random_seed = (global random_seed * 1103515245 + 12345) & 0x7FFFFFFF;
             random_variation = (global random_seed % (humanization + 1)) - (humanization >> 1);
             timing_offset = timing_offset + random_variation;
         }
         
-        // Calculate total step time with swing
+
         step_time = global base_step_time + timing_offset;
-        if (step_time < 1000) step_time = 1000;  // Minimum step time
+        if (step_time < 1000) step_time = 1000;
         
-        // Check for step boundary
+
         gate_state = 0;
         if (global step_counter >= step_time) {
             global step_counter = 0;
-            global current_step = (global current_step + 1) % 8;  // 8-step cycle
-            gate_state = 1;  // Trigger gate
+            global current_step = (global current_step + 1) % 8;
+            gate_state = 1;
         }
         
-        // Read input sample
+
         input_sample = signal[0];
         
-        // Apply swing-based processing
+
         if (gate_state == 1) {
-            // On step trigger: apply effect based on swing timing
+
             if (is_offbeat == 1 && swing_amount > 128) {
-                // Off-beat with swing: emphasize the groove
-                delayed_sample = input_sample + (input_sample >> 2);  // Slight boost
+
+                delayed_sample = input_sample + (input_sample >> 2);
             } else {
-                // On-beat or straight timing: clean signal
+
                 delayed_sample = input_sample;
             }
         } else {
-            // Between steps: use previous processed value
-            delayed_sample = input_sample - (input_sample >> 3);  // Slight reduction
+
+            delayed_sample = input_sample - (input_sample >> 3);
         }
         
-        // Mix processed signal based on effect intensity
+
         output_sample = ((input_sample * (255 - effect_intensity)) + 
                         (delayed_sample * effect_intensity)) >> 8;
         
-        // Prevent clipping
+
         if (output_sample > 2047) output_sample = 2047;
         if (output_sample < -2047) output_sample = -2047;
         
-        // Output processed signal
+
         global signal[0] = output_sample;
         global signal[1] = output_sample;
         
-        // Display swing state on LEDs
-        global displayLEDs[0] = swing_amount;                 // Swing amount
-        global displayLEDs[1] = groove_pattern << 6;          // Groove pattern
+
+        global displayLEDs[0] = swing_amount;
+        global displayLEDs[1] = groove_pattern << 6;
         if (gate_state == 1) {
-            global displayLEDs[2] = 255;  // Step trigger active
+            global displayLEDs[2] = 255;
         } else {
-            global displayLEDs[2] = 32;   // Step trigger inactive
+            global displayLEDs[2] = 32;
         }
-        global displayLEDs[3] = global current_step << 5;     // Step position
+        global displayLEDs[3] = global current_step << 5;
         
         yield();
     }
@@ -191,29 +191,29 @@ locals swing_amount, humanization, groove_pattern, effect_intensity, step_time, 
 ## Try These Settings
 
 ```impala
-// Straight timing (no swing)
-params[CLOCK_FREQ_PARAM_INDEX] = 128;  // No swing
-params[SWITCHES_PARAM_INDEX] = 16;   // Minimal humanization
-params[OPERATOR_1_PARAM_INDEX] = 0;    // Straight pattern
-params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Light effect
 
-// Light jazz swing
-params[CLOCK_FREQ_PARAM_INDEX] = 180;  // Moderate swing
-params[SWITCHES_PARAM_INDEX] = 32;   // Light humanization
-params[OPERATOR_1_PARAM_INDEX] = 64;   // Standard swing pattern
-params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Medium effect
+params[CLOCK_FREQ_PARAM_INDEX] = 128;
+params[SWITCHES_PARAM_INDEX] = 16;
+params[OPERATOR_1_PARAM_INDEX] = 0;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 100;
 
-// Heavy shuffle
-params[CLOCK_FREQ_PARAM_INDEX] = 220;  // Heavy swing
-params[SWITCHES_PARAM_INDEX] = 64;   // More humanization
-params[OPERATOR_1_PARAM_INDEX] = 128;  // Shuffle pattern
-params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Strong effect
 
-// Complex groove
-params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Strong swing
-params[SWITCHES_PARAM_INDEX] = 80;   // Significant humanization
-params[OPERATOR_1_PARAM_INDEX] = 192;  // Complex pattern
-params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Heavy effect
+params[CLOCK_FREQ_PARAM_INDEX] = 180;
+params[SWITCHES_PARAM_INDEX] = 32;
+params[OPERATOR_1_PARAM_INDEX] = 64;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 150;
+
+
+params[CLOCK_FREQ_PARAM_INDEX] = 220;
+params[SWITCHES_PARAM_INDEX] = 64;
+params[OPERATOR_1_PARAM_INDEX] = 128;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 200;
+
+
+params[CLOCK_FREQ_PARAM_INDEX] = 200;
+params[SWITCHES_PARAM_INDEX] = 80;
+params[OPERATOR_1_PARAM_INDEX] = 192;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 180;
 ```
 
 ## Understanding Swing Timing

@@ -11,14 +11,14 @@ The key insight for audio DSP optimization is that perfect mathematical accuracy
 Trigonometric functions like `sin()` and `cos()` are expensive to compute. For audio applications, polynomial approximations provide excellent results with dramatically better performance.
 
 ```impala
-// Expensive: exact sine calculation using native function
+
 function expensive_sine(float x) returns float result {
-    result = sine(x);  // Native sine function
+    result = sine(x);
 }
 
-// Fast: polynomial approximation (error < 0.1%)
+
 function fast_sine(float x) returns float result {
-    // Normalize to [-π, π]
+
     while (x > 3.14159) {
         x = x - 6.28318;
     }
@@ -26,12 +26,12 @@ function fast_sine(float x) returns float result {
         x = x + 6.28318;
     }
     
-    // Polynomial approximation
+
     float x2 = x * x;
     result = x * (1.0 - x2 * (0.16666 - x2 * 0.00833));
 }
 
-// Audio oscillator using fast approximation
+
 global float osc_phase = 0.0;
 global float osc_phase_increment = 0.0;
 
@@ -58,7 +58,7 @@ Performance comparison on Permut8:
 Envelope generators and filter decay calculations often use exponential functions. Integer-based approximations can be much faster than floating-point exponentials.
 
 ```impala
-// Expensive: floating-point exponential decay
+
 global float env_value = 1.0;
 global float env_decay_rate = 0.999;
 
@@ -67,19 +67,19 @@ function processSlowEnvelope() returns float result {
     result = env_value;
 }
 
-// Fast: fixed-point exponential approximation
-global int fast_env_value = 65536;  // 16.16 fixed point
-global int fast_decay_factor = 65470;  // Equivalent to 0.999 in fixed point
+
+global int fast_env_value = 65536;
+global int fast_decay_factor = 65470;
 
 function processFastEnvelope() returns float result {
     fast_env_value = (fast_env_value * fast_decay_factor) >> 16;
     result = fast_env_value / 65536.0;
 }
 
-// Even faster: lookup table with linear interpolation
+
 global array decay_table[256] = {
     65536, 65470, 65405, 65340, 65275, 65211, 65147, 65083,
-    // ... fill with pre-computed decay values
+
     65020, 64957, 64894, 64832, 64769, 64707, 64645, 64583
 };
 
@@ -88,7 +88,7 @@ global int table_pos = 0;
 
 function processTableEnvelope() returns float result {
     table_env_value = decay_table[table_pos];
-    table_pos = (table_pos + 1) & 255;  // Wrap at 256
+    table_pos = (table_pos + 1) & 255;
     result = table_env_value / 65536.0;
 }
 ```
@@ -98,13 +98,13 @@ function processTableEnvelope() returns float result {
 Audio applications frequently need square root calculations for RMS detection, distance calculations, and envelope following. Fast integer approximations work well for these use cases.
 
 ```impala
-// Fast integer square root using bit manipulation
+
 function fast_sqrt(int x) returns int result {
     if (x == 0) {
         result = 0;
     } else {
         result = 0;
-        int bit = 1 << 30;  // Start with highest bit
+        int bit = 1 << 30;
         
         while (bit > x) {
             bit = bit >> 2;
@@ -122,15 +122,15 @@ function fast_sqrt(int x) returns int result {
     }
 }
 
-// RMS calculation using fast square root
+
 global int rms_sum_squares = 0;
 global int rms_sample_count = 0;
 global int RMS_WINDOW_SIZE = 64;
 
 function processRMS(float input) returns float result {
-    // Convert to integer for fast processing
+
     int sample = input * 32767.0;
-    rms_sum_squares = rms_sum_squares + ((sample * sample) >> 10);  // Scale to prevent overflow
+    rms_sum_squares = rms_sum_squares + ((sample * sample) >> 10);
     rms_sample_count = rms_sample_count + 1;
     
     if (rms_sample_count >= RMS_WINDOW_SIZE) {
@@ -140,7 +140,7 @@ function processRMS(float input) returns float result {
         rms_sum_squares = 0;
         rms_sample_count = 0;
     } else {
-        result = 0.0;  // No output until window complete
+        result = 0.0;
     }
 }
 ```
@@ -154,24 +154,24 @@ Bit manipulation operations are among the fastest calculations available on ARM 
 Multiplication and division by powers of two can be replaced with bit shifts, which are single-cycle operations.
 
 ```impala
-// Slow: floating-point arithmetic
+
 function slow_gain(float input, float gain_db) returns float result {
     float gain_linear = pow(10.0, gain_db / 20.0);
     result = input * gain_linear;
 }
 
-// Fast: bit-shift gain control (for simple gain adjustments)
+
 function fast_gain(int input, int shift_amount) returns int result {
     if (shift_amount >= 0) {
-        result = input << shift_amount;  // Multiply by 2^shift_amount
+        result = input << shift_amount;
     } else {
-        result = input >> (-shift_amount);  // Divide by 2^shift_amount
+        result = input >> (-shift_amount);
     }
 }
 
-// Practical example: simple compressor with bit-shift gain reduction
-global int comp_threshold = 16384;  // 50% of full scale
-global int comp_attack_shift = 1;   // 2:1 compression ratio
+
+global int comp_threshold = 16384;
+global int comp_attack_shift = 1;
 
 function processCompressor(int input) returns int result {
     int abs_input;
@@ -182,9 +182,9 @@ function processCompressor(int input) returns int result {
     }
     
     if (abs_input > comp_threshold) {
-        // Simple compression: reduce gain above threshold
+
         int excess = abs_input - comp_threshold;
-        excess = excess >> comp_attack_shift;  // Divide excess by 2
+        excess = excess >> comp_attack_shift;
         int output = comp_threshold + excess;
         if (input < 0) {
             result = -output;
@@ -202,25 +202,25 @@ function processCompressor(int input) returns int result {
 Modulo operations with power-of-two values can be replaced with bitwise AND operations.
 
 ```impala
-// Slow: modulo with division
+
 function slow_wrap(int index, int buffer_size) returns int result {
-    result = index % buffer_size;  // Only fast if buffer_size is power of 2
+    result = index % buffer_size;
 }
 
-// Fast: bitwise AND (requires power-of-2 buffer size)
+
 function fast_wrap(int index, int buffer_mask) returns int result {
-    result = index & buffer_mask;  // buffer_mask = buffer_size - 1
+    result = index & buffer_mask;
 }
 
-// Circular buffer using fast wrapping
-global int BUFFER_SIZE = 1024;  // Must be power of 2
-global int BUFFER_MASK = 1023;  // BUFFER_SIZE - 1
+
+global int BUFFER_SIZE = 1024;
+global int BUFFER_MASK = 1023;
 global array circ_buffer[1024];
 global int write_pos = 0;
 
 function writeCircularBuffer(float sample) {
     circ_buffer[write_pos] = sample;
-    write_pos = (write_pos + 1) & BUFFER_MASK;  // Fast wrap
+    write_pos = (write_pos + 1) & BUFFER_MASK;
 }
 
 function readCircularBuffer(int delay_samples) returns float result {
@@ -238,25 +238,25 @@ For maximum performance in mathematical operations, fixed-point arithmetic elimi
 Audio mixing operations benefit significantly from fixed-point optimization.
 
 ```impala
-// Standard floating-point crossfade
+
 function float_crossfade(float a, float b, float mix) returns float result {
     result = a * (1.0 - mix) + b * mix;
 }
 
-// Fixed-point crossfade (16.16 format)
+
 function fixed_crossfade(int a, int b, int mix_16_16) returns int result {
-    int inv_mix = 65536 - mix_16_16;  // 1.0 - mix in 16.16 format
+    int inv_mix = 65536 - mix_16_16;
     
-    // Multiply and shift back to 16.16 format
+
     int result_a = (a * inv_mix) >> 16;
     int result_b = (b * mix_16_16) >> 16;
     
     result = result_a + result_b;
 }
 
-// Practical mixer using fixed-point math
+
 global int NUM_CHANNELS = 4;
-global array channel_gains[4];  // 16.16 fixed point
+global array channel_gains[4];
 
 function setChannelGain(int channel, float gain) {
     channel_gains[channel] = gain * 65536.0;
@@ -265,13 +265,13 @@ function setChannelGain(int channel, float gain) {
 function mixChannels(array inputs[4]) returns int result {
     int sum = 0;
     
-    // Mix all channels
+
     sum = sum + ((inputs[0] * channel_gains[0]) >> 16);
     sum = sum + ((inputs[1] * channel_gains[1]) >> 16);
     sum = sum + ((inputs[2] * channel_gains[2]) >> 16);
     sum = sum + ((inputs[3] * channel_gains[3]) >> 16);
     
-    // Clamp to prevent overflow
+
     if (sum > 32767) {
         sum = 32767;
     }
@@ -288,11 +288,11 @@ function mixChannels(array inputs[4]) returns int result {
 Always measure the actual performance impact of mathematical optimizations. The Permut8's real-time constraints make measurement essential.
 
 ```impala
-// Simple cycle counter for performance measurement
+
 global int perf_start_cycles;
 
 function startPerformanceTimer() {
-    perf_start_cycles = getCycleCount();  // Native function to get cycle count
+    perf_start_cycles = getCycleCount();
 }
 
 function stopPerformanceTimer() returns int cycles {
@@ -300,24 +300,24 @@ function stopPerformanceTimer() returns int cycles {
     cycles = end_cycles - perf_start_cycles;
 }
 
-// Compare mathematical implementations
+
 function benchmark_math_functions() {
-    float test_input = 1.57;  // π/2
+    float test_input = 1.57;
     
-    // Test standard sine
+
     startPerformanceTimer();
     float result1 = sine(test_input);
     int std_cycles = stopPerformanceTimer();
     
-    // Test fast sine
+
     startPerformanceTimer();
     float result2 = fast_sine(test_input);
     int fast_cycles = stopPerformanceTimer();
     
-    // Display results on LEDs (cycle count as brightness)
-    displayLEDs[0] = std_cycles >> 2;   // Standard implementation
-    displayLEDs[1] = fast_cycles >> 2;  // Fast implementation
-    displayLEDs[2] = abs(result1 - result2) * 1000;  // Error magnitude
+
+    displayLEDs[0] = std_cycles >> 2;
+    displayLEDs[1] = fast_cycles >> 2;
+    displayLEDs[2] = abs(result1 - result2) * 1000;
 }
 ```
 

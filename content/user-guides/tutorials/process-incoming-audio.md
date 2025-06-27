@@ -21,13 +21,13 @@ Learn how to modify incoming audio to create your first real audio effects. In 1
 ### 1.1 The Basic Audio Flow
 **Every audio effect follows this pattern:**
 ```impala
-// 1. Read incoming audio
+
 int input = signal[0]
 
-// 2. Process the audio (modify it somehow)
+
 int processed = doSomethingTo(input)
 
-// 3. Output the processed audio
+
 signal[0] = processed
 ```
 
@@ -52,7 +52,7 @@ signal[0] = processed
 Create `simple_gain.impala`:
 
 ```impala
-// Simple Gain - Volume Control Effect
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 global array signal[2]
@@ -62,24 +62,24 @@ global array displayLEDs[4]
 function process()
 {
     loop {
-        // Read incoming audio
+
         int inputLeft = signal[0]
         int inputRight = signal[1]
         
-        // Apply gain (volume control)
-        int gain = 128  // Try different values: 64=half, 128=normal, 256=double
+
+        int gain = 128
         
         int outputLeft = (inputLeft * gain) / 128
         int outputRight = (inputRight * gain) / 128
         
-        // Safety clipping to prevent overload
+
         if (outputLeft > 2047) outputLeft = 2047
         else if (outputLeft < -2047) outputLeft = -2047
         
         if (outputRight > 2047) outputRight = 2047
         else if (outputRight < -2047) outputRight = -2047
         
-        // Output processed audio
+
         signal[0] = outputLeft
         signal[1] = outputRight
         
@@ -110,31 +110,31 @@ function process()
 function process()
 {
     loop {
-        // Read incoming audio
+
         int inputLeft = signal[0]
         int inputRight = signal[1]
         
-        // Get gain from knob 1 (0-255)
+
         int gainKnob = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
         
-        // Convert knob to useful gain range (0-512)
-        // 0 = silent, 128 = normal, 255 = double volume
-        int gain = (gainKnob * 2)  // Maps 0-255 to 0-510
+
+
+        int gain = (gainKnob * 2)
         
-        // Apply gain
+
         int outputLeft = (inputLeft * gain) / 255
         int outputRight = (inputRight * gain) / 255
         
-        // Safety clipping
+
         if (outputLeft > 2047) outputLeft = 2047
         else if (outputLeft < -2047) outputLeft = -2047
         if (outputRight > 2047) outputRight = 2047
         else if (outputRight < -2047) outputRight = -2047
         
-        // Visual feedback
-        displayLEDs[0] = gainKnob  // Show knob position
+
+        displayLEDs[0] = gainKnob
         
-        // Output processed audio
+
         signal[0] = outputLeft
         signal[1] = outputRight
         
@@ -158,50 +158,50 @@ function process()
 ### 4.1 Understanding Filtering
 **A simple filter smooths out fast changes in audio:**
 ```impala
-// High frequencies = rapid changes between samples
-// Low-pass filter = reduce rapid changes = duller sound
-// Formula: output = (input + previousOutput) / 2
+
+
+
 ```
 
 ### 4.2 Build a Simple Low-Pass Filter
 ```impala
-// Simple Low-Pass Filter
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 global array signal[2]
 global array params[8]
 global array displayLEDs[4]
 
-// Filter memory (remembers previous output)
+
 global int previousOutputLeft = 0
 global int previousOutputRight = 0
 
 function process()
 {
     loop {
-        // Read incoming audio
+
         int inputLeft = signal[0]
         int inputRight = signal[1]
         
-        // Get filter amount from knob 1
-        int filterKnob = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // 0-255
+
+        int filterKnob = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
         
-        // Convert to filter strength (0-255)
+
         int filterAmount = filterKnob
         
-        // Apply low-pass filter
-        // Mix input with previous output - more previous = more filtering
+
+
         int filteredLeft = ((inputLeft * (255 - filterAmount)) + (previousOutputLeft * filterAmount)) / 255
         int filteredRight = ((inputRight * (255 - filterAmount)) + (previousOutputRight * filterAmount)) / 255
         
-        // Remember this output for next time
+
         previousOutputLeft = filteredLeft
         previousOutputRight = filteredRight
         
-        // Visual feedback
+
         displayLEDs[0] = filterKnob
         
-        // Output filtered audio
+
         signal[0] = filteredLeft
         signal[1] = filteredRight
         
@@ -227,13 +227,13 @@ function process()
 ### 5.1 Understanding Distortion
 **Distortion clips (limits) audio to create harmonic content:**
 ```impala
-// Clean audio: smooth waves
-// Distorted audio: clipped/squared waves = more harmonics = "gritty" sound
+
+
 ```
 
 ### 5.2 Build Soft Clipping Distortion
 ```impala
-// Soft Clipping Distortion
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 global array signal[2]
@@ -243,26 +243,26 @@ global array displayLEDs[4]
 function process()
 {
     loop {
-        // Read incoming audio
+
         int inputLeft = signal[0]
         int inputRight = signal[1]
         
-        // Get drive amount from knob 1
-        int driveKnob = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // 0-255
+
+        int driveKnob = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
         
-        // Convert to drive multiplier (1x to 8x)
-        int drive = 256 + (driveKnob * 7)  // 256 to 2048 (1x to 8x)
+
+        int drive = 256 + (driveKnob * 7)
         
-        // Apply drive (amplify signal)
+
         int drivenLeft = (inputLeft * drive) / 256
         int drivenRight = (inputRight * drive) / 256
         
-        // Soft clipping (gentler than hard clipping)
+
         int clippedLeft = drivenLeft
         if (drivenLeft > 1500) {
-            clippedLeft = 1500 + ((drivenLeft - 1500) / 3)  // Soft clip positive
+            clippedLeft = 1500 + ((drivenLeft - 1500) / 3)
         } else if (drivenLeft < -1500) {
-            clippedLeft = -1500 + ((drivenLeft + 1500) / 3)  // Soft clip negative
+            clippedLeft = -1500 + ((drivenLeft + 1500) / 3)
         }
         
         int clippedRight = drivenRight
@@ -272,16 +272,16 @@ function process()
             clippedRight = -1500 + ((drivenRight + 1500) / 3)
         }
         
-        // Final safety clipping
+
         if (clippedLeft > 2047) clippedLeft = 2047
         else if (clippedLeft < -2047) clippedLeft = -2047
         if (clippedRight > 2047) clippedRight = 2047
         else if (clippedRight < -2047) clippedRight = -2047
         
-        // Visual feedback
+
         displayLEDs[0] = driveKnob
         
-        // Output distorted audio
+
         signal[0] = clippedLeft
         signal[1] = clippedRight
         
@@ -308,7 +308,7 @@ function process()
 **Combine gain, filter, and distortion with multiple knobs:**
 
 ```impala
-// Multi-Effect Processor
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 global array signal[2]
@@ -321,55 +321,55 @@ global int filterStateRight = 0
 function process()
 {
     loop {
-        // Read incoming audio
+
         int inputLeft = signal[0]
         int inputRight = signal[1]
         
-        // Read all control knobs
-        int gainKnob = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]      // Knob 1: Input gain
-        int filterKnob = (int)global params[OPERAND_2_LOW_PARAM_INDEX]    // Knob 2: Filter cutoff
-        int driveKnob = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]     // Knob 3: Distortion drive
-        int outputKnob = (int)global params[OPERAND_1_LOW_PARAM_INDEX]    // Knob 4: Output level
+
+        int gainKnob = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
+        int filterKnob = (int)global params[OPERAND_2_LOW_PARAM_INDEX]
+        int driveKnob = (int)global params[OPERAND_1_HIGH_PARAM_INDEX]
+        int outputKnob = (int)global params[OPERAND_1_LOW_PARAM_INDEX]
         
-        // STAGE 1: Input gain
-        int gain = (gainKnob * 3) + 64  // 64 to 829 (0.25x to 3.25x)
+
+        int gain = (gainKnob * 3) + 64
         int gainedLeft = (inputLeft * gain) / 256
         int gainedRight = (inputRight * gain) / 256
         
-        // STAGE 2: Distortion
-        int drive = 256 + (driveKnob * 4)  // 1x to 5x drive
+
+        int drive = 256 + (driveKnob * 4)
         int drivenLeft = (gainedLeft * drive) / 256
         int drivenRight = (gainedRight * drive) / 256
         
-        // Soft clipping
+
         if (drivenLeft > 1500) drivenLeft = 1500 + ((drivenLeft - 1500) / 3)
         else if (drivenLeft < -1500) drivenLeft = -1500 + ((drivenLeft + 1500) / 3)
         if (drivenRight > 1500) drivenRight = 1500 + ((drivenRight - 1500) / 3)
         else if (drivenRight < -1500) drivenRight = -1500 + ((drivenRight + 1500) / 3)
         
-        // STAGE 3: Low-pass filter
+
         int filterAmount = filterKnob
         filterStateLeft = ((drivenLeft * (255 - filterAmount)) + (filterStateLeft * filterAmount)) / 255
         filterStateRight = ((drivenRight * (255 - filterAmount)) + (filterStateRight * filterAmount)) / 255
         
-        // STAGE 4: Output level
+
         int outputLevel = outputKnob
         int finalLeft = (filterStateLeft * outputLevel) / 255
         int finalRight = (filterStateRight * outputLevel) / 255
         
-        // Final safety clipping
+
         if (finalLeft > 2047) finalLeft = 2047
         else if (finalLeft < -2047) finalLeft = -2047
         if (finalRight > 2047) finalRight = 2047
         else if (finalRight < -2047) finalRight = -2047
         
-        // LED feedback for each stage
-        displayLEDs[0] = gainKnob     // Input gain
-        displayLEDs[1] = filterKnob   // Filter amount
-        displayLEDs[2] = driveKnob    // Distortion drive
-        displayLEDs[3] = outputKnob   // Output level
+
+        displayLEDs[0] = gainKnob
+        displayLEDs[1] = filterKnob
+        displayLEDs[2] = driveKnob
+        displayLEDs[3] = outputKnob
         
-        // Output processed audio
+
         signal[0] = finalLeft
         signal[1] = finalRight
         
@@ -397,14 +397,14 @@ function process()
 
 **Gain Staging:**
 ```impala
-// Always control levels at each stage
-int processed = (input * effectAmount) / 256  // Scale by effect
-int output = (processed * outputLevel) / 255  // Scale by output level
+
+int processed = (input * effectAmount) / 256
+int output = (processed * outputLevel) / 255
 ```
 
 **State Management:**
 ```impala
-// Remember previous values for filters, delays, etc.
+
 global int previousValue = 0
 int currentOutput = (input + previousValue) / 2
 previousValue = currentOutput
@@ -412,8 +412,8 @@ previousValue = currentOutput
 
 **Parameter Scaling:**
 ```impala
-// Convert knob values to useful ranges
-int knobValue = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]  // 0-255
+
+int knobValue = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]
 int usefulValue = minRange + ((knobValue * (maxRange - minRange)) / 255)
 ```
 
@@ -433,11 +433,11 @@ else if (output < -2047) output = -2047
 
 **Start Subtle:**
 ```impala
-// Subtle effect (good starting point)
-int processed = (input * 7 + effect * 1) / 8  // 87.5% original, 12.5% effect
 
-// Extreme effect (for special purposes)
-int processed = effect  // 100% effect, 0% original
+int processed = (input * 7 + effect * 1) / 8
+
+
+int processed = effect
 ```
 
 ---
@@ -472,30 +472,30 @@ int processed = effect  // 100% effect, 0% original
 
 **Dynamic Effects:**
 ```impala
-// Compressor: Reduce loud signals
+
 if (input > threshold) output = input / ratio
 else output = input
 
-// Gate: Cut quiet signals
+
 if (input < threshold) output = 0
 else output = input
 ```
 
 **Time-Based Effects:**
 ```impala
-// Delay: Use buffer to store and recall audio
+
 delayBuffer[writePos] = input
 output = input + delayBuffer[readPos]
 
-// Chorus: Short delays with modulation
-// Reverb: Multiple delays with feedback
+
+
 ```
 
 **Frequency Effects:**
 ```impala
-// High-pass filter: Remove low frequencies
-// Band-pass filter: Keep only middle frequencies
-// Notch filter: Remove specific frequencies
+
+
+
 ```
 
 ### 9.2 Ready for Advanced Processing

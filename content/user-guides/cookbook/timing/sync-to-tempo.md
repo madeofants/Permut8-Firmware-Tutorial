@@ -27,7 +27,7 @@ Creates tempo-synchronized effects using internal timing for rhythmic delays, ga
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -39,120 +39,120 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// Tempo synchronization state
-global int sample_counter = 0       // Current position in beat
-global int beat_counter = 0         // Current beat number
-global int samples_per_beat = 22050 // Default: 120 BPM at 44.1kHz
-global int gate_state = 0           // Current gate state (0/1)
-global array delay_buffer[44100]    // 1-second delay buffer
-global int delay_write_pos = 0      // Write position in delay buffer
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global int sample_counter = 0
+global int beat_counter = 0
+global int samples_per_beat = 22050
+global int gate_state = 0
+global array delay_buffer[44100]
+global int delay_write_pos = 0
 
 function process()
 locals tempo_param, subdivision, gate_width, effect_amount, bpm_value, beat_length, gate_samples, beat_position, input_sample, delayed_sample, gated_sample, output_sample, delay_read_pos
 {
     loop {
-        // Read tempo and timing parameters
-        tempo_param = params[CLOCK_FREQ_PARAM_INDEX];      // 0-255 tempo control
-        subdivision = params[SWITCHES_PARAM_INDEX] >> 6; // 0-3 subdivision (4 types)
-        gate_width = params[OPERATOR_1_PARAM_INDEX];       // 0-255 gate width
-        effect_amount = params[OPERAND_1_HIGH_PARAM_INDEX];    // 0-255 effect intensity
+
+        tempo_param = params[CLOCK_FREQ_PARAM_INDEX];
+        subdivision = params[SWITCHES_PARAM_INDEX] >> 6;
+        gate_width = params[OPERATOR_1_PARAM_INDEX];
+        effect_amount = params[OPERAND_1_HIGH_PARAM_INDEX];
         
-        // Calculate BPM from parameter (60-180 BPM range)
-        bpm_value = 60 + ((tempo_param * 120) >> 8);  // 60-180 BPM
+
+        bpm_value = 60 + ((tempo_param * 120) >> 8);
         
-        // Calculate samples per beat at 44.1kHz
-        // Formula: (60 * sample_rate) / BPM
+
+
         global samples_per_beat = (60 * 44100) / bpm_value;
         
-        // Apply subdivision (whole, half, quarter, eighth notes)
+
         if (subdivision == 0) {
-            // Whole note (4 beats)
-            beat_length = global samples_per_beat << 2;  // 4x longer
+
+            beat_length = global samples_per_beat << 2;
         } else if (subdivision == 1) {
-            // Half note (2 beats)
-            beat_length = global samples_per_beat << 1;  // 2x longer
+
+            beat_length = global samples_per_beat << 1;
         } else if (subdivision == 2) {
-            // Quarter note (1 beat)
-            beat_length = global samples_per_beat;       // Normal beat
+
+            beat_length = global samples_per_beat;
         } else {
-            // Eighth note (1/2 beat)
-            beat_length = global samples_per_beat >> 1;  // 2x faster
+
+            beat_length = global samples_per_beat >> 1;
         }
         
-        // Advance sample counter
+
         global sample_counter = global sample_counter + 1;
         
-        // Check for beat boundary
+
         if (global sample_counter >= beat_length) {
             global sample_counter = 0;
             global beat_counter = global beat_counter + 1;
-            if (global beat_counter >= 16) global beat_counter = 0; // 16-beat cycle
+            if (global beat_counter >= 16) global beat_counter = 0;
         }
         
-        // Calculate gate timing based on gate width parameter
-        gate_samples = (beat_length * gate_width) >> 8;  // Gate width as fraction of beat
+
+        gate_samples = (beat_length * gate_width) >> 8;
         
-        // Update gate state
+
         if (global sample_counter < gate_samples) {
-            global gate_state = 1;  // Gate on
+            global gate_state = 1;
         } else {
-            global gate_state = 0;  // Gate off
+            global gate_state = 0;
         }
         
-        // Calculate beat position for delay timing
+
         beat_position = global sample_counter;
         
-        // Read input sample
+
         input_sample = signal[0];
         
-        // Tempo-synced delay (read from delay buffer)
+
         delay_read_pos = global delay_write_pos - beat_length;
         if (delay_read_pos < 0) delay_read_pos = delay_read_pos + 44100;
         if (delay_read_pos >= 44100) delay_read_pos = delay_read_pos - 44100;
         
         delayed_sample = delay_buffer[delay_read_pos];
         
-        // Apply rhythmic gating to signal
+
         if (global gate_state == 1) {
-            gated_sample = input_sample;  // Full volume during gate
+            gated_sample = input_sample;
         } else {
-            gated_sample = input_sample >> 2;  // Quarter volume during gate off
+            gated_sample = input_sample >> 2;
         }
         
-        // Mix dry signal with tempo-synced delay
+
         output_sample = gated_sample + 
             ((delayed_sample * effect_amount) >> 8);
         
-        // Store current sample in delay buffer
+
         global delay_buffer[global delay_write_pos] = input_sample;
         global delay_write_pos = global delay_write_pos + 1;
         if (global delay_write_pos >= 44100) global delay_write_pos = 0;
         
-        // Prevent clipping
+
         if (output_sample > 2047) output_sample = 2047;
         if (output_sample < -2047) output_sample = -2047;
         
-        // Output processed signal
+
         global signal[0] = output_sample;
         global signal[1] = output_sample;
         
-        // Visual feedback on LEDs
-        global displayLEDs[0] = bpm_value;                    // Show BPM
-        global displayLEDs[1] = subdivision << 6;             // Show subdivision
+
+        global displayLEDs[0] = bpm_value;
+        global displayLEDs[1] = subdivision << 6;
         if (global gate_state == 1) {
-            global displayLEDs[2] = 255;  // Gate on
+            global displayLEDs[2] = 255;
         } else {
-            global displayLEDs[2] = 0;    // Gate off
+            global displayLEDs[2] = 0;
         }
-        global displayLEDs[3] = beat_position >> 8;          // Beat position
+        global displayLEDs[3] = beat_position >> 8;
         
         yield();
     }
@@ -183,29 +183,29 @@ locals tempo_param, subdivision, gate_width, effect_amount, bpm_value, beat_leng
 ## Try These Settings
 
 ```impala
-// Fast rhythmic gating
-params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High tempo (170 BPM)
-params[SWITCHES_PARAM_INDEX] = 192;  // Eighth note subdivision
-params[OPERATOR_1_PARAM_INDEX] = 100;  // Short gate width
-params[OPERAND_1_HIGH_PARAM_INDEX] = 150;  // Medium delay feedback
 
-// Slow tempo with long gates
-params[CLOCK_FREQ_PARAM_INDEX] = 80;   // Low tempo (100 BPM)
-params[SWITCHES_PARAM_INDEX] = 64;   // Half note subdivision
-params[OPERATOR_1_PARAM_INDEX] = 200;  // Long gate width
-params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Light delay feedback
+params[CLOCK_FREQ_PARAM_INDEX] = 200;
+params[SWITCHES_PARAM_INDEX] = 192;
+params[OPERATOR_1_PARAM_INDEX] = 100;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 150;
 
-// Medium tempo, quarter notes
-params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium tempo (120 BPM)
-params[SWITCHES_PARAM_INDEX] = 128;  // Quarter note subdivision
-params[OPERATOR_1_PARAM_INDEX] = 128;  // 50% gate width
-params[OPERAND_1_HIGH_PARAM_INDEX] = 180;  // Heavy delay feedback
 
-// Very slow whole notes
-params[CLOCK_FREQ_PARAM_INDEX] = 60;   // Slow tempo (90 BPM)
-params[SWITCHES_PARAM_INDEX] = 0;    // Whole note subdivision
-params[OPERATOR_1_PARAM_INDEX] = 255;  // Full gate width
-params[OPERAND_1_HIGH_PARAM_INDEX] = 80;   // Subtle delay
+params[CLOCK_FREQ_PARAM_INDEX] = 80;
+params[SWITCHES_PARAM_INDEX] = 64;
+params[OPERATOR_1_PARAM_INDEX] = 200;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 100;
+
+
+params[CLOCK_FREQ_PARAM_INDEX] = 128;
+params[SWITCHES_PARAM_INDEX] = 128;
+params[OPERATOR_1_PARAM_INDEX] = 128;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 180;
+
+
+params[CLOCK_FREQ_PARAM_INDEX] = 60;
+params[SWITCHES_PARAM_INDEX] = 0;
+params[OPERATOR_1_PARAM_INDEX] = 255;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 80;
 ```
 
 ## Understanding Tempo Sync

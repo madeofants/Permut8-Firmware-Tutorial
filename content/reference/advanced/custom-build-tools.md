@@ -552,7 +552,7 @@ class CodeGenerator:
                     f"log(1.0 + params[{i}] * 9.0) / log(10.0);"
                 )
             
-            param_descriptions.append(f"// Parameter {i}: {param['description']}")
+            param_descriptions.append(f"
         
         # Template variables
         template_vars = {
@@ -709,36 +709,36 @@ class DSPGenerator:
             return None
         
         code = f'''
-// {template['description']}
-// Auto-generated optimized implementation
+
+
 
 typedef struct {{
-    float x1, x2;  // Input delay line
-    float y1, y2;  // Output delay line
-    float b0, b1, b2;  // Feedforward coefficients
-    float a1, a2;      // Feedback coefficients
+    float x1, x2;
+    float y1, y2;
+    float b0, b1, b2;
+    float a1, a2;
 }} BiquadFilter;
 
 static BiquadFilter filter = {{0}};
 
 void update_filter_coefficients(float cutoff, float Q) {{
-    // Coefficient calculation
+
     {template['coefficients']}
     
-    // Normalize coefficients
+
     {template['normalization']}
     
-    // Store in filter structure
+
     filter.b0 = b0; filter.b1 = b1; filter.b2 = b2;
     filter.a1 = a1; filter.a2 = a2;
 }}
 
 float process_biquad(float input) {{
-    // Direct Form II implementation (optimized)
+
     float w = input - filter.a1 * filter.y1 - filter.a2 * filter.y2;
     float output = filter.b0 * w + filter.b1 * filter.y1 + filter.b2 * filter.y2;
     
-    // Update delay line
+
     filter.y2 = filter.y1;
     filter.y1 = output;
     
@@ -1454,7 +1454,7 @@ deploy() {
     
     log_info "Deployment completed successfully!"
     log_info "Released version: $new_version"
-    log_info "Download: https://$UPLOAD_SERVER/releases/release_$new_version.tar.gz"
+    log_info "Download: https:
 }
 
 # Command line interface
@@ -1500,7 +1500,7 @@ esac
 **vscode_extension/** - Visual Studio Code extension for Permut8 development:
 
 ```json
-// package.json - VSCode extension manifest
+
 {
     "name": "permut8-dev",
     "displayName": "Permut8 Development Tools",

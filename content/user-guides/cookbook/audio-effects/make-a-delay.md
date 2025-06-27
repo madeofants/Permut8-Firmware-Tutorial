@@ -46,7 +46,7 @@ For most delay effects, use **Approach 1: Original Operators**:
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -58,24 +58,24 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
-extern native read              // Read from delay line memory
-extern native write             // Write to delay line memory
 
-// Standard global variables
-global int clock                 // Sample counter for timing
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT] // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
-global int clockFreqLimit        // Current clock frequency limit
+extern native yield
+extern native read
+extern native write
 
-// Delay processing variables
-global array delayBuffer[2]     // Temporary buffer for memory operations
-global int delayIndex = 0       // Current position in delay buffer
-global int maxDelayTime = 1000  // Maximum delay in samples (timing varies with sample rate)
 
-// Utility function for audio clipping
+global int clock
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+global int clockFreqLimit
+
+
+global array delayBuffer[2]
+global int delayIndex = 0
+global int maxDelayTime = 1000
+
+
 function clipAudio(sample) returns clipped
 locals
 {
@@ -88,40 +88,40 @@ function process()
 locals
 {
     loop {
-        operate1();  // Process left channel
-        operate2();  // Process right channel
+        operate1();
+        operate2();
     }
 }
 
 function operate1()
 locals int delayTime, int feedbackAmount, int readPos, int delayedSample, int input, int output, int ledPattern
 {
-    // === PARAMETER READING ===
-    delayTime = ((int)global params[CLOCK_FREQ_PARAM_INDEX] * global maxDelayTime / 255) + 1;  // 1-1000 samples
-    feedbackAmount = (int)global params[SWITCHES_PARAM_INDEX] * 90 / 255;             // 0-90% feedback
+
+    delayTime = ((int)global params[CLOCK_FREQ_PARAM_INDEX] * global maxDelayTime / 255) + 1;
+    feedbackAmount = (int)global params[SWITCHES_PARAM_INDEX] * 90 / 255;
     
-    // === DELAY PROCESSING ===
-    // Read delayed sample from memory (fixed offset from write position)
+
+
     readPos = (global delayIndex - delayTime + global maxDelayTime) % global maxDelayTime;
     read(readPos, 1, global delayBuffer);
     delayedSample = global delayBuffer[0];
     
-    // Mix input with delayed signal for output
+
     input = global signal[0];
     output = input + (delayedSample * feedbackAmount / 100);
     output = clipAudio(output);
     
-    // Store new sample (input + feedback) for next delay iteration
+
     global delayBuffer[0] = input + (delayedSample * feedbackAmount / 100);
     global delayBuffer[0] = clipAudio(global delayBuffer[0]);
     
     write(global delayIndex, 1, global delayBuffer);
     
-    // Update delay buffer position (fixed circular buffer)
+
     global delayIndex = (global delayIndex + 1) % global maxDelayTime;
     
-    // === OUTPUT AND VISUALIZATION ===
-    // Show delay activity on LEDs (lights when delayed signal is audible)
+
+
     ledPattern = 0;
     if (delayedSample > 100 || delayedSample < -100) {
         ledPattern = (1 << (global delayIndex % 8));
@@ -135,12 +135,12 @@ locals int delayTime, int feedbackAmount, int readPos, int delayedSample, int in
 function operate2()
 locals int delayTime, int feedbackAmount, int readPos, int delayedSample, int input, int output
 {
-    // === RIGHT CHANNEL PROCESSING ===
-    // Identical delay processing for right channel using offset memory location
+
+
     delayTime = ((int)global params[CLOCK_FREQ_PARAM_INDEX] * global maxDelayTime / 255) + 1;
     feedbackAmount = (int)global params[SWITCHES_PARAM_INDEX] * 90 / 255;
     
-    // Use offset memory location to avoid interference with left channel
+
     readPos = ((global delayIndex - delayTime + global maxDelayTime) % global maxDelayTime) + global maxDelayTime;
     read(readPos, 1, global delayBuffer);
     delayedSample = global delayBuffer[0];
@@ -149,7 +149,7 @@ locals int delayTime, int feedbackAmount, int readPos, int delayedSample, int in
     output = input + (delayedSample * feedbackAmount / 100);
     output = clipAudio(output);
     
-    // Store sample with feedback
+
     global delayBuffer[0] = input + (delayedSample * feedbackAmount / 100);
     global delayBuffer[0] = clipAudio(global delayBuffer[0]);
     

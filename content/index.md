@@ -69,15 +69,15 @@ Permut8 enables you to create custom audio effects and synthesizers that run dir
 
 ### **Common Patterns**
 ```impala
-// Basic firmware structure
+
 function process()
 locals /* declare variables */
 {
     loop {
-        // Read parameters: params[PARAM_INDEX]
-        // Process audio: signal[0] (left), signal[1] (right)
-        // Update LEDs: displayLEDs[0-3]
-        yield();  // REQUIRED: Return control to system
+
+
+
+        yield();
     }
 }
 ```

@@ -40,14 +40,14 @@ extern native yield
 extern native read
 extern native write
 
-// Audio and parameter constants
+
 const int AUDIO_MAX = 2047
 const int AUDIO_MIN = -2047
 const int PARAM_MAX = 255
 const int LED_MAX = 255
 const int MEMORY_SIZE = 65536
 
-// Interface override: Transform operator interface into custom delay controls
+
 readonly array panelTextRows[8] = {
     "",
     "",
@@ -59,7 +59,7 @@ readonly array panelTextRows[8] = {
     "DELAY |-- FEEDBACK (INSTRUCTION 1 LOW) --|"
 }
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX = 0
 const int OPERAND_1_LOW_PARAM_INDEX = 1
 const int OPERAND_2_LOW_PARAM_INDEX = 2
@@ -76,7 +76,7 @@ global array displayLEDs[4]
 global clock
 global clockFreqLimit
 
-// Delay state (what SUB operator manages automatically)
+
 global writePosition = 0
 global array tempBuffer[2]
 
@@ -84,43 +84,43 @@ function process() {
     locals delayTime, feedback, input, delayed, output, readPosition
     
     loop {
-        // Same parameters that SUB operator uses, but with custom control
-        delayTime = (params[OPERAND_1_HIGH_PARAM_INDEX] * 500 / PARAM_MAX) + 50  // 50-550 samples (Instruction 1 High)
-        feedback = (params[OPERAND_1_LOW_PARAM_INDEX] * 200 / PARAM_MAX)         // 0-200 feedback (Instruction 1 Low)
+
+        delayTime = (params[OPERAND_1_HIGH_PARAM_INDEX] * 500 / PARAM_MAX) + 50
+        feedback = (params[OPERAND_1_LOW_PARAM_INDEX] * 200 / PARAM_MAX)
         
-        // Manual delay processing (what SUB operator does automatically)
+
         input = signal[0]
         
-        // Read delayed sample from memory (read position = write position - delay time)
+
         readPosition = writePosition - delayTime
-        if (readPosition < 0) readPosition = readPosition + MEMORY_SIZE  // Wrap around
+        if (readPosition < 0) readPosition = readPosition + MEMORY_SIZE
         
         read(readPosition, 1, tempBuffer)
         delayed = tempBuffer[0]
         
-        // Create echo: original + delayed signal
+
         output = input + (delayed * feedback / PARAM_MAX)
         
-        // Prevent clipping
+
         if (output > AUDIO_MAX) output = AUDIO_MAX
         if (output < AUDIO_MIN) output = AUDIO_MIN
         
-        // Write current input + feedback to memory for next cycle
+
         tempBuffer[0] = input + (delayed * feedback / PARAM_MAX)
         write(writePosition, 1, tempBuffer)
         
-        // Advance write position (what hardware manages automatically)
+
         writePosition = (writePosition + 1) % MEMORY_SIZE
         
-        // Output the echo
+
         signal[0] = output
-        signal[1] = output  // Mono delay
+        signal[1] = output
         
-        // Visual feedback showing delay activity
-        displayLEDs[0] = delayTime >> 2        // Show delay time
-        displayLEDs[1] = feedback              // Show feedback amount
-        displayLEDs[2] = (delayed > 0) ? LED_MAX : 0x00  // Activity indicator
-        displayLEDs[3] = (writePosition >> 8) & LED_MAX  // Position indicator
+
+        displayLEDs[0] = delayTime >> 2
+        displayLEDs[1] = feedback
+        displayLEDs[2] = (delayed > 0) ? LED_MAX : 0x00
+        displayLEDs[3] = (writePosition >> 8) & LED_MAX
         
         yield()
     }
@@ -132,22 +132,22 @@ function process() {
 ### **The Core Algorithm**
 
 ```impala
-// 1. Calculate where to read from
-readPosition = writePosition - delayTime
-if (readPosition < 0) readPosition = readPosition + 65536  // Handle wraparound
 
-// 2. Read the delayed audio
+readPosition = writePosition - delayTime
+if (readPosition < 0) readPosition = readPosition + 65536
+
+
 read(readPosition, 1, tempBuffer)
 delayed = tempBuffer[0]
 
-// 3. Mix with current input
+
 output = input + (delayed * feedback / 255)
 
-// 4. Write to current position for future reads
+
 tempBuffer[0] = input + (delayed * feedback / 255)
 write(writePosition, 1, tempBuffer)
 
-// 5. Advance to next position
+
 writePosition = (writePosition + 1) % 65536
 ```
 
@@ -170,21 +170,21 @@ writePosition = (writePosition + 1) % 65536
 ### **Parameter Mapping**
 
 ```impala
-// Transform abstract operand values into musical parameters  
-delayTime = (params[OPERAND_1_HIGH_PARAM_INDEX] * 500 / 255) + 50  // 50-550 samples
-// At 44.1kHz: 50 samples = ~1.1ms, 550 samples = ~12.5ms
 
-feedback = (params[OPERAND_1_LOW_PARAM_INDEX] * 200 / 255)         // 0-200 (0-78% feedback)
-// Linear scaling prevents runaway feedback while allowing rich echoes
+delayTime = (params[OPERAND_1_HIGH_PARAM_INDEX] * 500 / 255) + 50
+
+
+feedback = (params[OPERAND_1_LOW_PARAM_INDEX] * 200 / 255)
+
 ```
 
 ### **Visual Feedback System**
 
 ```impala
-displayLEDs[0] = delayTime >> 2        // Delay time indicator (0-137)
-displayLEDs[1] = feedback              // Feedback amount (0-200)  
-displayLEDs[2] = (delayed > 0) ? 0xFF : 0x00  // Audio activity
-displayLEDs[3] = (writePosition >> 8) & 0xFF  // Memory position
+displayLEDs[0] = delayTime >> 2
+displayLEDs[1] = feedback
+displayLEDs[2] = (delayed > 0) ? 0xFF : 0x00
+displayLEDs[3] = (writePosition >> 8) & 0xFF
 ```
 
 **LED Meanings**:
@@ -281,34 +281,34 @@ Each preset has `Operator1: "8"` which means:
 
 ### **1. Stereo Delay**
 ```impala
-// Separate left/right processing
-signal[0] = inputL + (delayedL * feedback / 255)  // Left channel
-signal[1] = inputR + (delayedR * feedback / 255)  // Right channel
+
+signal[0] = inputL + (delayedL * feedback / 255)
+signal[1] = inputR + (delayedR * feedback / 255)
 ```
 
 ### **2. Filtered Feedback**
 ```impala
-// Simple high-cut filter on feedback
-filteredFeedback = delayed - (delayed >> 3)  // Reduce high frequencies
+
+filteredFeedback = delayed - (delayed >> 3)
 output = input + (filteredFeedback * feedback / 255)
 ```
 
 ### **3. Tempo Sync**
 ```impala
-// Sync delay time to musical divisions
-tempoDelayTime = 11025  // Quarter note at 120 BPM, 44.1kHz
-if (params[OPERATOR_2_PARAM_INDEX] > 127) tempoDelayTime = 5512  // Eighth note
+
+tempoDelayTime = 11025
+if (params[OPERATOR_2_PARAM_INDEX] > 127) tempoDelayTime = 5512
 ```
 
 ### **4. Ping-Pong Delay**
 ```impala
-// Alternate delays between left and right channels
+
 if ((writePosition >> 10) & 1) {
-    signal[0] = input + delayed  // Left gets delay
-    signal[1] = input            // Right gets dry
+    signal[0] = input + delayed
+    signal[1] = input
 } else {
-    signal[0] = input            // Left gets dry  
-    signal[1] = input + delayed  // Right gets delay
+    signal[0] = input
+    signal[1] = input + delayed
 }
 ```
 
@@ -316,9 +316,9 @@ if ((writePosition >> 10) & 1) {
 
 ### **Memory Access Optimization**
 ```impala
-// Batch reads for efficiency
+
 array batchBuffer[4]
-read(readPosition, 4, batchBuffer)  // Read 4 samples at once
+read(readPosition, 4, batchBuffer)
 ```
 
 ### **CPU Usage**
@@ -328,7 +328,7 @@ read(readPosition, 4, batchBuffer)  // Read 4 samples at once
 
 ### **Memory Safety**
 ```impala
-// Always validate array bounds
+
 if (readPosition < 0) readPosition = readPosition + 65536
 if (readPosition >= 65536) readPosition = readPosition - 65536
 ```

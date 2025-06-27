@@ -27,7 +27,7 @@ Analyzes frequency content to extract musically meaningful information from audi
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -39,55 +39,55 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// Frequency analysis state
-global array magnitude[8]       // Frequency bin magnitudes
-global array peak_tracker[8]    // Peak tracking per bin
-global int peak_frequency = 0   // Dominant frequency bin
-global int spectral_centroid = 0  // Spectral center of mass
-global int harmonic_strength = 0   // Harmonic content measure
-global int update_counter = 0   // Analysis rate control
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global array magnitude[8]
+global array peak_tracker[8]
+global int peak_frequency = 0
+global int spectral_centroid = 0
+global int harmonic_strength = 0
+global int update_counter = 0
 
 function process()
 locals i, peak_threshold, noise_floor, total_energy, weighted_sum, max_bin, max_magnitude, harmonic_sum, fundamental_bin, led_pattern
 {
     loop {
-        // Read control parameters
-        peak_threshold = params[CLOCK_FREQ_PARAM_INDEX];    // Peak detection threshold
-        noise_floor = params[SWITCHES_PARAM_INDEX] >> 1;  // Noise floor level
+
+        peak_threshold = params[CLOCK_FREQ_PARAM_INDEX];
+        noise_floor = params[SWITCHES_PARAM_INDEX] >> 1;
         
-        // Simple magnitude calculation from input signal
+
         global update_counter = global update_counter + 1;
-        if (global update_counter >= 512) {  // Update rate control
+        if (global update_counter >= 512) {
             global update_counter = 0;
             
-            // Simulate frequency analysis using input amplitude
-            // In real implementation, this would use FFT data
+
+
             i = signal[0];
-            if (i < 0) i = -i;  // Absolute value
+            if (i < 0) i = -i;
             
-            // Distribute energy across frequency bins based on signal characteristics
-            global magnitude[0] = i >> 5;  // Low frequency
-            global magnitude[1] = i >> 4;  // Low-mid
-            global magnitude[2] = i >> 3;  // Mid
-            global magnitude[3] = i >> 4;  // Mid-high
-            global magnitude[4] = i >> 5;  // High
-            global magnitude[5] = i >> 6;  // Very high
-            global magnitude[6] = i >> 7;  // Ultra high
-            global magnitude[7] = i >> 8;  // Harmonics
+
+            global magnitude[0] = i >> 5;
+            global magnitude[1] = i >> 4;
+            global magnitude[2] = i >> 3;
+            global magnitude[3] = i >> 4;
+            global magnitude[4] = i >> 5;
+            global magnitude[5] = i >> 6;
+            global magnitude[6] = i >> 7;
+            global magnitude[7] = i >> 8;
             
-            // Add some variation based on parameters
+
             global magnitude[1] = global magnitude[1] + (params[OPERATOR_1_PARAM_INDEX] >> 3);
             global magnitude[2] = global magnitude[2] + (params[OPERAND_1_HIGH_PARAM_INDEX] >> 2);
             
-            // Peak detection - find dominant frequency bin
+
             max_bin = 0;
             max_magnitude = global magnitude[0];
             i = 1;
@@ -126,12 +126,12 @@ locals i, peak_threshold, noise_floor, total_energy, weighted_sum, max_bin, max_
                 max_bin = i;
             }
             
-            // Update peak tracker with smoothing
+
             if (max_magnitude > peak_threshold) {
                 global peak_frequency = max_bin;
             }
             
-            // Calculate spectral centroid (center of mass)
+
             total_energy = 0;
             weighted_sum = 0;
             total_energy = total_energy + (int)global magnitude[0];
@@ -155,10 +155,10 @@ locals i, peak_threshold, noise_floor, total_energy, weighted_sum, max_bin, max_
             if (total_energy > 10) {
                 global spectral_centroid = weighted_sum / total_energy;
             } else {
-                global spectral_centroid = 3;  // Default mid-range
+                global spectral_centroid = 3;
             }
             
-            // Simple harmonic analysis - check for harmonic relationships
+
             fundamental_bin = global peak_frequency;
             harmonic_sum = (int)global magnitude[fundamental_bin];
             if (fundamental_bin * 2 < 8) {
@@ -170,8 +170,8 @@ locals i, peak_threshold, noise_floor, total_energy, weighted_sum, max_bin, max_
             global harmonic_strength = harmonic_sum >> 2;
         }
         
-        // === FREQUENCY VISUALIZATION ===
-        // Display spectrum on LED ring 0
+
+
         led_pattern = 0;
         if (((int)global magnitude[0] >> 4) > 0) led_pattern = led_pattern | 1;
         if (((int)global magnitude[1] >> 4) > 0) led_pattern = led_pattern | 2;
@@ -183,16 +183,16 @@ locals i, peak_threshold, noise_floor, total_energy, weighted_sum, max_bin, max_
         if (((int)global magnitude[7] >> 4) > 0) led_pattern = led_pattern | 128;
         global displayLEDs[0] = led_pattern;
         
-        // Show peak frequency on LED ring 1
+
         global displayLEDs[1] = 1 << global peak_frequency;
         
-        // Show spectral centroid on LED ring 2
+
         if (global spectral_centroid > 7) global spectral_centroid = 7;
         global displayLEDs[2] = 1 << global spectral_centroid;
         
-        // Show harmonic strength on LED ring 3
+
         led_pattern = 0;
-        i = global harmonic_strength >> 5;  // Scale to 0-7 range
+        i = global harmonic_strength >> 5;
         if (i > 7) i = 7;
         if (i >= 1) led_pattern = led_pattern | 1;
         if (i >= 2) led_pattern = led_pattern | 2;
@@ -204,7 +204,7 @@ locals i, peak_threshold, noise_floor, total_energy, weighted_sum, max_bin, max_
         if (i >= 8) led_pattern = led_pattern | 128;
         global displayLEDs[3] = led_pattern;
         
-        // Pass audio through unchanged
+
         global signal[0] = (int)global signal[0];
         global signal[1] = (int)global signal[1];
         
@@ -243,23 +243,23 @@ locals i, peak_threshold, noise_floor, total_energy, weighted_sum, max_bin, max_
 ## Try These Settings
 
 ```impala
-// Sensitive pitch detection
-params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Low threshold
-params[SWITCHES_PARAM_INDEX] = 32;   // Low noise floor
-params[OPERATOR_1_PARAM_INDEX] = 128;  // Moderate mid boost
-params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Slight high boost
 
-// Harmonic analysis
-params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium threshold
-params[SWITCHES_PARAM_INDEX] = 64;   // Medium noise floor
-params[OPERATOR_1_PARAM_INDEX] = 200;  // Strong mid emphasis
-params[OPERAND_1_HIGH_PARAM_INDEX] = 100;  // Moderate high boost
+params[CLOCK_FREQ_PARAM_INDEX] = 64;
+params[SWITCHES_PARAM_INDEX] = 32;
+params[OPERATOR_1_PARAM_INDEX] = 128;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 64;
 
-// Timbral analysis
-params[CLOCK_FREQ_PARAM_INDEX] = 100;  // Medium-low threshold
-params[SWITCHES_PARAM_INDEX] = 80;   // Higher noise floor
-params[OPERATOR_1_PARAM_INDEX] = 64;   // Subtle mid boost
-params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Strong high emphasis
+
+params[CLOCK_FREQ_PARAM_INDEX] = 128;
+params[SWITCHES_PARAM_INDEX] = 64;
+params[OPERATOR_1_PARAM_INDEX] = 200;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 100;
+
+
+params[CLOCK_FREQ_PARAM_INDEX] = 100;
+params[SWITCHES_PARAM_INDEX] = 80;
+params[OPERATOR_1_PARAM_INDEX] = 64;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 200;
 ```
 
 ## Musical Applications

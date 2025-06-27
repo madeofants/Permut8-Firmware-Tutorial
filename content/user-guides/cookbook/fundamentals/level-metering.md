@@ -25,7 +25,7 @@ Level metering displays audio signal levels using LED indicators. It shows peak 
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -37,52 +37,52 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// Level meter state
-global int peak_level = 0       // Current peak level
-global int avg_level = 0        // Average level
-global int peak_hold_value = 0  // Peak hold level
-global int peak_hold_timer = 0  // Peak hold countdown
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global int peak_level = 0
+global int avg_level = 0
+global int peak_hold_value = 0
+global int peak_hold_timer = 0
 
 function process()
 locals int sensitivity, int meter_mode, int hold_time, int left_level, int right_level, int max_level, int led_level
 {
     loop {
-        // Read parameters
-        sensitivity = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 4) + 1;  // 1-16 sensitivity
-        meter_mode = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 6);        // 0-3 meter types
-        hold_time = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] << 4);         // 0-4080 hold time
+
+        sensitivity = ((int)global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 4) + 1;
+        meter_mode = ((int)global (int)global params[SWITCHES_PARAM_INDEX] >> 6);
+        hold_time = ((int)global (int)global params[OPERATOR_1_PARAM_INDEX] << 4);
         
-        // Get absolute signal levels
+
         left_level = (int)global signal[0];
         if (left_level < 0) left_level = -left_level;
         
         right_level = (int)global signal[1];
         if (right_level < 0) right_level = -right_level;
         
-        // Find maximum level (stereo peak)
+
         max_level = left_level;
         if (right_level > max_level) max_level = right_level;
         
-        // Update peak level (fast attack)
+
         if (max_level > global peak_level) {
             global peak_level = max_level;
         } else {
-            // Slow release based on sensitivity
+
             global peak_level = global peak_level - (global peak_level >> sensitivity);
         }
         
-        // Update average level (slower response)
+
         global avg_level = global avg_level + ((max_level - global avg_level) >> 8);
         
-        // Peak hold logic
+
         if (global peak_level > global peak_hold_value) {
             global peak_hold_value = global peak_level;
             global peak_hold_timer = hold_time;
@@ -92,38 +92,38 @@ locals int sensitivity, int meter_mode, int hold_time, int left_level, int right
             global peak_hold_value = global peak_hold_value - (global peak_hold_value >> 6);
         }
         
-        // Select display level based on meter mode
+
         if (meter_mode == 0) {
-            led_level = global peak_level;      // Peak meter
+            led_level = global peak_level;
         } else if (meter_mode == 1) {
-            led_level = global avg_level;       // Average meter
+            led_level = global avg_level;
         } else if (meter_mode == 2) {
-            led_level = global peak_hold_value; // Peak hold meter
+            led_level = global peak_hold_value;
         } else {
-            // Combined display
+
             led_level = (global peak_level + global avg_level) >> 1;
         }
         
-        // Map level to LED display (0-2047 → 0-255 per LED)
-        global displayLEDs[0] = led_level >> 3;           // LED 1: Full range
+
+        global displayLEDs[0] = led_level >> 3;
         
-        // LED 2: Only for higher levels
+
         if (led_level > 512) {
             global displayLEDs[1] = (led_level - 512) >> 2;
         } else {
             global displayLEDs[1] = 0;
         }
         
-        // LED 3: Only for even higher levels  
+
         if (led_level > 1280) {
             global displayLEDs[2] = (led_level - 1280) >> 1;
         } else {
             global displayLEDs[2] = 0;
         }
         
-        // LED 4: Peak warning (red zone)
-        if (led_level > 1843) {  // About 90% of full scale
-            global displayLEDs[3] = 255;  // Full brightness warning
+
+        if (led_level > 1843) {
+            global displayLEDs[3] = 255;
         } else {
             global displayLEDs[3] = 0;
         }
@@ -154,25 +154,25 @@ locals int sensitivity, int meter_mode, int hold_time, int left_level, int right
 ## Try These Settings
 
 ```impala
-// Standard peak meter
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Medium sensitivity
-(int)global params[SWITCHES_PARAM_INDEX] = 0;    // Peak mode
-(int)global params[OPERATOR_1_PARAM_INDEX] = 100;  // Short peak hold
 
-// Average level meter
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Lower sensitivity
-(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Average mode
-(int)global params[OPERATOR_1_PARAM_INDEX] = 0;    // No peak hold
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 128;
+(int)global params[SWITCHES_PARAM_INDEX] = 0;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 100;
 
-// Combined display
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // High sensitivity
-(int)global params[SWITCHES_PARAM_INDEX] = 192;  // Combined mode
-(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // Long peak hold
 
-// Slow monitoring
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 32;   // Very low sensitivity
-(int)global params[SWITCHES_PARAM_INDEX] = 128;  // Peak hold mode
-(int)global params[OPERATOR_1_PARAM_INDEX] = 255;  // Maximum hold time
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 64;
+(int)global params[SWITCHES_PARAM_INDEX] = 64;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 0;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;
+(int)global params[SWITCHES_PARAM_INDEX] = 192;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 32;
+(int)global params[SWITCHES_PARAM_INDEX] = 128;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 255;
 ```
 
 ## Understanding Level Metering

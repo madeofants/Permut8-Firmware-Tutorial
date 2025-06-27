@@ -13,7 +13,7 @@ Permut8's constrained environment demands efficient code, but premature optimiza
 The most important optimization principle: **write correct code first, then optimize**. Permut8's real-time constraints are strict, but buggy optimized code is worse than slightly slower correct code.
 
 ```impala
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -24,17 +24,17 @@ const int SWITCHES_PARAM_INDEX
 const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
-// Bad: Premature optimization that introduces bugs
+
 function process() {
-    // Complex unrolled loop with edge case bugs
-    global signal[0] = ((global (int)global params[CLOCK_FREQ_PARAM_INDEX] * 3547) >> 12) + global offset; // Magic numbers!
+
+    global signal[0] = ((global (int)global params[CLOCK_FREQ_PARAM_INDEX] * 3547) >> 12) + global offset;
 }
 
-// Good: Clear, correct code ready for optimization
+
 function process() 
 locals int gain
 {
-    gain = global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 4;  // Divide by 16 for scaling
+    gain = global (int)global params[CLOCK_FREQ_PARAM_INDEX] >> 4;
     global signal[0] = global input * gain + global offset;
 }
 
@@ -67,7 +67,7 @@ The algorithm you choose has more performance impact than any other optimization
 **Example: Filter Design Choices**
 
 ```impala
-// Expensive: Convolution reverb (O(n²))
+
 function convolution_reverb(input) returns int
 locals int output, int i
 {
@@ -78,7 +78,7 @@ locals int output, int i
     return output;
 }
 
-// Efficient: IIR filter (O(1))
+
 function iir_filter(input) returns int
 locals int output
 {
@@ -105,14 +105,14 @@ For real-time audio, prefer algorithms with:
 Often, approximate algorithms provide sufficient quality with much better performance:
 
 ```impala
-// Exact but expensive: Full precision sine calculation
+
 function precise_sine(phase) returns int
 {
-    // Use expensive floating point sine (not available in basic Impala)
-    return sine(phase * 6283 >> 10);  // 2*PI approximation
+
+    return sine(phase * 6283 >> 10);
 }
 
-// Approximate but fast: Linear interpolation table lookup
+
 function fast_sine(phase) returns int
 locals int table_index, int fraction, int current, int next
 {
@@ -131,7 +131,7 @@ locals int table_index, int fraction, int current, int next
 Permut8's memory architecture favors sequential access. Design your data structures and algorithms to access memory sequentially whenever possible.
 
 ```impala
-// Bad: Random memory access
+
 function process_scattered()
 locals int i, int index
 {
@@ -141,7 +141,7 @@ locals int i, int index
     }
 }
 
-// Good: Sequential memory access
+
 function process_sequential()
 locals int i
 {
@@ -156,21 +156,21 @@ locals int i
 Organize data to maximize cache efficiency:
 
 ```impala
-// Cache-unfriendly: Mixed data access patterns
-// Impala uses global arrays instead of structs
+
+
 global array delay_buffer[MAX_DELAY]
 global int delay_write_pos = 0
 global int delay_read_pos = 0
 global int delay_feedback = 128
 
-// Cache-friendly: Separate arrays for bulk processing
-// Structure of arrays approach in Impala
-global array delay_buffers[NUM_DELAYS * MAX_DELAY]  // Flattened 2D array
+
+
+global array delay_buffers[NUM_DELAYS * MAX_DELAY]
 global array delay_write_positions[NUM_DELAYS]
 global array delay_read_positions[NUM_DELAYS]
 global array delay_feedbacks[NUM_DELAYS]
 
-// Access pattern for optimized delay bank
+
 function get_delay_buffer_sample(delay_index, sample_offset) returns int
 {
     return global delay_buffers[delay_index * MAX_DELAY + sample_offset];
@@ -182,9 +182,9 @@ function get_delay_buffer_sample(delay_index, sample_offset) returns int
 Pre-allocate buffers and reuse them to avoid dynamic allocation:
 
 ```impala
-// Global buffer pool - Impala approach
-global array temp_buffers[4 * BUFFER_SIZE]  // Flattened 2D array
-global array buffer_usage[4]  // 0 = free, 1 = used
+
+global array temp_buffers[4 * BUFFER_SIZE]
+global array buffer_usage[4]
 
 function get_temp_buffer() returns int
 locals int i
@@ -192,10 +192,10 @@ locals int i
     for (i = 0 to 3) {
         if (global buffer_usage[i] == 0) {
             global buffer_usage[i] = 1;
-            return i;  // Return buffer index
+            return i;
         }
     }
-    return -1;  // No buffer available
+    return -1;
 }
 
 function return_temp_buffer(index)
@@ -205,7 +205,7 @@ function return_temp_buffer(index)
     }
 }
 
-// Access temp buffer sample
+
 function get_temp_buffer_sample(buffer_index, sample_index) returns int
 {
     return global temp_buffers[buffer_index * BUFFER_SIZE + sample_index];
@@ -224,7 +224,7 @@ function set_temp_buffer_sample(buffer_index, sample_index, value)
 For operations that don't require full floating-point precision, fixed-point arithmetic can be significantly faster:
 
 ```impala
-// Fixed-point gain control (Q15 format)
+
 function apply_gain_fixed(input, gain_q15) returns int
 locals int result
 {
@@ -232,11 +232,11 @@ locals int result
     return result;
 }
 
-// Integer equivalent for Impala
+
 function apply_gain_integer(input, gain) returns int
 locals int result
 {
-    result = (input * gain) >> 8;  // Assume 8-bit gain scaling
+    result = (input * gain) >> 8;
     return result;
 }
 ```
@@ -246,22 +246,22 @@ locals int result
 Replace expensive operations with cheaper alternatives where possible:
 
 ```impala
-// Expensive division
+
 function expensive_normalize(value, max) returns int
 {
-    return value / max;  // Division is slow
+    return value / max;
 }
 
-// Cheaper multiplication by reciprocal (pre-calculate reciprocal)
+
 function cheap_normalize(value, max_reciprocal) returns int
 {
-    return (value * max_reciprocal) >> 16;  // Fixed-point multiplication
+    return (value * max_reciprocal) >> 16;
 }
 
-// Even cheaper: bit shifts for powers of 2
+
 function power_of_two_divide(value, shift) returns int
 {
-    return value >> shift;  // Equivalent to value / (2^shift)
+    return value >> shift;
 }
 ```
 
@@ -270,7 +270,7 @@ function power_of_two_divide(value, shift) returns int
 When processing multiple samples, consider vectorized operations:
 
 ```impala
-// Scalar processing
+
 function apply_gain_scalar(buffer_size, gain)
 locals int i
 {
@@ -279,7 +279,7 @@ locals int i
     }
 }
 
-// Vectorized processing (unrolled loop)
+
 function apply_gain_vectorized(buffer_size, gain)
 locals int i
 {
@@ -291,7 +291,7 @@ locals int i
         global audio_buffer[i + 3] = (global audio_buffer[i + 3] * gain) >> 8;
         i = i + 4;
     }
-    // Handle remaining samples
+
     while (i < buffer_size) {
         global audio_buffer[i] = (global audio_buffer[i] * gain) >> 8;
         i = i + 1;
@@ -306,13 +306,13 @@ locals int i
 Permut8's DSP hardware provides specific optimizations you should leverage:
 
 ```impala
-// Use Impala native functions for optimized operations
+
 function optimized_filter(input) returns int
 locals int output, int coeff
 {
     coeff = global filter_coefficient;
-    // Impala doesn't support inline assembly, use efficient integer math
-    output = (input * coeff) >> 8;  // Multiply-accumulate equivalent
+
+    output = (input * coeff) >> 8;
     return output;
 }
 ```
@@ -322,17 +322,17 @@ locals int output, int coeff
 Don't recalculate expensive parameter-derived values every sample:
 
 ```impala
-// Bad: Expensive calculation every sample
+
 function process_sample(input) returns int
 locals int cutoff_freq, int q, int filter_coeff
 {
     cutoff_freq = (global params[CUTOFF] * SAMPLE_RATE) >> 1;
-    q = global params[RESONANCE] * 10 + 128;  // Fixed-point math
+    q = global params[RESONANCE] * 10 + 128;
     filter_coeff = calculate_filter_coeffs(cutoff_freq, q);
     return apply_filter(input, filter_coeff);
 }
 
-// Good: Update coefficients only when parameters change
+
 global int cached_coeff = 0
 global array last_(int)global params[OPERATOR_1_PARAM_INDEX]
 
@@ -356,16 +356,16 @@ locals int cutoff_freq, int q
 Choose buffer sizes that work well with Permut8's architecture:
 
 ```impala
-// Align buffer sizes to cache line boundaries
-const int OPTIMAL_BUFFER_SIZE = 64   // Matches cache line size
-const int DELAY_BUFFER_SIZE = 1024   // Power of 2 for efficient indexing
 
-// Use power-of-2 sizes for circular buffers
+const int OPTIMAL_BUFFER_SIZE = 64
+const int DELAY_BUFFER_SIZE = 1024
+
+
 function circular_buffer_write(value)
 locals int new_pos
 {
     global circular_buffer[global write_pos] = value;
-    new_pos = (global write_pos + 1) & (DELAY_BUFFER_SIZE - 1);  // Fast modulo for power-of-2
+    new_pos = (global write_pos + 1) & (DELAY_BUFFER_SIZE - 1);
     global write_pos = new_pos;
 }
 
@@ -423,15 +423,15 @@ Use Permut8's built-in timing facilities to measure performance:
 function benchmark_function()
 locals int start_time, int end_time, int cycles_used
 {
-    start_time = global clock;  // Use system clock
+    start_time = global clock;
     
-    // Your code here
+
     expensive_operation();
     
     end_time = global clock;
     cycles_used = end_time - start_time;
     
-    // Log timing information
+
     if (DEBUG) {
         trace("Function took cycles: ");
         trace(intToString(cycles_used, 10, 1, global debug_buffer));
@@ -444,8 +444,8 @@ locals int start_time, int end_time, int cycles_used
 Create a systematic approach to performance testing:
 
 ```impala
-// Performance testing framework - Impala approach
-global array test_names[8 * 32]  // 8 tests, 32 chars each (flattened)
+
+global array test_names[8 * 32]
 global array test_iterations[8]
 global array test_total_cycles[8]
 global int current_test_count = 0
@@ -465,7 +465,7 @@ locals int i, int start_time, int end_time
 {
     for (i = 0 to global test_iterations[test_index] - 1) {
         start_time = global clock;
-        expensive_operation();  // Test function goes here
+        expensive_operation();
         end_time = global clock;
         global test_total_cycles[test_index] = global test_total_cycles[test_index] + 
                                                (end_time - start_time);
@@ -491,9 +491,9 @@ Track memory usage to prevent overruns:
 function check_memory_usage()
 locals int buffer_usage, int param_usage
 {
-    // Impala uses static memory allocation, check buffer usage
-    buffer_usage = global buffer_write_pos;  // Current buffer position
-    param_usage = global param_update_count; // Parameter update frequency
+
+    buffer_usage = global buffer_write_pos;
+    param_usage = global param_update_count;
     
     if (buffer_usage > BUFFER_WARNING_THRESHOLD) {
         if (DEBUG) {
@@ -517,22 +517,22 @@ locals int buffer_usage, int param_usage
 **Solution**: Profile first, optimize second
 
 ```impala
-// Don't do this without profiling first
+
 function premature_optimization()
 locals int result, int value
 {
     value = global input_sample;
-    // Complex bit-twiddling to save a few cycles
-    result = ((value << 3) + (value << 1)) >> 2; // value * 10 / 4
+
+    result = ((value << 3) + (value << 1)) >> 2;
     global output_sample = result;
 }
 
-// Do this: Clear, correct code first
+
 function clear_code()
 locals int result, int value
 {
     value = global input_sample;
-    result = (value * 5) >> 1;  // Clear intent: value * 2.5 in fixed-point
+    result = (value * 5) >> 1;
     global output_sample = result;
 }
 ```
@@ -553,20 +553,20 @@ locals int result, int value
 **Solution**: Extensive testing of optimized code
 
 ```impala
-// Dangerous: Fast but potentially incorrect
+
 function unsafe_fast_function(input) returns int
 locals int index
 {
-    // Assumes input is always positive, skips bounds checking
-    index = input;  // Direct cast without bounds checking
-    return global LOOKUP_TABLE[index];  // Could access out of bounds!
+
+    index = input;
+    return global LOOKUP_TABLE[index];
 }
 
-// Safe: Slightly slower but correct
+
 function safe_function(input) returns int
 locals int index
 {
-    // Clamp input to valid range
+
     if (input < 0) {
         index = 0;
     } else if (input >= LOOKUP_TABLE_SIZE) {
@@ -583,15 +583,15 @@ locals int index
 ### Example 1: Oscillator Optimization
 
 ```impala
-// Before optimization: Expensive trigonometric calculation
+
 global int slow_oscillator_phase = 0
 global int slow_oscillator_frequency = 1000
 
 function slow_oscillator_next_sample() returns int
 locals int output
 {
-    // Expensive sine calculation (not available in basic Impala)
-    output = sine((global slow_oscillator_phase * 6283) >> 16);  // 2*PI approximation
+
+    output = sine((global slow_oscillator_phase * 6283) >> 16);
     global slow_oscillator_phase = global slow_oscillator_phase + 
                                    (global slow_oscillator_frequency * 65536 / SAMPLE_RATE);
     if (global slow_oscillator_phase >= 65536) {
@@ -600,7 +600,7 @@ locals int output
     return output;
 }
 
-// After optimization: Table lookup with interpolation
+
 global int fast_oscillator_phase_accumulator = 0
 global int fast_oscillator_frequency_word = 1000
 
@@ -624,9 +624,9 @@ locals int table_index, int fraction, int current, int next, int result
 ### Example 2: Filter Bank Optimization
 
 ```impala
-// Before: Individual filter processing
-global array filter_states[NUM_FILTERS * 4]  // 4 states per filter
-global array filter_coeffs[NUM_FILTERS * 5]  // 5 coeffs per filter
+
+global array filter_states[NUM_FILTERS * 4]
+global array filter_coeffs[NUM_FILTERS * 5]
 
 function process_filter_bank_slow(input) returns int
 locals int output, int filter, int state_offset, int coeff_offset
@@ -640,28 +640,28 @@ locals int output, int filter, int state_offset, int coeff_offset
     return output;
 }
 
-// After: Vectorized processing with loop unrolling
+
 function process_filter_bank_fast(input) returns int
 locals int y, int x1, int x2, int y1, int y2
 {
     y = input;
     
-    // Unroll filter processing for better performance - Filter 0
-    x1 = global filter_states[1];  // x1[0]
-    x2 = global filter_states[2];  // x2[0]
-    y1 = global filter_states[3];  // y1[0]
-    y2 = global filter_states[4];  // y2[0]
+
+    x1 = global filter_states[1];
+    x2 = global filter_states[2];
+    y1 = global filter_states[3];
+    y2 = global filter_states[4];
     
     y = ((global filter_coeffs[0] * y + global filter_coeffs[1] * x1 + 
           global filter_coeffs[2] * x2 - global filter_coeffs[3] * y1 - 
           global filter_coeffs[4] * y2) >> 8);
           
-    global filter_states[2] = x1;  // x2[0] = x1[0]
-    global filter_states[1] = input;  // x1[0] = input
-    global filter_states[4] = y1;  // y2[0] = y1[0]
-    global filter_states[3] = y;   // y1[0] = y
+    global filter_states[2] = x1;
+    global filter_states[1] = input;
+    global filter_states[4] = y1;
+    global filter_states[3] = y;
     
-    // Additional filter stages would be unrolled here...
+
     
     return y;
 }
@@ -675,7 +675,7 @@ locals int output
                global filter_coeffs[coeff_offset + 3] * global filter_states[state_offset + 3] - 
                global filter_coeffs[coeff_offset + 4] * global filter_states[state_offset + 4]) >> 8);
     
-    // Update filter state
+
     global filter_states[state_offset + 2] = global filter_states[state_offset + 1];
     global filter_states[state_offset + 1] = input;
     global filter_states[state_offset + 4] = global filter_states[state_offset + 3];

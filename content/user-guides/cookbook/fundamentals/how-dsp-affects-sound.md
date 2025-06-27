@@ -65,7 +65,7 @@ In custom firmware (Approach 2), audio samples are integers from **-2047 to +204
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -78,14 +78,14 @@ const int PARAM_COUNT
 
 extern native yield
 
-global array signal[2]  // [left channel, right channel]
-global array params[PARAM_COUNT]  // Hardware knob values (0-255)
+global array signal[2]
+global array params[PARAM_COUNT]
 
 function process() {
     loop {
-        // signal[0] = some number between -2047 and +2047
-        // signal[1] = some number between -2047 and +2047
-        yield();  // Send these numbers to the speakers
+
+
+        yield();
     }
 }
 
@@ -105,47 +105,47 @@ Here are the most fundamental ways code affects sound:
 
 #### 1. Make it Louder (Multiply by Bigger Number)
 ```impala
-signal[0] = signal[0] * 2;  // Twice as loud
-signal[1] = signal[1] * 2;  // Both channels
+signal[0] = signal[0] * 2;
+signal[1] = signal[1] * 2;
 ```
 **What Happens**: Every audio sample gets bigger → Speaker moves more → Sound is louder
 
 #### 2. Make it Quieter (Multiply by Smaller Number)
 ```impala
-signal[0] = signal[0] / 2;  // Half as loud
-signal[1] = signal[1] / 2;  // Both channels
+signal[0] = signal[0] / 2;
+signal[1] = signal[1] / 2;
 ```
 **What Happens**: Every audio sample gets smaller → Speaker moves less → Sound is quieter
 
 #### 3. Add Distortion (Push Beyond Limits)
 ```impala
-signal[0] = signal[0] * 5;  // Way too loud!
-// Permut8 automatically prevents damage by limiting to ±2047
-// But this creates distortion - harsh, buzzy sound
+signal[0] = signal[0] * 5;
+
+
 ```
 **What Happens**: Numbers try to go beyond ±2047 → Get "clipped" → Creates distortion
 
 #### 4. Mix Two Sounds (Add Numbers)
 ```impala
 int originalSound = signal[0];
-int synthesizedSound = 1000;  // A constant tone
-signal[0] = originalSound + synthesizedSound;  // Mix them!
+int synthesizedSound = 1000;
+signal[0] = originalSound + synthesizedSound;
 ```
 **What Happens**: Two sound sources combine → You hear both at once
 
 #### 5. Create Echo (Use Old Numbers)
 ```impala
-global array delayBuffer[1000];  // Store old audio
+global array delayBuffer[1000];
 global int delayPos = 0;
 
-// In your process() loop:
+
 int currentAudio = signal[0];
-int oldAudio = delayBuffer[delayPos];  // Audio from 1000 samples ago
+int oldAudio = delayBuffer[delayPos];
 
-signal[0] = currentAudio + (oldAudio / 2);  // Mix current + old = echo!
+signal[0] = currentAudio + (oldAudio / 2);
 
-delayBuffer[delayPos] = currentAudio;  // Remember this audio for later
-delayPos = (delayPos + 1) % 1000;      // Move to next position
+delayBuffer[delayPos] = currentAudio;
+delayPos = (delayPos + 1) % 1000;
 ```
 **What Happens**: You hear current audio + audio from the past → Echo effect!
 
@@ -181,22 +181,22 @@ global array displayLEDs[4]
 
 function process() {
     loop {
-        // Read the current audio coming into Permut8
+
         int leftInput = signal[0];
         int rightInput = signal[1];
         
-        // CHANGE THE SOUND: Make it quieter using Clock Frequency Knob
-        int volumeKnob = (int)global params[CLOCK_FREQ_PARAM_INDEX];  // 0-255 from hardware
-        int volumeAmount = volumeKnob + 1;  // 1-256 (never zero)
+
+        int volumeKnob = (int)global params[CLOCK_FREQ_PARAM_INDEX];
+        int volumeAmount = volumeKnob + 1;
         
-        // Apply the volume change
+
         signal[0] = (leftInput * volumeAmount) / 256;
         signal[1] = (rightInput * volumeAmount) / 256;
         
-        // Visual feedback: Show the volume on LED display
+
         displayLEDs[0] = volumeKnob;
         
-        yield();  // Send the modified audio to speakers
+        yield();
     }
 }
 ```
@@ -297,16 +297,16 @@ Now that you understand how code affects sound, you're ready for:
 ```impala
 function process() {
     loop {
-        // 1. Read current audio
+
         int input = signal[0];
         
-        // 2. Do some math to change it
+
         int output = input * someModification;
         
-        // 3. Send modified audio to speakers
+
         signal[0] = output;
         
-        yield();  // Repeat 44,100 times per second
+        yield();
     }
 }
 ```

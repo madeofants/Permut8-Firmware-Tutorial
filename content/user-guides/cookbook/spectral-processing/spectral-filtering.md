@@ -27,7 +27,7 @@ Provides frequency domain filtering that operates directly on spectral component
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -39,53 +39,53 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// Spectral filtering state
-global array magnitude[8]       // Frequency bin magnitudes
-global array filter_gains[8]    // Filter gain per frequency bin
-global array filtered_spectrum[8] // Filtered frequency content
-global int update_counter = 0   // Analysis rate control
-global int filter_type = 0      // Filter type selection
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global array magnitude[8]
+global array filter_gains[8]
+global array filtered_spectrum[8]
+global int update_counter = 0
+global int filter_type = 0
 
 function process()
 locals i, cutoff_freq, filter_slope, filter_resonance, input_amplitude, output_amplitude, led_pattern
 {
     loop {
-        // Read control parameters
-        cutoff_freq = params[CLOCK_FREQ_PARAM_INDEX] >> 5;        // 0-7 range (cutoff frequency bin)
-        filter_slope = (params[SWITCHES_PARAM_INDEX] >> 6) + 1; // 1-4 range (filter steepness)
-        filter_resonance = params[OPERATOR_1_PARAM_INDEX];        // 0-255 range (resonance amount)
-        global filter_type = params[OPERAND_1_HIGH_PARAM_INDEX] >> 6; // 0-3 range (filter type)
+
+        cutoff_freq = params[CLOCK_FREQ_PARAM_INDEX] >> 5;
+        filter_slope = (params[SWITCHES_PARAM_INDEX] >> 6) + 1;
+        filter_resonance = params[OPERATOR_1_PARAM_INDEX];
+        global filter_type = params[OPERAND_1_HIGH_PARAM_INDEX] >> 6;
         
-        // Simple frequency analysis from input signal
+
         global update_counter = global update_counter + 1;
-        if (global update_counter >= 256) {  // Update rate control
+        if (global update_counter >= 256) {
             global update_counter = 0;
             
             input_amplitude = signal[0];
             if (input_amplitude < 0) input_amplitude = -input_amplitude;
             
-            // Distribute input energy across frequency bins (simplified spectral analysis)
-            global magnitude[0] = input_amplitude >> 4;  // DC/Low
-            global magnitude[1] = input_amplitude >> 3;  // Low
-            global magnitude[2] = input_amplitude >> 2;  // Low-mid
-            global magnitude[3] = input_amplitude >> 1;  // Mid (strongest)
-            global magnitude[4] = input_amplitude >> 2;  // Mid-high
-            global magnitude[5] = input_amplitude >> 3;  // High
-            global magnitude[6] = input_amplitude >> 4;  // Very high
-            global magnitude[7] = input_amplitude >> 5;  // Ultra high
+
+            global magnitude[0] = input_amplitude >> 4;
+            global magnitude[1] = input_amplitude >> 3;
+            global magnitude[2] = input_amplitude >> 2;
+            global magnitude[3] = input_amplitude >> 1;
+            global magnitude[4] = input_amplitude >> 2;
+            global magnitude[5] = input_amplitude >> 3;
+            global magnitude[6] = input_amplitude >> 4;
+            global magnitude[7] = input_amplitude >> 5;
             
-            // Calculate filter gains based on filter type and parameters
+
             if (global filter_type == 0) {
-                // Low-pass filter
-                global filter_gains[0] = 255;  // Pass DC
+
+                global filter_gains[0] = 255;
                 if (cutoff_freq >= 1) { global filter_gains[1] = 255; } else { global filter_gains[1] = 0; }
                 if (cutoff_freq >= 2) { global filter_gains[2] = 255; } else { global filter_gains[2] = 0; }
                 if (cutoff_freq >= 3) { global filter_gains[3] = 255; } else { global filter_gains[3] = 0; }
@@ -95,7 +95,7 @@ locals i, cutoff_freq, filter_slope, filter_resonance, input_amplitude, output_a
                 if (cutoff_freq >= 7) { global filter_gains[7] = 255; } else { global filter_gains[7] = 0; }
                 
             } else if (global filter_type == 1) {
-                // High-pass filter
+
                 if (cutoff_freq <= 0) { global filter_gains[0] = 255; } else { global filter_gains[0] = 0; }
                 if (cutoff_freq <= 1) { global filter_gains[1] = 255; } else { global filter_gains[1] = 0; }
                 if (cutoff_freq <= 2) { global filter_gains[2] = 255; } else { global filter_gains[2] = 0; }
@@ -103,10 +103,10 @@ locals i, cutoff_freq, filter_slope, filter_resonance, input_amplitude, output_a
                 if (cutoff_freq <= 4) { global filter_gains[4] = 255; } else { global filter_gains[4] = 0; }
                 if (cutoff_freq <= 5) { global filter_gains[5] = 255; } else { global filter_gains[5] = 0; }
                 if (cutoff_freq <= 6) { global filter_gains[6] = 255; } else { global filter_gains[6] = 0; }
-                global filter_gains[7] = 255;  // Always pass high frequencies
+                global filter_gains[7] = 255;
                 
             } else if (global filter_type == 2) {
-                // Band-pass filter (centered around cutoff)
+
                 global filter_gains[0] = 0;
                 global filter_gains[1] = 0;
                 if (cutoff_freq == 2) { global filter_gains[2] = 255; } else { global filter_gains[2] = 0; }
@@ -117,7 +117,7 @@ locals i, cutoff_freq, filter_slope, filter_resonance, input_amplitude, output_a
                 global filter_gains[7] = 0;
                 
             } else {
-                // Notch filter (inverse of band-pass)
+
                 global filter_gains[0] = 255;
                 global filter_gains[1] = 255;
                 if (cutoff_freq == 2) { global filter_gains[2] = 0; } else { global filter_gains[2] = 255; }
@@ -128,13 +128,13 @@ locals i, cutoff_freq, filter_slope, filter_resonance, input_amplitude, output_a
                 global filter_gains[7] = 255;
             }
             
-            // Add resonance boost at cutoff frequency
+
             if (cutoff_freq < 8 && filter_resonance > 64) {
                 global filter_gains[cutoff_freq] = 255 + (filter_resonance >> 2);
                 if ((int)global filter_gains[cutoff_freq] > 511) global filter_gains[cutoff_freq] = 511;
             }
             
-            // Apply filtering to spectrum
+
             global filtered_spectrum[0] = (global magnitude[0] * global filter_gains[0]) >> 8;
             global filtered_spectrum[1] = (global magnitude[1] * global filter_gains[1]) >> 8;
             global filtered_spectrum[2] = (global magnitude[2] * global filter_gains[2]) >> 8;
@@ -145,7 +145,7 @@ locals i, cutoff_freq, filter_slope, filter_resonance, input_amplitude, output_a
             global filtered_spectrum[7] = (global magnitude[7] * global filter_gains[7]) >> 8;
         }
         
-        // Reconstruct filtered audio (inverse spectral synthesis)
+
         output_amplitude = 0;
         output_amplitude = output_amplitude + global filtered_spectrum[0];
         output_amplitude = output_amplitude + global filtered_spectrum[1];
@@ -155,18 +155,18 @@ locals i, cutoff_freq, filter_slope, filter_resonance, input_amplitude, output_a
         output_amplitude = output_amplitude + global filtered_spectrum[5];
         output_amplitude = output_amplitude + global filtered_spectrum[6];
         output_amplitude = output_amplitude + global filtered_spectrum[7];
-        output_amplitude = output_amplitude >> 3;  // Divide by 8
+        output_amplitude = output_amplitude >> 3;
         
-        // Mix with original signal for more natural sound
+
         input_amplitude = signal[0];
         output_amplitude = (input_amplitude >> 2) + (output_amplitude * 3 >> 2);
         
-        // Prevent clipping
+
         if (output_amplitude > 2047) output_amplitude = 2047;
         if (output_amplitude < -2047) output_amplitude = -2047;
         
-        // === SPECTRAL FILTER VISUALIZATION ===
-        // Display original spectrum on LED ring 0
+
+
         led_pattern = 0;
         if (((int)global magnitude[0] >> 5) > 0) led_pattern = led_pattern | 1;
         if (((int)global magnitude[1] >> 5) > 0) led_pattern = led_pattern | 2;
@@ -178,7 +178,7 @@ locals i, cutoff_freq, filter_slope, filter_resonance, input_amplitude, output_a
         if (((int)global magnitude[7] >> 5) > 0) led_pattern = led_pattern | 128;
         global displayLEDs[0] = led_pattern;
         
-        // Display filter response on LED ring 1
+
         led_pattern = 0;
         if (((int)global filter_gains[0] >> 7) > 0) led_pattern = led_pattern | 1;
         if (((int)global filter_gains[1] >> 7) > 0) led_pattern = led_pattern | 2;
@@ -190,14 +190,14 @@ locals i, cutoff_freq, filter_slope, filter_resonance, input_amplitude, output_a
         if (((int)global filter_gains[7] >> 7) > 0) led_pattern = led_pattern | 128;
         global displayLEDs[1] = led_pattern;
         
-        // Show filter cutoff frequency on LED ring 2
+
         if (cutoff_freq > 7) cutoff_freq = 7;
         global displayLEDs[2] = 1 << cutoff_freq;
         
-        // Show filter type on LED ring 3
-        global displayLEDs[3] = (global filter_type + 1) << 6;  // Show current filter type
+
+        global displayLEDs[3] = (global filter_type + 1) << 6;
         
-        // Output filtered audio
+
         global signal[0] = output_amplitude;
         global signal[1] = output_amplitude;
         
@@ -236,23 +236,23 @@ locals i, cutoff_freq, filter_slope, filter_resonance, input_amplitude, output_a
 ## Try These Settings
 
 ```impala
-// Low-pass filter with resonance
-params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Mid cutoff frequency (bin 4)
-params[SWITCHES_PARAM_INDEX] = 128;  // Medium slope
-params[OPERATOR_1_PARAM_INDEX] = 200;  // High resonance
-params[OPERAND_1_HIGH_PARAM_INDEX] = 0;    // Low-pass type
 
-// High-pass filter
-params[CLOCK_FREQ_PARAM_INDEX] = 64;   // Low cutoff frequency (bin 2)
-params[SWITCHES_PARAM_INDEX] = 192;  // Steep slope
-params[OPERATOR_1_PARAM_INDEX] = 100;  // Moderate resonance
-params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // High-pass type
+params[CLOCK_FREQ_PARAM_INDEX] = 128;
+params[SWITCHES_PARAM_INDEX] = 128;
+params[OPERATOR_1_PARAM_INDEX] = 200;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 0;
 
-// Notch filter for removing specific frequency
-params[CLOCK_FREQ_PARAM_INDEX] = 160;  // Higher cutoff (bin 5)
-params[SWITCHES_PARAM_INDEX] = 255;  // Maximum slope
-params[OPERATOR_1_PARAM_INDEX] = 255;  // Maximum resonance
-params[OPERAND_1_HIGH_PARAM_INDEX] = 192;  // Notch type
+
+params[CLOCK_FREQ_PARAM_INDEX] = 64;
+params[SWITCHES_PARAM_INDEX] = 192;
+params[OPERATOR_1_PARAM_INDEX] = 100;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 64;
+
+
+params[CLOCK_FREQ_PARAM_INDEX] = 160;
+params[SWITCHES_PARAM_INDEX] = 255;
+params[OPERATOR_1_PARAM_INDEX] = 255;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 192;
 ```
 
 ## Understanding Frequency Bins

@@ -51,7 +51,7 @@ The Permut8 provides distinct memory regions optimized for different purposes:
 
 **Circular Buffer Pattern:**
 ```impala
-// Circular buffer implementation
+
 const int BUFFER_SIZE = 1024;
 global array buffer[1024];
 global int writeIndex = 0;
@@ -70,7 +70,7 @@ function readCircular() returns int sample {
 
 **Ping-Pong Buffer Pattern:**
 ```impala
-// Ping-pong buffer implementation
+
 const int BUFFER_SIZE = 512;
 global array bufferA[512];
 global array bufferB[512];
@@ -113,7 +113,7 @@ function swapBuffers() {
 
 **Streaming Buffer Pattern:**
 ```impala
-// Streaming buffer implementation
+
 const int CHUNK_SIZE = 64;
 global array inputChunk[64];
 global array outputChunk[64];
@@ -143,7 +143,7 @@ function addSample(int sample) {
 
 ### Sequential Access (Optimal)
 ```impala
-// Fast: Linear memory access pattern
+
 function processSequential(array buffer[1024], int length) {
     int i
     for (i = 0 to length - 1) {
@@ -154,19 +154,19 @@ function processSequential(array buffer[1024], int length) {
 
 ### Strided Access (Moderate Performance)
 ```impala
-// Moderate: Predictable stride pattern
+
 function processInterleaved(array stereoBuffer[2048], int frames) {
     int i
     for (i = 0 to frames - 1) {
-        stereoBuffer[i * 2] = processLeft(stereoBuffer[i * 2])         // Left
-        stereoBuffer[i * 2 + 1] = processRight(stereoBuffer[i * 2 + 1]) // Right
+        stereoBuffer[i * 2] = processLeft(stereoBuffer[i * 2])
+        stereoBuffer[i * 2 + 1] = processRight(stereoBuffer[i * 2 + 1])
     }
 }
 ```
 
 ### Random Access (Slower)
 ```impala
-// Slower: Cache-unfriendly random access
+
 function processRandom(array buffer[1024], array indices[128], int count) {
     int i
     for (i = 0 to count - 1) {
@@ -178,9 +178,9 @@ function processRandom(array buffer[1024], array indices[128], int count) {
 
 ### Cache-Friendly Patterns
 ```impala
-// Optimize for memory cache behavior
-const int CACHE_LINE_SIZE = 32  // bytes
-const int SAMPLES_PER_LINE = 16  // CACHE_LINE_SIZE / 2 (16-bit samples)
+
+const int CACHE_LINE_SIZE = 32
+const int SAMPLES_PER_LINE = 16
 
 function processBlocks(array buffer[1024], int length) {
     int blocks = length / SAMPLES_PER_LINE
@@ -190,7 +190,7 @@ function processBlocks(array buffer[1024], int length) {
         int baseIndex = block * SAMPLES_PER_LINE
         int i
         
-        // Process entire cache line at once
+
         for (i = 0 to SAMPLES_PER_LINE - 1) {
             buffer[baseIndex + i] = process(buffer[baseIndex + i])
         }
@@ -209,12 +209,12 @@ function processBlocks(array buffer[1024], int length) {
 - Deterministic timing
 
 ```impala
-// Pre-allocated at compile time
+
 const int DELAY_SIZE = 2048
 global array delayBuffer[2048]
 global int delayIndex = 0
 
-// Fast, predictable processing
+
 function processDelay(int input) returns int delayed {
     delayed = delayBuffer[delayIndex]
     delayBuffer[delayIndex] = input
@@ -231,16 +231,16 @@ function processDelay(int input) returns int delayed {
 - Unpredictable timing
 
 ```impala
-// Avoid in real-time audio code - Impala doesn't support dynamic allocation
-// This is shown as an anti-pattern for reference only
 
-// Instead, use static allocation:
-global array tempBuffer[2048]  // Pre-allocated at compile time
+
+
+
+global array tempBuffer[2048]
 
 function safeBufferOperation() {
-    // All buffers are statically allocated
-    // No allocation/deallocation overhead
-    // Guaranteed memory availability
+
+
+
 }
 ```
 
@@ -250,25 +250,25 @@ function safeBufferOperation() {
 
 **Single Buffer, Multiple Uses:**
 ```impala
-// Efficient buffer reuse
+
 const int WORK_BUFFER_SIZE = 1024
 global array workBuffer[1024]
 
 function processChain(array input[1024], int length) {
     int i
     
-    // Step 1: Copy input to work buffer
+
     for (i = 0 to length - 1) {
         workBuffer[i] = input[i]
     }
     
-    // Step 2: Process in-place
+
     applyFilter(workBuffer, length)
     
-    // Step 3: Reuse same buffer for different operation
+
     applyDistortion(workBuffer, length)
     
-    // Step 4: Copy result back
+
     for (i = 0 to length - 1) {
         input[i] = workBuffer[i]
     }
@@ -277,7 +277,7 @@ function processChain(array input[1024], int length) {
 
 **Overlapping Buffer Technique:**
 ```impala
-// Overlapping buffer processing
+
 const int TOTAL_SIZE = 1024
 const int OVERLAP = 256
 global array buffer[1024]
@@ -285,17 +285,17 @@ global array buffer[1024]
 function processOverlapping(array newSamples[256], int newLength) {
     int i
     
-    // Shift existing data
+
     for (i = 0 to TOTAL_SIZE - newLength - 1) {
         buffer[i] = buffer[i + newLength]
     }
     
-    // Add new samples to end
+
     for (i = 0 to newLength - 1) {
         buffer[TOTAL_SIZE - newLength + i] = newSamples[i]
     }
     
-    // Process full buffer
+
     processFullBuffer(buffer, TOTAL_SIZE)
 }
 ```
@@ -303,10 +303,10 @@ function processOverlapping(array newSamples[256], int newLength) {
 ### Memory Pool Management
 
 ```impala
-// Memory pool for static allocation management
+
 const int POOL_SIZE = 4096
 const int BLOCK_SIZE = 256
-const int NUM_BLOCKS = 16  // POOL_SIZE / BLOCK_SIZE
+const int NUM_BLOCKS = 16
 
 global array memoryPool[4096]
 global array blockUsed[16]
@@ -316,10 +316,10 @@ function allocateBlock() returns int blockIndex {
     for (i = 0 to NUM_BLOCKS - 1) {
         if (blockUsed[i] == 0) {
             blockUsed[i] = 1
-            return i  // Return block index
+            return i
         }
     }
-    return -1  // Pool exhausted
+    return -1
 }
 
 function freeBlock(int blockIndex) {
@@ -346,24 +346,24 @@ function getBlockAddress(int blockIndex) returns int offset {
 ### Access Pattern Optimization
 
 ```impala
-// Optimized memory copy operations
+
 function efficientCopy(array dest[1024], array src[1024], int length) {
     int i
     
-    // Unrolled loop for better performance
+
     for (i = 0 to length - 4) {
         if (i + 3 < length) {
             dest[i] = src[i]
             dest[i + 1] = src[i + 1]
             dest[i + 2] = src[i + 2]
             dest[i + 3] = src[i + 3]
-            i = i + 3  // Skip ahead (loop will increment by 1)
+            i = i + 3
         } else {
             dest[i] = src[i]
         }
     }
     
-    // Handle any remaining samples
+
     while (i < length) {
         dest[i] = src[i]
         i = i + 1
@@ -376,23 +376,23 @@ function efficientCopy(array dest[1024], array src[1024], int length) {
 **Structure of Arrays (SoA) vs Array of Structures (AoS):**
 
 ```impala
-// Array of Structures (AoS) - Poor cache locality
-// Interleaved stereo data
-global array stereoSamples[2048]  // left[0], right[0], left[1], right[1]...
 
-// Structure of Arrays (SoA) - Better cache locality
+
+global array stereoSamples[2048]
+
+
 global array leftChannel[1024]
 global array rightChannel[1024]
 
 function processChannels() {
     int i
     
-    // Process entire left channel with good cache locality
+
     for (i = 0 to 1023) {
         leftChannel[i] = processLeft(leftChannel[i])
     }
     
-    // Then process right channel
+
     for (i = 0 to 1023) {
         rightChannel[i] = processRight(rightChannel[i])
     }
@@ -404,15 +404,15 @@ function processChannels() {
 ### Memory Usage Monitoring
 
 ```impala
-// Memory monitoring utilities
+
 global int maxStackUsage = 0
 const int STACK_BASE = 0xA000
 const int STACK_SIZE = 4096
 const int LED_RED = 0xFF
 
 function checkStackUsage() {
-    // Note: getCurrentStackPointer() would be a native function
-    // This is a conceptual example
+
+
     int currentSP = getCurrentStackPointer()
     int usage = STACK_BASE - currentSP
     
@@ -420,9 +420,9 @@ function checkStackUsage() {
         maxStackUsage = usage
     }
     
-    // Alert if approaching limit
-    if (usage > STACK_SIZE * 8 / 10) {  // 80% threshold
-        global displayLEDs[0] = LED_RED  // Stack warning
+
+    if (usage > STACK_SIZE * 8 / 10) {
+        global displayLEDs[0] = LED_RED
     }
 }
 
@@ -434,7 +434,7 @@ function getMaxStackUsage() returns int usage {
 ### Buffer Overflow Protection
 
 ```impala
-// Safe buffer with overflow protection
+
 const int BUFFER_SIZE = 1024
 const int GUARD_SIZE = 16
 
@@ -444,7 +444,7 @@ global array guardSuffix[16]
 
 function initSafeBuffer() {
     int i
-    // Initialize guard patterns
+
     for (i = 0 to GUARD_SIZE - 1) {
         guardPrefix[i] = 0xDEAD
         guardSuffix[i] = 0xBEEF
@@ -453,11 +453,11 @@ function initSafeBuffer() {
 
 function checkIntegrity() returns int isValid {
     int i
-    isValid = 1  // Assume valid
+    isValid = 1
     
     for (i = 0 to GUARD_SIZE - 1) {
         if (guardPrefix[i] != 0xDEAD || guardSuffix[i] != 0xBEEF) {
-            isValid = 0  // Buffer overflow detected
+            isValid = 0
             break
         }
     }

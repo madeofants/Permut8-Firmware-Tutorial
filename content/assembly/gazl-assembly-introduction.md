@@ -33,7 +33,7 @@ Direct GAZL knowledge becomes essential when:
 GAZL understanding complements Impala development:
 
 ```impala
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -44,7 +44,7 @@ const int SWITCHES_PARAM_INDEX
 const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
-// High-level Impala algorithm
+
 function process_samples() {
     int i;
     for (i = 0 to BUFFER_SIZE - 1) {
@@ -285,7 +285,7 @@ $pointer_var:   INPp           ; Pointer parameter
 
 ### How Impala Becomes GAZL
 ```impala
-// Impala source
+
 function addNumbers(a, b) returns int result {
     result = a + b;
 }
@@ -305,7 +305,7 @@ addNumbers:     FUNC
 
 ### Global Variable Mapping
 ```impala
-// Impala global declarations
+
 global array signal[2]
 global array params[PARAM_COUNT]
 global int my_variable = 100

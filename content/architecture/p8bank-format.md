@@ -68,7 +68,7 @@ Programs: {
         Operand2High: "0x00"
         Operand2Low: "0x00"
     }
-    // A1-C9 similar structure
+
 }
 ```
 
@@ -108,9 +108,9 @@ Firmware: {
         "params: GLOB *PARAM_COUNT"
         "displayLEDs: GLOB *4"
         "clock: DATi #0"
-        // ... complete GAZL assembly (CLEANED)
+
         "process: FUNC"
-        // ... function definitions
+
     }
 }
 ```
@@ -139,8 +139,8 @@ Firmware: {
 Vector graphics for plugin interface customization:
 ```
 Logo: {
-    // SVG or vector graphics data
-    // Customizes plugin appearance
+
+
 }
 ```
 
@@ -149,9 +149,9 @@ Logo: {
 Documentation and usage information:
 ```
 About: {
-    // Usage instructions
-    // Parameter descriptions
-    // Credits and version info
+
+
+
 }
 ```
 

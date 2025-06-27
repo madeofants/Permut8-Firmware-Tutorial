@@ -41,10 +41,10 @@ As a programmer, you already understand many audio engineering concepts - you ju
 Imagine you have a function that processes arrays of numbers, but the processing makes the output unpredictably louder or quieter:
 
 ```javascript
-// This processing function changes the output level unpredictably
+
 function processData(input) {
     let processed = input.map(x => complexAlgorithm(x));
-    // Sometimes output is 2x bigger, sometimes 0.5x smaller!
+
     return processed;
 }
 ```
@@ -58,7 +58,7 @@ This is exactly what happens with audio effects - they change volume as a side e
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -77,20 +77,20 @@ global array displayLEDs[4]
 
 function process() {
     loop {
-        // Original input level
+
         int inputLevel = signal[0];
         
-        // Apply some effect that changes volume
-        int distortionAmount = (int)global params[CLOCK_FREQ_PARAM_INDEX] / 32;  // 0-7
+
+        int distortionAmount = (int)global params[CLOCK_FREQ_PARAM_INDEX] / 32;
         int processed = inputLevel * distortionAmount;
         
-        // GAIN COMPENSATION: Auto-scale back to original level
-        int compensatedGain = 256 / (distortionAmount + 1);  // Inverse scaling
+
+        int compensatedGain = 256 / (distortionAmount + 1);
         int compensated = (processed * compensatedGain) / 256;
         
-        // Result: Effect applied but volume stays consistent
+
         signal[0] = compensated;
-        signal[1] = compensated;  // Same for right channel
+        signal[1] = compensated;
         
         yield();
     }
@@ -118,9 +118,9 @@ global int previousLevel = 0;
 function process() {
     loop {
         int input = signal[0];
-        int compressionRatio = (int)global params[CLOCK_FREQ_PARAM_INDEX];  // 0-255
+        int compressionRatio = (int)global params[CLOCK_FREQ_PARAM_INDEX];
         
-        // Compression reduces loud signals
+
         int compressed;
         if (input > 1000) {
             int excess = input - 1000;
@@ -129,11 +129,11 @@ function process() {
             compressed = input;
         }
         
-        // MAKEUP GAIN: Compensate for volume reduction
+
         int makeupGain = 1 + (compressionRatio / 128);
         int final = (compressed * makeupGain);
         
-        // Safety clipping
+
         if (final > 2047) final = 2047;
         if (final < -2047) final = -2047;
         
@@ -157,8 +157,8 @@ Imagine updating a variable that controls critical real-time behavior:
 let criticalValue = 100;
 
 function updateValue(newValue) {
-    criticalValue = newValue;  // SUDDEN CHANGE!
-    // This could cause glitches in real-time systems
+    criticalValue = newValue;
+
 }
 ```
 
@@ -176,29 +176,29 @@ global array signal[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
-// Smoothed parameter storage
+
 global int smoothedVolume = 128;
 global int smoothedFilter = 128;
 
 function process() {
     loop {
-        // Read current knob positions
-        int targetVolume = (int)global params[CLOCK_FREQ_PARAM_INDEX];    // 0-255
-        int targetFilter = (int)global params[SWITCHES_PARAM_INDEX];    // 0-255
+
+        int targetVolume = (int)global params[CLOCK_FREQ_PARAM_INDEX];
+        int targetFilter = (int)global params[SWITCHES_PARAM_INDEX];
         
-        // PARAMETER SMOOTHING: Gradually approach target values
-        // Like interpolation: current = current + (target - current) / speed
+
+
         smoothedVolume = smoothedVolume + ((targetVolume - smoothedVolume) / 8);
         smoothedFilter = smoothedFilter + ((targetFilter - smoothedFilter) / 16);
         
-        // Use smoothed values for processing
+
         int volume = smoothedVolume;
         int filterAmount = smoothedFilter;
         
-        // Apply smoothed parameters
+
         int processed = (signal[0] * volume) / 255;
         
-        // Simple filter using smoothed parameter
+
         processed = (processed + (signal[0] * filterAmount / 255)) / 2;
         
         signal[0] = processed;
@@ -224,22 +224,22 @@ function process() {
 ### Advanced Smoothing Techniques
 
 ```impala
-// Different smoothing speeds for different parameters
+
 global int smoothedGain = 0;
 global int smoothedFreq = 1000;
 
 function process() {
     loop {
         int targetGain = (int)global params[CLOCK_FREQ_PARAM_INDEX];
-        int targetFreq = (int)global params[SWITCHES_PARAM_INDEX] * 20;  // 0-5100 Hz range
+        int targetFreq = (int)global params[SWITCHES_PARAM_INDEX] * 20;
         
-        // FAST smoothing for gain (immediate response)
+
         smoothedGain = smoothedGain + ((targetGain - smoothedGain) / 4);
         
-        // SLOW smoothing for frequency (musical sweeps)
+
         smoothedFreq = smoothedFreq + ((targetFreq - smoothedFreq) / 32);
         
-        // Use appropriately smoothed values...
+
         
         yield();
     }
@@ -255,9 +255,9 @@ function process() {
 Every data type has limits:
 
 ```c
-int8_t  small_int = 127;    // Max value: 127
-int16_t medium_int = 32767; // Max value: 32767
-int32_t large_int = 2147483647; // Max value: huge
+int8_t  small_int = 127;
+int16_t medium_int = 32767;
+int32_t large_int = 2147483647;
 ```
 
 Audio has similar limits, and managing them is critical for quality.
@@ -288,18 +288,18 @@ global array displayLEDs[4]
 function process() {
     loop {
         int input = signal[0];
-        int effectAmount = (int)global params[CLOCK_FREQ_PARAM_INDEX];  // 0-255
+        int effectAmount = (int)global params[CLOCK_FREQ_PARAM_INDEX];
         
-        // HEADROOM MANAGEMENT: Keep some "space" for processing
-        int workingLevel = (input * 80) / 100;  // Use only 80% of range
+
+        int workingLevel = (input * 80) / 100;
         
-        // Apply effect in the "safe zone"
+
         int processed = workingLevel + (effectAmount * 4);
         
-        // DYNAMIC RANGE OPTIMIZATION: Use the full range efficiently
-        int optimized = (processed * 120) / 100;  // Expand back to use full range
+
+        int optimized = (processed * 120) / 100;
         
-        // SAFETY LIMITING: Never exceed the limits
+
         if (optimized > 2047) optimized = 2047;
         if (optimized < -2047) optimized = -2047;
         
@@ -330,12 +330,12 @@ function process() {
 ### The Programming Analogy
 
 ```javascript
-// High "signal-to-noise" code - clean and purposeful
+
 function calculateInterest(principal, rate, time) {
     return principal * rate * time;
 }
 
-// Low "signal-to-noise" code - useful logic buried in noise
+
 function calculateInterest(principal, rate, time) {
     let temp1 = principal;
     let temp2 = rate;
@@ -344,7 +344,7 @@ function calculateInterest(principal, rate, time) {
     console.log(debug1);
     let intermediate = temp1 * temp2;
     let temp4 = intermediate * temp3;
-    let noise = Math.random() * 0.001; // Unnecessary noise!
+    let noise = Math.random() * 0.001;
     return temp4 + noise;
 }
 ```
@@ -359,15 +359,15 @@ function process() {
     loop {
         int desiredSignal = signal[0];
         
-        // HIGH SIGNAL-TO-NOISE processing:
+
         int cleanResult = desiredSignal * 2;
         
-        // LOW SIGNAL-TO-NOISE processing:
+
         int noisyResult = desiredSignal * 2;
-        noisyResult += (noisyResult % 3);  // Adds digital artifacts!
-        noisyResult += 5;                  // Adds constant noise!
+        noisyResult += (noisyResult % 3);
+        noisyResult += 5;
         
-        // Use the clean version
+
         signal[0] = cleanResult;
         signal[1] = cleanResult;
         
@@ -379,12 +379,12 @@ function process() {
 ### Maximizing Signal-to-Noise Ratio
 
 ```impala
-// GOOD: Clean, predictable processing
+
 int processed = (input * gain) / 256;
 
-// BAD: Introduces noise and artifacts  
-int processed = (input * gain) / 255;  // Creates rounding errors
-processed += (processed % 2);          // Adds digital noise
+
+int processed = (input * gain) / 255;
+processed += (processed % 2);
 ```
 
 ---
@@ -402,16 +402,16 @@ function safeBounds(int value, int min, int max) {
 
 function process() {
     loop {
-        // ALWAYS validate input before processing
+
         int input = safeBounds(signal[0], -2047, 2047);
         
-        // ALWAYS validate parameters
+
         int gain = safeBounds((int)global params[CLOCK_FREQ_PARAM_INDEX], 0, 255);
         
-        // Process with validated data
+
         int result = (input * gain) / 255;
         
-        // ALWAYS validate output
+
         signal[0] = safeBounds(result, -2047, 2047);
         signal[1] = safeBounds(result, -2047, 2047);
         
@@ -429,13 +429,13 @@ function process() {
         int complexEffect = (int)global params[CLOCK_FREQ_PARAM_INDEX];
         
         if (complexEffect < 10) {
-            // Simple processing for low values
-            signal[0] = input;  // Pass through
+
+            signal[0] = input;
         } else if (complexEffect < 128) {
-            // Medium complexity
+
             signal[0] = input * 2;
         } else {
-            // Full complexity only when needed
+
             signal[0] = complexProcessing(input);
         }
         
@@ -447,10 +447,10 @@ function process() {
 ### Pattern 3: Predictable Behavior
 
 ```impala
-// GOOD: Predictable, linear response
+
 int volume = (knobValue * maxVolume) / 255;
 
-// BAD: Unpredictable, exponential jumps
+
 int volume = knobValue * knobValue * knobValue;
 ```
 
@@ -468,7 +468,7 @@ global array signal[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
-// Smoothed parameters
+
 global int smoothedDrive = 128;
 global int smoothedTone = 128;
 global int smoothedLevel = 255;
@@ -482,7 +482,7 @@ function safeBounds(int value, int min, int max) {
 function softClip(int input, int threshold) {
     if (input > threshold) {
         int excess = input - threshold;
-        return threshold + (excess / 3);  // Gentle compression
+        return threshold + (excess / 3);
     } else if (input < -threshold) {
         int excess = input + threshold;
         return -threshold + (excess / 3);
@@ -492,43 +492,43 @@ function softClip(int input, int threshold) {
 
 function process() {
     loop {
-        // INPUT VALIDATION
+
         int input = safeBounds(signal[0], -2047, 2047);
         
-        // PARAMETER SMOOTHING
+
         smoothedDrive = smoothedDrive + (((int)global params[CLOCK_FREQ_PARAM_INDEX] - smoothedDrive) / 8);
         smoothedTone = smoothedTone + (((int)global params[SWITCHES_PARAM_INDEX] - smoothedTone) / 16);
         smoothedLevel = smoothedLevel + (((int)global params[OPERATOR_1_PARAM_INDEX] - smoothedLevel) / 8);
         
-        // HEADROOM MANAGEMENT
-        int workingSignal = (input * 80) / 100;  // Leave headroom
+
+        int workingSignal = (input * 80) / 100;
         
-        // DRIVE STAGE with gain compensation awareness
-        int driveAmount = 1 + (smoothedDrive / 32);  // 1-8x
+
+        int driveAmount = 1 + (smoothedDrive / 32);
         int driven = workingSignal * driveAmount;
         
-        // TONE-CONTROLLED CLIPPING
+
         int clipThreshold = 300 + ((smoothedTone * 1200) / 255);
         int clipped = softClip(driven, clipThreshold);
         
-        // GAIN COMPENSATION
-        int compensationGain = 256 / driveAmount;  // Inverse of drive gain
+
+        int compensationGain = 256 / driveAmount;
         int compensated = (clipped * compensationGain) / 256;
         
-        // OUTPUT LEVEL with dynamic range optimization
+
         int final = (compensated * smoothedLevel) / 255;
         
-        // FINAL SAFETY LIMITING
+
         final = safeBounds(final, -2047, 2047);
         
-        // STEREO OUTPUT
+
         signal[0] = final;
         signal[1] = final;
         
-        // VISUAL FEEDBACK
-        displayLEDs[0] = smoothedDrive / 4;   // Drive level
-        displayLEDs[1] = smoothedTone / 4;    // Tone setting
-        displayLEDs[2] = smoothedLevel / 4;   // Output level
+
+        displayLEDs[0] = smoothedDrive / 4;
+        displayLEDs[1] = smoothedTone / 4;
+        displayLEDs[2] = smoothedLevel / 4;
         
         yield();
     }
@@ -595,25 +595,25 @@ This example demonstrates **every professional audio engineering concept**:
 
 ### **Professional Audio Processing Pattern**:
 ```impala
-// 1. Validate inputs
+
 int input = safeBounds(signal[0], -2047, 2047);
 
-// 2. Smooth parameters  
+
 smoothedParam = smoothedParam + ((targetParam - smoothedParam) / rate);
 
-// 3. Manage headroom
+
 int working = (input * 80) / 100;
 
-// 4. Apply effect
+
 int processed = effectAlgorithm(working, smoothedParam);
 
-// 5. Compensate gain if needed
+
 int compensated = (processed * compensationFactor) / 256;
 
-// 6. Optimize dynamic range
+
 int optimized = (compensated * expansionFactor) / 256;
 
-// 7. Safety limit
+
 signal[0] = safeBounds(optimized, -2047, 2047);
 ```
 

@@ -57,8 +57,8 @@ Audio Processing Execution
 ```
 
 ```impala
-// === IMPALA SOURCE EXAMPLE ===
-// High-level Impala firmware
+
+
 
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
@@ -66,7 +66,7 @@ global array signal[2]
 global array params[8]
 global array displayLEDs[4]
 
-// Efficient Impala algorithm design
+
 function process() {
     loop {
         processAudioSamples();
@@ -78,17 +78,17 @@ function process() {
 function processAudioSamples()
 locals int i, int sample, int processed
 {
-    // Optimized for efficient GAZL compilation
-    int gain = calculateGain();  // Cached outside loop
+
+    int gain = calculateGain();
     
-    for (i = 0 to 1) {  // Process stereo channels
+    for (i = 0 to 1) {
         sample = global signal[i];
         
-        // Simple, compiler-friendly operations
+
         processed = sample * gain;
-        processed = processed >> 8;  // Normalize
+        processed = processed >> 8;
         
-        // Clamp to audio range
+
         if (processed > 2047) {
             processed = 2047;
         } else if (processed < -2047) {
@@ -102,11 +102,11 @@ locals int i, int sample, int processed
 function calculateGain() returns int
 locals int operand_high, int operand_low
 {
-    // Cache parameter access for efficiency
+
     operand_high = global params[OPERAND_1_HIGH_PARAM_INDEX];
     operand_low = global params[OPERAND_1_LOW_PARAM_INDEX];
     
-    // Combine parameters efficiently
+
     return (operand_high << 8) | operand_low;
 }
 ```
@@ -169,9 +169,9 @@ processAudioSamples: FUNC
 Write Impala code that compiles to efficient GAZL virtual machine instructions:
 
 ```impala
-// === OPTIMIZATION PATTERN 1: Loop Structure ===
 
-// INEFFICIENT: Complex loop conditions
+
+
 function inefficientLoop()
 locals int i, int condition, int result
 {
@@ -182,7 +182,7 @@ locals int i, int condition, int result
     }
 }
 
-// EFFICIENT: Simple loop with cached conditions
+
 function efficientLoop()
 locals int i, int threshold, int should_continue
 {
@@ -200,16 +200,16 @@ locals int i, int threshold, int should_continue
     }
 }
 
-// === OPTIMIZATION PATTERN 2: Parameter Access ===
 
-// INEFFICIENT: Repeated global access
+
+
 function inefficientParameterAccess()
 locals int i, int sample
 {
     for (i = 0 to BUFFER_SIZE - 1) {
         sample = global signal[i];
         
-        // Repeated global access in loop
+
         sample = sample * global params[OPERAND_1_HIGH_PARAM_INDEX];
         sample = sample + global params[OPERAND_1_LOW_PARAM_INDEX];
         
@@ -217,18 +217,18 @@ locals int i, int sample
     }
 }
 
-// EFFICIENT: Cached parameter access
+
 function efficientParameterAccess()
 locals int i, int sample, int gain, int offset
 {
-    // Cache parameters outside loop
+
     gain = global params[OPERAND_1_HIGH_PARAM_INDEX];
     offset = global params[OPERAND_1_LOW_PARAM_INDEX];
     
     for (i = 0 to BUFFER_SIZE - 1) {
         sample = global signal[i];
         
-        // Use cached values
+
         sample = sample * gain;
         sample = sample + offset;
         
@@ -236,9 +236,9 @@ locals int i, int sample, int gain, int offset
     }
 }
 
-// === OPTIMIZATION PATTERN 3: Function Design ===
 
-// INEFFICIENT: Complex function with many parameters
+
+
 function inefficientFunction(a, b, c, d, e) returns int
 locals int temp1, int temp2, int temp3
 {
@@ -253,16 +253,16 @@ locals int temp1, int temp2, int temp3
     }
 }
 
-// EFFICIENT: Simple, focused functions
+
 function efficientMultiply(a, b) returns int {
     return a * b;
 }
 
 function efficientScale(value, factor) returns int {
     if (factor > 100) {
-        return value << 1;  // Multiply by 2 using shift
+        return value << 1;
     } else {
-        return value >> 1;  // Divide by 2 using shift
+        return value >> 1;
     }
 }
 ```
@@ -272,9 +272,9 @@ function efficientScale(value, factor) returns int {
 Design Impala data structures for efficient GAZL memory access:
 
 ```impala
-// === OPTIMIZED DATA STRUCTURE DESIGN ===
 
-// INEFFICIENT: Complex nested data access
+
+
 global array voiceFrequencies[8];
 global array voiceAmplitudes[8];
 global array voicePhases[8];
@@ -284,48 +284,48 @@ function inefficientVoiceProcessing()
 locals int voice, int freq, int amp, int phase, int state
 {
     for (voice = 0 to 7) {
-        // Multiple global array accesses
+
         freq = global voiceFrequencies[voice];
         amp = global voiceAmplitudes[voice];
         phase = global voicePhases[voice];
         state = global voiceStates[voice];
         
-        // Complex processing
+
         processVoice(freq, amp, phase, state, voice);
     }
 }
 
-// EFFICIENT: Sequential processing of each parameter type
+
 function efficientVoiceProcessing()
 locals int voice, int cached_value
 {
-    // Process all frequencies together (better cache locality)
+
     for (voice = 0 to 7) {
         cached_value = global voiceFrequencies[voice];
-        cached_value = cached_value * 2;  // Example processing
+        cached_value = cached_value * 2;
         global voiceFrequencies[voice] = cached_value;
     }
     
-    // Process all amplitudes together
+
     for (voice = 0 to 7) {
         cached_value = global voiceAmplitudes[voice];
-        cached_value = cached_value >> 1;  // Example processing
+        cached_value = cached_value >> 1;
         global voiceAmplitudes[voice] = cached_value;
     }
     
-    // Continue for other parameters...
+
 }
 
-// === EFFICIENT PARAMETER COMBINATION ===
+
 
 function combineParameters() returns int
 locals int high, int low, int combined
 {
-    // Efficient parameter combining for 16-bit values
+
     high = global params[OPERAND_1_HIGH_PARAM_INDEX];
     low = global params[OPERAND_1_LOW_PARAM_INDEX];
     
-    // Single operation to combine
+
     combined = (high << 8) | low;
     
     return combined;
@@ -495,69 +495,69 @@ help:
 Write Impala code with GAZL compilation performance in mind:
 
 ```impala
-// === PERFORMANCE PATTERN 1: Algorithm Structure ===
 
-// Organize algorithms for optimal GAZL compilation
+
+
 function performanceOptimizedFilter()
 locals int i, int sample, int state, int coefficient
 {
-    // Pre-load frequently used values
+
     coefficient = global params[FILTER_COEFF_INDEX];
     state = global filterState[0];
     
-    // Optimized processing loop
+
     for (i = 0 to BUFFER_SIZE - 1) {
         sample = global signal[i];
         
-        // Simple, efficient operations
-        state = (state + sample) >> 1;        // Simple average
-        sample = sample + (state >> 2);       // Add filtered component
+
+        state = (state + sample) >> 1;
+        sample = sample + (state >> 2);
         
         global signal[i] = sample;
     }
     
-    // Store updated state
+
     global filterState[0] = state;
 }
 
-// === PERFORMANCE PATTERN 2: Conditional Optimization ===
+
 
 function optimizedConditionalProcessing()
 locals int i, int sample, int mode, int threshold
 {
-    // Cache decision variables
+
     mode = global params[PROCESSING_MODE_INDEX];
     threshold = global params[THRESHOLD_INDEX];
     
-    // Structure for efficient compilation
+
     if (mode == BYPASS_MODE) {
-        // Simple bypass - compiles to minimal GAZL
+
         return;
     } else if (mode == FILTER_MODE) {
-        // Dedicated filter processing
+
         applyFilterProcessing(threshold);
     } else if (mode == DISTORTION_MODE) {
-        // Dedicated distortion processing
+
         applyDistortionProcessing(threshold);
     }
 }
 
-// === PERFORMANCE PATTERN 3: Memory Access Optimization ===
+
 
 function optimizedMemoryAccess()
 locals int i, int left_sample, int right_sample
 {
-    // Process samples in pairs for efficiency
+
     for (i = 0 to BUFFER_SIZE - 1) {
-        // Sequential memory access
+
         left_sample = global signal[0];
         right_sample = global signal[1];
         
-        // Process both channels
+
         left_sample = left_sample * 120 >> 7;
         right_sample = right_sample * 120 >> 7;
         
-        // Sequential memory write
+
         global signal[0] = left_sample;
         global signal[1] = right_sample;
     }
@@ -569,7 +569,7 @@ locals int i, int left_sample, int right_sample
 Implement robust error handling in Impala that compiles efficiently:
 
 ```impala
-// === ROBUST ERROR HANDLING ===
+
 
 global int lastErrorCode = 0;
 global int errorCount = 0;
@@ -582,25 +582,25 @@ const int ERROR_ARITHMETIC_OVERFLOW = 3;
 function safeAudioProcessing() returns int
 locals int result, int backup_sample
 {
-    // Clear error state
+
     lastErrorCode = ERROR_NONE;
     
-    // Validate input parameters
+
     if (global params[GAIN_INDEX] > 255) {
         lastErrorCode = ERROR_INVALID_PARAMETER;
-        // Use safe default
+
         global params[GAIN_INDEX] = 128;
     }
     
-    // Process with overflow protection
+
     backup_sample = global signal[0];
     
     result = processAudioSample(global signal[0]);
     
-    // Validate result
+
     if (result > 2047 || result < -2047) {
         lastErrorCode = ERROR_ARITHMETIC_OVERFLOW;
-        result = backup_sample;  // Restore original
+        result = backup_sample;
         errorCount = errorCount + 1;
     }
     
@@ -614,12 +614,12 @@ locals int processed, int gain
 {
     gain = global params[GAIN_INDEX];
     
-    // Safe arithmetic with overflow check
+
     processed = sample * gain;
     
-    // Check for overflow (simple but effective)
-    if (processed > 262143 || processed < -262144) {  // 18-bit limit
-        // Saturate to prevent overflow
+
+    if (processed > 262143 || processed < -262144) {
+
         if (processed > 0) {
             processed = 262143;
         } else {
@@ -627,7 +627,7 @@ locals int processed, int gain
         }
     }
     
-    // Scale back to audio range
+
     processed = processed >> 8;
     
     return processed;
@@ -641,7 +641,7 @@ locals int processed, int gain
 Test Impala firmware through the GAZL compilation process:
 
 ```impala
-// === TESTING FRAMEWORK ===
+
 
 global int testResults[16];
 global int currentTest = 0;
@@ -655,13 +655,13 @@ locals int passed, int total
         trace("=== Starting Firmware Tests ===");
     }
     
-    // Test basic functionality
+
     runTest("Basic Audio Processing", testBasicAudioProcessing);
     runTest("Parameter Handling", testParameterHandling);
     runTest("Error Handling", testErrorHandling);
     runTest("Performance Boundaries", testPerformanceBoundaries);
     
-    // Calculate results
+
     passed = countPassedTests();
     total = currentTest;
     
@@ -702,70 +702,70 @@ locals int result
 function testBasicAudioProcessing() returns int
 locals int original_left, int original_right, int processed_left, int processed_right
 {
-    // Setup test conditions
+
     original_left = 1000;
     original_right = -1000;
     
     global signal[0] = original_left;
     global signal[1] = original_right;
-    global params[GAIN_INDEX] = 128;  // Unity gain
+    global params[GAIN_INDEX] = 128;
     
-    // Process audio
+
     safeAudioProcessing();
     
-    // Check results
+
     processed_left = global signal[0];
     processed_right = global signal[1];
     
-    // Validate processing (should be approximately unchanged at unity gain)
+
     if (abs(processed_left - original_left) < 10 &&
         abs(processed_right - original_right) < 10) {
-        return 1;  // Test passed
+        return 1;
     }
     
-    return 0;  // Test failed
+    return 0;
 }
 
 function testParameterHandling() returns int
 locals int i, int initial_value, int set_value
 {
-    // Test parameter range validation
+
     for (i = 0 to PARAM_COUNT - 1) {
         initial_value = global params[i];
         
-        // Test boundary values
-        global params[i] = 300;  // Invalid (>255)
+
+        global params[i] = 300;
         safeAudioProcessing();
         
         if (global params[i] > 255) {
-            return 0;  // Should have been corrected
+            return 0;
         }
         
-        // Restore original
+
         global params[i] = initial_value;
     }
     
-    return 1;  // Test passed
+    return 1;
 }
 
 function testErrorHandling() returns int
 locals int error_before, int error_after
 {
-    // Test error recovery
+
     error_before = lastErrorCode;
     
-    // Force an error condition
-    global signal[0] = 3000;  // Out of range
+
+    global signal[0] = 3000;
     safeAudioProcessing();
     
     error_after = lastErrorCode;
     
-    // Check that error was detected and handled
+
     if (error_after != ERROR_NONE && global signal[0] <= 2047) {
-        return 1;  // Error detected and corrected
+        return 1;
     }
     
-    return 0;  // Error handling failed
+    return 0;
 }
 
 function abs(value) returns int {
@@ -793,7 +793,7 @@ locals int i, int count
 Validate performance characteristics of compiled GAZL:
 
 ```impala
-// === PERFORMANCE VALIDATION ===
+
 
 global int performanceMetrics[8];
 
@@ -804,19 +804,19 @@ locals int start_time, int end_time, int duration, int threshold
         trace("=== Performance Validation ===");
     }
     
-    // Measure audio processing time
+
     start_time = getSampleCounter();
     
-    // Run standard processing
+
     safeAudioProcessing();
     
     end_time = getSampleCounter();
     duration = end_time - start_time;
     
-    // Store performance metric
+
     performanceMetrics[0] = duration;
     
-    // Define performance threshold (example: 100 cycles)
+
     threshold = 100;
     
     if (DEBUG) {
@@ -824,7 +824,7 @@ locals int start_time, int end_time, int duration, int threshold
         trace("Threshold:", threshold);
     }
     
-    // Validate performance
+
     if (duration <= threshold) {
         if (DEBUG) {
             trace("✓ Performance validation passed");
@@ -839,7 +839,7 @@ locals int start_time, int end_time, int duration, int threshold
 }
 
 function getSampleCounter() returns int {
-    // Return current sample counter for timing
+
     return global clock;
 }
 ```

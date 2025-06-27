@@ -24,26 +24,26 @@ By the end of this guide, you'll understand:
 **Full patches** replace Permut8's entire audio processing chain with your custom code.
 
 ```impala
-// === FULL PATCH EXAMPLE ===
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required globals for Full patches
-global array signal[2]          // Direct audio I/O
+
+global array signal[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
 function process()
 {
     loop {
-        // YOU control the entire audio path
-        int inputLeft = global signal[0]    // Raw input
+
+        int inputLeft = global signal[0]
         int inputRight = global signal[1]
         
-        // Your complete effect processing
+
         int outputLeft = processMyEffect(inputLeft)
         int outputRight = processMyEffect(inputRight)
         
-        // Direct output to hardware
+
         global signal[0] = outputLeft
         global signal[1] = outputRight
         
@@ -63,37 +63,37 @@ function process()
 **Mod patches** replace one or both of Permut8's built-in operators while keeping the rest of the processing chain intact.
 
 ```impala
-// === MOD PATCH EXAMPLE ===
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required globals for Mod patches  
-global array positions[2]       // Memory position I/O
+
+global array positions[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
-// Replace Operator 1 with custom processing
+
 function operate1()
 returns int processed
 locals array inputSamples[2], array outputSamples[2]
 {
-    // Read from memory positions
+
     read(global positions[0], 1, inputSamples)
     
-    // Your operator processing
+
     outputSamples[0] = processMyOperator(inputSamples[0])
-    outputSamples[1] = inputSamples[1]  // Pass through right channel
+    outputSamples[1] = inputSamples[1]
     
-    // Write back to memory
+
     write(global positions[0], 1, outputSamples)
     
-    return 1  // Indicate we processed the audio
+    return 1
 }
 
-// Optionally replace Operator 2 as well
+
 function operate2()
 returns int processed
 {
-    // Similar processing for second operator
+
     return 1
 }
 ```
@@ -110,11 +110,11 @@ returns int processed
 
 #### ✅ **Complete Effect Replacement**
 ```impala
-// Example: Custom reverb that needs total control
+
 function process()
 {
     loop {
-        // Complex reverb algorithm needs entire audio path
+
         int wet = calculateReverb(global signal[0])
         int dry = global signal[0] * dryLevel / 1000
         global signal[0] = wet + dry
@@ -132,11 +132,11 @@ function process()
 
 #### ✅ **Performance-Critical Applications**
 ```impala
-// Direct audio access = lowest latency
+
 function process()
 {
     loop {
-        // No memory read/write overhead
+
         global signal[0] = fastProcessing(global signal[0])
         yield()
     }
@@ -145,13 +145,13 @@ function process()
 
 #### ✅ **Hardware Integration Focus**
 ```impala
-// Direct control over audio hardware
+
 function process()
 {
     loop {
-        // Custom sample rate handling
-        // Direct LED control synchronized with audio
-        // Custom clock domain management
+
+
+
         yield()
     }
 }
@@ -161,15 +161,15 @@ function process()
 
 #### ✅ **Operator-Style Effects**
 ```impala
-// Example: Bitcrusher that fits perfectly as an operator
+
 function operate1()
 returns int processed
 locals array samples[2], int crushed
 {
     read(global positions[0], 1, samples)
     
-    // Bitcrush processing
-    crushed = samples[0] & crushMask  // Simple bit reduction
+
+    crushed = samples[0] & crushMask
     samples[0] = crushed
     
     write(global positions[0], 1, samples)
@@ -186,28 +186,28 @@ locals array samples[2], int crushed
 
 #### ✅ **Integration with Permut8 Features**
 ```impala
-// Your operator + Permut8's delay/feedback = complex result
+
 function operate1()
 returns int processed
 {
-    // Your processing gets automatic:
-    // - Delay line integration
-    // - Feedback control
-    // - Clock synchronization
-    // - Parameter mapping
+
+
+
+
+
     return 1
 }
 ```
 
 #### ✅ **Rapid Prototyping**
 ```impala
-// Quick idea testing - minimal boilerplate
+
 function operate1()
 returns int processed
 locals array samples[2]
 {
     read(global positions[0], 1, samples)
-    samples[0] = experimentalProcess(samples[0])  // Test your idea
+    samples[0] = experimentalProcess(samples[0])
     write(global positions[0], 1, samples)
     return 1
 }
@@ -250,55 +250,55 @@ locals array samples[2]
 ### Full Patch Implementation Pattern
 
 ```impala
-// === COMPLETE FULL PATCH TEMPLATE ===
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required globals
+
 global array signal[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
 global int clock
 
-// Your effect state
+
 global int effectState = 0
 global array effectMemory[1024]
 
-// Optional: Initialize your effect
+
 function init()
 {
     global effectState = 0
-    // Initialize effect memory, lookup tables, etc.
+
 }
 
-// Optional: Handle parameter changes
+
 function update()
 {
-    // Map params[0-7] to your effect parameters
-    // Update LED displays
-    // Recalculate coefficients, etc.
+
+
+
 }
 
-// Optional: Handle reset
+
 function reset()
 {
     global effectState = 0
-    // Reset effect to initial state
+
 }
 
-// Required: Main audio processing
+
 function process()
 locals int inputL, int inputR, int outputL, int outputR
 {
     loop {
-        // Get input
+
         inputL = global signal[0]
         inputR = global signal[1]
         
-        // Your effect processing
-        outputL = processEffect(inputL, 0)  // Left channel
-        outputR = processEffect(inputR, 1)  // Right channel
+
+        outputL = processEffect(inputL, 0)
+        outputR = processEffect(inputR, 1)
         
-        // Set output
+
         global signal[0] = outputL
         global signal[1] = outputR
         
@@ -306,78 +306,78 @@ locals int inputL, int inputR, int outputL, int outputR
     }
 }
 
-// Your effect implementation
+
 function processEffect(int input, int channel)
 returns int output
 {
-    // Your algorithm here
-    output = input  // Placeholder
+
+    output = input
 }
 ```
 
 ### Mod Patch Implementation Pattern
 
 ```impala
-// === COMPLETE MOD PATCH TEMPLATE ===
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required globals for Mod patches
+
 global array positions[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
-// Your operator state
+
 global int operatorState = 0
 
-// Optional: Initialize
+
 function init()
 {
     global operatorState = 0
 }
 
-// Optional: Handle parameter changes
+
 function update()
 {
-    // Parameters automatically mapped by framework
-    // Focus on your operator-specific parameters
+
+
 }
 
-// Required: Implement operator 1
+
 function operate1()
 returns int processed
 locals array samples[2], int position
 {
-    // Get memory position from framework
+
     position = global positions[0]
     
-    // Read audio from memory
+
     read(position, 1, samples)
     
-    // Your operator processing
+
     samples[0] = processOperator(samples[0])
     samples[1] = processOperator(samples[1])
     
-    // Write back to memory
+
     write(position, 1, samples)
     
-    return 1  // Signal that we processed the audio
-}
-
-// Optional: Implement operator 2
-function operate2()
-returns int processed
-{
-    // Similar to operate1, but for second operator slot
-    // Can be different algorithm or same with different parameters
     return 1
 }
 
-// Your operator implementation
+
+function operate2()
+returns int processed
+{
+
+
+    return 1
+}
+
+
 function processOperator(int input)
 returns int output
 {
-    // Your algorithm here
-    output = input  // Placeholder
+
+    output = input
 }
 ```
 
@@ -388,7 +388,7 @@ returns int output
 When your Mod patch outgrows the operator model:
 
 ```impala
-// Original Mod patch operator
+
 function operate1()
 returns int processed
 locals array samples[2]
@@ -399,11 +399,11 @@ locals array samples[2]
     return 1
 }
 
-// Migrated to Full patch
+
 function process()
 {
     loop {
-        // Direct audio access
+
         global signal[0] = complexEffect(global signal[0])
         global signal[1] = complexEffect(global signal[1])
         yield()
@@ -424,7 +424,7 @@ function process()
 When you want to integrate with Permut8's features:
 
 ```impala
-// Original Full patch
+
 function process()
 {
     loop {
@@ -433,7 +433,7 @@ function process()
     }
 }
 
-// Migrated to Mod patch
+
 function operate1()
 returns int processed
 locals array samples[2]
@@ -458,7 +458,7 @@ locals array samples[2]
 ### Example 1: Bitcrusher (Perfect for Mod Patch)
 
 ```impala
-// === BITCRUSHER MOD PATCH ===
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 global array positions[2]
@@ -470,9 +470,9 @@ global int sampleRateReduction = 1
 
 function update()
 {
-    // Map parameters to bit crushing settings
-    global bitDepth = 1 + global params[OPERAND_1_HIGH_PARAM_INDEX] / 32  // 1-8 bits
-    global sampleRateReduction = 1 + global params[OPERAND_1_LOW_PARAM_INDEX] / 64  // 1-4x
+
+    global bitDepth = 1 + global params[OPERAND_1_HIGH_PARAM_INDEX] / 32
+    global sampleRateReduction = 1 + global params[OPERAND_1_LOW_PARAM_INDEX] / 64
 }
 
 function operate1()
@@ -481,17 +481,17 @@ locals array samples[2], int crushedSample, int mask
 {
     read(global positions[0], 1, samples)
     
-    // Create bit mask for bit depth reduction
+
     mask = 0xFFFF << (16 - global bitDepth)
     
-    // Apply bit crushing
+
     crushedSample = samples[0] & mask
     
-    // Apply sample rate reduction (simple hold)
+
     if ((global clock % global sampleRateReduction) == 0) {
         samples[0] = crushedSample
     }
-    // else keep previous sample (sample rate reduction)
+
     
     write(global positions[0], 1, samples)
     return 1
@@ -507,15 +507,15 @@ locals array samples[2], int crushedSample, int mask
 ### Example 2: Custom Reverb (Requires Full Patch)
 
 ```impala
-// === CUSTOM REVERB FULL PATCH ===
+
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
 global array signal[2]
 global array params[PARAM_COUNT]
 global array displayLEDs[4]
 
-// Reverb state (complex, requires total control)
-global array reverbBuffer[32768]  // 0.74 second at 44.1kHz
+
+global array reverbBuffer[32768]
 global int writePos = 0
 global array tapDelays[8] = {100, 200, 400, 600, 1200, 1800, 2400, 3200}
 global int reverbTime = 500
@@ -533,31 +533,31 @@ locals int input, int wet, int dry, int output, int i, int tapSample, int readPo
     loop {
         input = global signal[0]
         
-        // Write to reverb buffer
+
         global reverbBuffer[global writePos] = input
         
-        // Calculate reverb (sum of multiple taps)
+
         wet = 0
         for (i = 0 to 7) {
             readPos = global writePos - global tapDelays[i]
             if (readPos < 0) readPos = readPos + 32768
             
             tapSample = global reverbBuffer[readPos]
-            wet = wet + tapSample / 8  // Mix all taps
+            wet = wet + tapSample / 8
         }
         
-        // Apply reverb time (feedback)
+
         wet = wet * global reverbTime / 1000
         
-        // Mix wet and dry
+
         dry = input * (255 - global wetLevel) / 255
         wet = wet * global wetLevel / 255
         output = dry + wet
         
         global signal[0] = output
-        global signal[1] = output  // Mono reverb
+        global signal[1] = output
         
-        // Advance write position
+
         global writePos = (global writePos + 1) % 32768
         
         yield()
@@ -576,21 +576,21 @@ locals int input, int wet, int dry, int output, int i, int tapSample, int readPo
 ### CPU Usage Comparison
 
 ```impala
-// Mod Patch: Framework overhead
+
 function operate1()
 returns int processed
 {
-    read(position, 1, samples)     // Memory access overhead
-    samples[0] = process(samples[0]) // Your algorithm
-    write(position, 1, samples)    // Memory access overhead
+    read(position, 1, samples)
+    samples[0] = process(samples[0])
+    write(position, 1, samples)
     return 1
 }
 
-// Full Patch: Direct processing
+
 function process()
 {
     loop {
-        global signal[0] = process(global signal[0])  // Direct access
+        global signal[0] = process(global signal[0])
         yield()
     }
 }
@@ -605,15 +605,15 @@ function process()
 ### Memory Usage Patterns
 
 ```impala
-// Mod Patch: Memory shared with framework
-global array positions[2]  // Small footprint
-// Framework manages delay buffers, feedback paths, etc.
 
-// Full Patch: You manage all memory
-global array signal[2]           // Direct audio
-global array delayBuffer[44100]  // Your delay buffer
-global array workingMemory[1024] // Your workspace
-// You allocate everything you need
+global array positions[2]
+
+
+
+global array signal[2]
+global array delayBuffer[44100]
+global array workingMemory[1024]
+
 ```
 
 ## Chapter 8: Testing and Debugging
@@ -621,21 +621,21 @@ global array workingMemory[1024] // Your workspace
 ### Testing Mod Patches
 
 ```impala
-// Test with known inputs using trace()
+
 function operate1()
 returns int processed
 locals array samples[2]
 {
     read(global positions[0], 1, samples)
     
-    // Debug: trace input values
+
     if ((global clock % 1000) == 0) {
         trace("Input: " + intToString(samples[0]))
     }
     
     samples[0] = processOperator(samples[0])
     
-    // Debug: trace output values
+
     if ((global clock % 1000) == 0) {
         trace("Output: " + intToString(samples[0]))
     }
@@ -648,21 +648,21 @@ locals array samples[2]
 ### Testing Full Patches
 
 ```impala
-// Test with direct signal monitoring
+
 function process()
 locals int input, int output
 {
     loop {
         input = global signal[0]
         
-        // Debug: Monitor signal levels
+
         if ((global clock % 1000) == 0) {
             trace("Level: " + intToString(abs(input)))
         }
         
         output = processEffect(input)
         
-        // Safety: Always clamp output
+
         if (output > 2047) output = 2047
         if (output < -2047) output = -2047
         
@@ -680,23 +680,23 @@ locals int input, int output
 
 **Problem**: Chose Mod patch for complex reverb
 ```impala
-// BAD: Trying to implement reverb as operator
+
 function operate1()
 returns int processed
 {
-    // Complex reverb doesn't fit operator model well
-    // Limited memory, timing issues, integration problems
+
+
     return 1
 }
 ```
 
 **Solution**: Use Full patch for complex effects
 ```impala
-// GOOD: Full patch gives total control for reverb
+
 function process()
 {
     loop {
-        // Complete control over timing and memory
+
         yield()
     }
 }
@@ -706,27 +706,27 @@ function process()
 
 **Problem**: Unnecessary memory operations in Mod patch
 ```impala
-// BAD: Multiple read/write operations
+
 function operate1()
 returns int processed
 {
     read(global positions[0], 1, samples1)
-    read(global positions[0], 1, samples2)  // Redundant!
-    // Process
+    read(global positions[0], 1, samples2)
+
     write(global positions[0], 1, result1)
-    write(global positions[0], 1, result2)  // Redundant!
+    write(global positions[0], 1, result2)
     return 1
 }
 ```
 
 **Solution**: Minimize memory operations
 ```impala
-// GOOD: Single read/write pair
+
 function operate1()
 returns int processed
 {
     read(global positions[0], 1, samples)
-    // Process samples in place
+
     write(global positions[0], 1, samples)
     return 1
 }
@@ -736,26 +736,26 @@ returns int processed
 
 **Problem**: Forgetting to return from operator functions
 ```impala
-// BAD: No return value
+
 function operate1()
 {
     read(global positions[0], 1, samples)
-    // Process
+
     write(global positions[0], 1, samples)
-    // Missing: return 1;
+
 }
 ```
 
 **Solution**: Always return 1 for processed audio
 ```impala
-// GOOD: Clear return value
+
 function operate1()
 returns int processed
 {
     read(global positions[0], 1, samples)
-    // Process
+
     write(global positions[0], 1, samples)
-    return 1  // Signal successful processing
+    return 1
 }
 ```
 

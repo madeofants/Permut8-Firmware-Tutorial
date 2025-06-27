@@ -68,15 +68,15 @@
 
 ### Audio Processing Constants
 ```impala
-// Audio sample range (12-bit signed)
+
 const int AUDIO_MIN = -2047
 const int AUDIO_MAX = 2047
 
-// Parameter range (8-bit unsigned)  
+
 const int PARAM_MIN = 0
 const int PARAM_MAX = 255
 
-// Required parameter indices
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -90,31 +90,31 @@ const int PARAM_COUNT
 
 ### Essential Global Variables
 ```impala
-// Core audio I/O
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT] // Parameter values (0-255)
-global array displayLEDs[4]     // LED ring displays
 
-// Common utility variables
-global int clock                 // Sample counter
-global int clockFreqLimit        // Timing control
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global int clock
+global int clockFreqLimit
 ```
 
 ### Common Function Patterns
 ```impala
-// Required function structure
+
 function process()
 locals /* declare local variables */
 {
     loop {
-        // Read parameters
-        // Process audio
-        // Update displays
-        yield();  // REQUIRED: Return control to system
+
+
+
+        yield();
     }
 }
 
-// Required native function
+
 extern native yield
 ```
 

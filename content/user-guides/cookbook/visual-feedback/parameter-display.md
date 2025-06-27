@@ -27,7 +27,7 @@ Provides real-time visual feedback for patch parameters using LED positioning an
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -39,29 +39,29 @@ const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// Parameter display state
-global array smoothed_params[4] = {128, 128, 128, 128}  // Smoothed parameter values
-global int oscillator_phase = 0     // Phase for audio generation
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global array smoothed_params[4] = {128, 128, 128, 128}
+global int oscillator_phase = 0
 
 function process()
 locals display_mode, param0, param1, param2, param3, led_position, led_count, led_pattern, center_pos, offset, step, leds_per_step, i, frequency, resonance, gain, sine_index, oscillator_output, diff
 {
     loop {
-        // Read control parameters
-        param0 = params[CLOCK_FREQ_PARAM_INDEX];      // Parameter 0 (0-255)
-        param1 = params[SWITCHES_PARAM_INDEX];      // Parameter 1 (0-255)
-        param2 = params[OPERATOR_1_PARAM_INDEX];      // Parameter 2 (0-255)
-        display_mode = params[OPERAND_1_HIGH_PARAM_INDEX] >> 6;  // Display mode (0-3)
+
+        param0 = params[CLOCK_FREQ_PARAM_INDEX];
+        param1 = params[SWITCHES_PARAM_INDEX];
+        param2 = params[OPERATOR_1_PARAM_INDEX];
+        display_mode = params[OPERAND_1_HIGH_PARAM_INDEX] >> 6;
         
-        // Smooth parameter values to avoid LED flickering
+
         diff = param0 - global smoothed_params[0];
         global smoothed_params[0] = global smoothed_params[0] + (diff >> 3);
         
@@ -71,16 +71,16 @@ locals display_mode, param0, param1, param2, param3, led_position, led_count, le
         diff = param2 - global smoothed_params[2];
         global smoothed_params[2] = global smoothed_params[2] + (diff >> 3);
         
-        // === DISPLAY PARAMETER 0 ON LED RING 0 ===
+
         if (display_mode == 0) {
-            // Single LED mode
-            led_position = global smoothed_params[0] >> 5;  // Scale to 0-7
+
+            led_position = global smoothed_params[0] >> 5;
             if (led_position > 7) led_position = 7;
             global displayLEDs[0] = 1 << led_position;
             
         } else if (display_mode == 1) {
-            // Bar graph mode
-            led_count = (global smoothed_params[0] >> 5) + 1;  // 1-8 LEDs
+
+            led_count = (global smoothed_params[0] >> 5) + 1;
             if (led_count > 8) led_count = 8;
             
             led_pattern = 0;
@@ -95,9 +95,9 @@ locals display_mode, param0, param1, param2, param3, led_position, led_count, le
             global displayLEDs[0] = led_pattern;
             
         } else if (display_mode == 2) {
-            // Bipolar mode (center-based)
-            center_pos = 4;  // Center of 8 LEDs
-            offset = (global smoothed_params[0] - 128) >> 4;  // -8 to +7 range
+
+            center_pos = 4;
+            offset = (global smoothed_params[0] - 128) >> 4;
             
             led_position = center_pos + offset;
             if (led_position < 0) led_position = 0;
@@ -106,24 +106,24 @@ locals display_mode, param0, param1, param2, param3, led_position, led_count, le
             global displayLEDs[0] = (1 << center_pos) | (1 << led_position);
             
         } else {
-            // Stepped mode (discrete values)
-            step = global smoothed_params[0] >> 6;  // 0-3 steps
-            leds_per_step = 2;  // 2 LEDs per step
+
+            step = global smoothed_params[0] >> 6;
+            leds_per_step = 2;
             
             led_pattern = 0;
             if (step == 0) {
-                led_pattern = 3;  // LEDs 0,1
+                led_pattern = 3;
             } else if (step == 1) {
-                led_pattern = 12; // LEDs 2,3  
+                led_pattern = 12;
             } else if (step == 2) {
-                led_pattern = 48; // LEDs 4,5
+                led_pattern = 48;
             } else {
-                led_pattern = 192; // LEDs 6,7
+                led_pattern = 192;
             }
             global displayLEDs[0] = led_pattern;
         }
         
-        // === DISPLAY PARAMETER 1 ON LED RING 1 (Bar graph) ===
+
         led_count = (global smoothed_params[1] >> 5) + 1;
         if (led_count > 8) led_count = 8;
         
@@ -138,40 +138,40 @@ locals display_mode, param0, param1, param2, param3, led_position, led_count, le
         if (led_count >= 8) led_pattern = led_pattern | 128;
         global displayLEDs[1] = led_pattern;
         
-        // === DISPLAY PARAMETER 2 ON LED RING 2 (Single LED) ===
+
         led_position = global smoothed_params[2] >> 5;
         if (led_position > 7) led_position = 7;
         global displayLEDs[2] = 1 << led_position;
         
-        // === DISPLAY MODE INDICATOR ON LED RING 3 ===
-        global displayLEDs[3] = (display_mode + 1) << 6;  // Show current mode
+
+        global displayLEDs[3] = (display_mode + 1) << 6;
         
-        // === AUDIO GENERATION USING PARAMETERS ===
-        // Use parameters to control audio
-        frequency = 200 + ((global smoothed_params[0] * 1800) >> 8);  // 200-1900 Hz
-        resonance = global smoothed_params[1];  // 0-255
-        gain = global smoothed_params[2];       // 0-255
+
+
+        frequency = 200 + ((global smoothed_params[0] * 1800) >> 8);
+        resonance = global smoothed_params[1];
+        gain = global smoothed_params[2];
         
-        // Simple oscillator
+
         global oscillator_phase = global oscillator_phase + (frequency << 6);
         if (global oscillator_phase >= 2048000) global oscillator_phase = global oscillator_phase - 2048000;
         
-        // Triangle wave approximation
-        sine_index = global oscillator_phase >> 11;  // Scale to 0-255 range
+
+        sine_index = global oscillator_phase >> 11;
         if (sine_index < 128) {
-            oscillator_output = (sine_index << 4) - 1024;  // Rising edge
+            oscillator_output = (sine_index << 4) - 1024;
         } else {
-            oscillator_output = 1024 - ((sine_index - 128) << 4);  // Falling edge
+            oscillator_output = 1024 - ((sine_index - 128) << 4);
         }
         
-        // Apply gain
+
         oscillator_output = (oscillator_output * gain) >> 8;
         
-        // Prevent clipping
+
         if (oscillator_output > 2047) oscillator_output = 2047;
         if (oscillator_output < -2047) oscillator_output = -2047;
         
-        // Output audio
+
         global signal[0] = oscillator_output;
         global signal[1] = oscillator_output;
         
@@ -202,29 +202,29 @@ locals display_mode, param0, param1, param2, param3, led_position, led_count, le
 ## Try These Settings
 
 ```impala
-// Single LED mode
-params[CLOCK_FREQ_PARAM_INDEX] = 128;  // Middle position
-params[SWITCHES_PARAM_INDEX] = 200;  // High value
-params[OPERATOR_1_PARAM_INDEX] = 64;   // Low-mid value
-params[OPERAND_1_HIGH_PARAM_INDEX] = 0;    // Single LED mode
 
-// Bar graph mode
-params[CLOCK_FREQ_PARAM_INDEX] = 160;  // 5 LEDs lit
-params[SWITCHES_PARAM_INDEX] = 255;  // All LEDs lit
-params[OPERATOR_1_PARAM_INDEX] = 80;   // 2-3 LEDs lit
-params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Bar graph mode
+params[CLOCK_FREQ_PARAM_INDEX] = 128;
+params[SWITCHES_PARAM_INDEX] = 200;
+params[OPERATOR_1_PARAM_INDEX] = 64;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 0;
 
-// Bipolar mode
-params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Above center
-params[SWITCHES_PARAM_INDEX] = 100;  // Average level
-params[OPERATOR_1_PARAM_INDEX] = 60;   // Below center
-params[OPERAND_1_HIGH_PARAM_INDEX] = 128;  // Bipolar mode
 
-// Stepped mode
-params[CLOCK_FREQ_PARAM_INDEX] = 180;  // Step 2 of 4
-params[SWITCHES_PARAM_INDEX] = 150;  // Medium level
-params[OPERATOR_1_PARAM_INDEX] = 220;  // High value
-params[OPERAND_1_HIGH_PARAM_INDEX] = 192;  // Stepped mode
+params[CLOCK_FREQ_PARAM_INDEX] = 160;
+params[SWITCHES_PARAM_INDEX] = 255;
+params[OPERATOR_1_PARAM_INDEX] = 80;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 64;
+
+
+params[CLOCK_FREQ_PARAM_INDEX] = 200;
+params[SWITCHES_PARAM_INDEX] = 100;
+params[OPERATOR_1_PARAM_INDEX] = 60;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 128;
+
+
+params[CLOCK_FREQ_PARAM_INDEX] = 180;
+params[SWITCHES_PARAM_INDEX] = 150;
+params[OPERATOR_1_PARAM_INDEX] = 220;
+params[OPERAND_1_HIGH_PARAM_INDEX] = 192;
 ```
 ## How It Works
 

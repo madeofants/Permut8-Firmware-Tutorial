@@ -27,7 +27,7 @@ An envelope controls how a parameter changes over time, most commonly the volume
 ```impala
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 
-// Audio and parameter constants
+
 const int AUDIO_MAX = 2047
 const int AUDIO_MIN = -2047
 const int PARAM_MAX = 255
@@ -37,7 +37,7 @@ const int ENVELOPE_ATTACK_THRESHOLD = 1900
 const int ENVELOPE_DECAY_TOLERANCE = 50
 const int ENVELOPE_SILENCE_THRESHOLD = 10
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX = 0
 const int OPERAND_1_LOW_PARAM_INDEX = 1
 const int OPERAND_2_HIGH_PARAM_INDEX = 2
@@ -48,105 +48,105 @@ const int SWITCHES_PARAM_INDEX = 6
 const int CLOCK_FREQ_PARAM_INDEX = 7
 const int PARAM_COUNT = 8
 
-// Envelope stage constants
+
 const int STAGE_OFF = 0
 const int STAGE_ATTACK = 1
 const int STAGE_DECAY = 2
 const int STAGE_SUSTAIN = 3
 const int STAGE_RELEASE = 4
 
-// Required native function declarations
-extern native yield             // Return control to Permut8 audio engine
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
+extern native yield
 
-// Simple ADSR envelope state
-global int envelope_level = 0   // Current envelope level (0-2047)
-global int envelope_stage = 0   // Current stage (0=off, 1=attack, 2=decay, 3=sustain, 4=release)
-global int stage_counter = 0    // Counter for current stage timing
-global int gate_trigger = 0     // Gate input (0=off, 1=on)
+
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
+
+
+global int envelope_level = 0
+global int envelope_stage = 0
+global int stage_counter = 0
+global int gate_trigger = 0
 
 function process()
 locals int attack, int decay, int sustain, int release, int stage_time, int target_level, int output
 {
     loop {
-        // Read parameters
-        attack = (params[CLOCK_FREQ_PARAM_INDEX] >> 3) + 1;     // 1-32 attack speed
-        decay = (params[SWITCHES_PARAM_INDEX] >> 3) + 1;      // 1-32 decay speed
-        sustain = (params[OPERATOR_1_PARAM_INDEX] << 3);        // 0-2040 sustain level
-        release = (params[OPERAND_1_HIGH_PARAM_INDEX] >> 3) + 1;    // 1-32 release speed
+
+        attack = (params[CLOCK_FREQ_PARAM_INDEX] >> 3) + 1;
+        decay = (params[SWITCHES_PARAM_INDEX] >> 3) + 1;
+        sustain = (params[OPERATOR_1_PARAM_INDEX] << 3);
+        release = (params[OPERAND_1_HIGH_PARAM_INDEX] >> 3) + 1;
         
-        // Simple gate trigger (could be connected to note input)
-        // For demo: use knob position to trigger envelope
+
+
         if (params[OPERAND_1_LOW_PARAM_INDEX] > PARAM_HALF && global gate_trigger == 0) {
             global gate_trigger = 1;
-            global envelope_stage = STAGE_ATTACK;  // Start attack
+            global envelope_stage = STAGE_ATTACK;
             global stage_counter = 0;
         } else if (params[OPERAND_1_LOW_PARAM_INDEX] <= PARAM_HALF && global gate_trigger == 1) {
             global gate_trigger = 0;
-            global envelope_stage = STAGE_RELEASE;  // Start release
+            global envelope_stage = STAGE_RELEASE;
             global stage_counter = 0;
         }
         
-        // Process envelope stages
+
         if (global envelope_stage == STAGE_ATTACK) {
-            // Attack stage - rise to peak
+
             target_level = ENVELOPE_PEAK;
             global envelope_level = global envelope_level + ((target_level - global envelope_level) >> attack);
             
-            // Check if attack is complete
+
             if (global envelope_level > ENVELOPE_ATTACK_THRESHOLD) {
-                global envelope_stage = STAGE_DECAY;  // Move to decay
+                global envelope_stage = STAGE_DECAY;
                 global stage_counter = 0;
             }
             
         } else if (global envelope_stage == STAGE_DECAY) {
-            // Decay stage - drop to sustain level
+
             global envelope_level = global envelope_level + ((sustain - global envelope_level) >> decay);
             
-            // Check if decay is complete
+
             if (global envelope_level <= (sustain + ENVELOPE_DECAY_TOLERANCE) && global envelope_level >= (sustain - ENVELOPE_DECAY_TOLERANCE)) {
-                global envelope_stage = STAGE_SUSTAIN;  // Move to sustain
+                global envelope_stage = STAGE_SUSTAIN;
             }
             
         } else if (global envelope_stage == STAGE_SUSTAIN) {
-            // Sustain stage - maintain level
+
             global envelope_level = sustain;
             
         } else if (global envelope_stage == STAGE_RELEASE) {
-            // Release stage - fade to silence
+
             global envelope_level = global envelope_level + ((0 - global envelope_level) >> release);
             
-            // Check if release is complete
+
             if (global envelope_level < ENVELOPE_SILENCE_THRESHOLD) {
-                global envelope_stage = STAGE_OFF;  // Back to idle
+                global envelope_stage = STAGE_OFF;
                 global envelope_level = 0;
             }
             
         } else {
-            // Idle stage
+
             global envelope_level = 0;
         }
         
-        // Apply envelope to input signal
+
         output = (signal[0] * global envelope_level) >> 11;
         
-        // Prevent clipping
+
         if (output > AUDIO_MAX) output = AUDIO_MAX;
         if (output < AUDIO_MIN) output = AUDIO_MIN;
         
-        // Output result
+
         signal[0] = output;
         signal[1] = output;
         
-        // Show envelope activity on LEDs
-        displayLEDs[0] = global envelope_level >> 3;  // Show envelope level
-        displayLEDs[1] = global envelope_stage << 6;  // Show current stage
-        displayLEDs[2] = attack << 3;                 // Show attack setting
-        displayLEDs[3] = sustain >> 3;               // Show sustain level
+
+        displayLEDs[0] = global envelope_level >> 3;
+        displayLEDs[1] = global envelope_stage << 6;
+        displayLEDs[2] = attack << 3;
+        displayLEDs[3] = sustain >> 3;
         
         yield();
     }
@@ -174,29 +174,29 @@ locals int attack, int decay, int sustain, int release, int stage_time, int targ
 ## Try These Settings
 
 ```impala
-// Piano envelope
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 8;    // Fast attack
-(int)global params[SWITCHES_PARAM_INDEX] = 64;   // Medium decay
-(int)global params[OPERATOR_1_PARAM_INDEX] = 100;  // Low sustain
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;   // Medium release
 
-// Pad envelope
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;  // Slow attack
-(int)global params[SWITCHES_PARAM_INDEX] = 150;  // Slow decay
-(int)global params[OPERATOR_1_PARAM_INDEX] = 200;  // High sustain
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;  // Long release
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 8;
+(int)global params[SWITCHES_PARAM_INDEX] = 64;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 100;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 64;
 
-// Percussion envelope
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 8;    // Very fast attack
-(int)global params[SWITCHES_PARAM_INDEX] = 32;   // Fast decay
-(int)global params[OPERATOR_1_PARAM_INDEX] = 0;    // No sustain
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 32;   // Fast release
 
-// Bass envelope
-(int)global params[CLOCK_FREQ_PARAM_INDEX] = 16;   // Quick attack
-(int)global params[SWITCHES_PARAM_INDEX] = 32;   // Short decay
-(int)global params[OPERATOR_1_PARAM_INDEX] = 220;  // High sustain
-(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 32;   // Short release
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 200;
+(int)global params[SWITCHES_PARAM_INDEX] = 150;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 200;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 200;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 8;
+(int)global params[SWITCHES_PARAM_INDEX] = 32;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 0;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 32;
+
+
+(int)global params[CLOCK_FREQ_PARAM_INDEX] = 16;
+(int)global params[SWITCHES_PARAM_INDEX] = 32;
+(int)global params[OPERATOR_1_PARAM_INDEX] = 220;
+(int)global params[OPERAND_1_HIGH_PARAM_INDEX] = 32;
 ```
 
 ## Understanding ADSR

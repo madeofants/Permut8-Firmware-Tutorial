@@ -37,7 +37,7 @@ Memory management using fixed-size arrays with no dynamic allocation (no malloc/
 **yield()**  
 Native function that returns control to the audio engine every sample, essential for real-time processing. Must be called once per processing cycle.
 ```impala
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -48,7 +48,7 @@ const int SWITCHES_PARAM_INDEX
 const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
-yield(); // Return control to host
+yield();
 
 ```
 
@@ -92,19 +92,19 @@ global array audioBuffer[1024]
 **signal[2]**  
 Global audio I/O array for stereo processing (left/right channels). Audio samples range from -2047 to 2047.
 ```impala
-global array signal[2]  // [left, right] audio samples
+global array signal[2]
 ```
 
 **params[PARAM_COUNT]**  
 Global parameter array for hardware knob values (0-255 range).
 ```impala
-global array params[PARAM_COUNT]  // Knob values (0-255)
+global array params[PARAM_COUNT]
 ```
 
 **displayLEDs[4]**  
 Global LED control array for visual feedback (8-bit brightness masks).
 ```impala
-global array displayLEDs[4]  // LED control arrays
+global array displayLEDs[4]
 ```
 
 ### Hardware Specifications
@@ -131,7 +131,7 @@ Software-based sound generator using mathematical waveforms. Creates audio by re
 **Phase accumulator**  
 Counter (0-65535) representing position in waveform cycle for oscillator state tracking.
 ```impala
-global int phase = 0  // Current position in the waveform
+global int phase = 0
 ```
 
 **Phase increment**  
@@ -165,7 +165,7 @@ if (phase < 32768) {
 **Sawtooth wave**  
 Linear ramp waveform creating bright, buzzy sound with rich harmonic content.
 ```impala
-amplitude = (phase / 2) - 16384;  // Linear ramp
+amplitude = (phase / 2) - 16384;
 ```
 
 ### Time-Based Effects
@@ -193,13 +193,13 @@ Simplest distortion created by multiplying audio samples by values larger than 1
 **Hard clipping**  
 Immediate cutoff distortion where samples exceeding limits are truncated to maximum values, creating harsh digital sound.
 ```impala
-if (signal > 2047) signal = 2047;  // Hard clipping
+if (signal > 2047) signal = 2047;
 ```
 
 **Soft clipping**  
 Gradual compression distortion using mathematical curves to smoothly limit audio, creating warm musical sound.
 ```impala
-if (signal > threshold) signal = threshold + (excess / 4);  // Soft clipping
+if (signal > threshold) signal = threshold + (excess / 4);
 ```
 
 **Clipping threshold**  
@@ -219,7 +219,7 @@ Educational approach building distortion complexity from basic multiplication th
 **Gain compensation**  
 Automatic output level adjustment to maintain consistent volume when effects change signal amplitude, similar to auto-scaling algorithms.
 ```impala
-int compensationGain = 256 / distortionAmount;  // Inverse scaling
+int compensationGain = 256 / distortionAmount;
 ```
 
 **Parameter smoothing**  
@@ -400,7 +400,7 @@ Basic development process starting with working audio I/O before adding effects 
 **Static memory**  
 Fixed allocation using global arrays with predictable memory usage for real-time constraints.
 ```impala
-global array buffer[1024];  // Static allocation
+global array buffer[1024];
 ```
 
 **Circular buffer**  

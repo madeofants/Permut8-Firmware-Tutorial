@@ -13,7 +13,7 @@ All code examples have been tested and verified. For a minimal implementation wi
 const int PRAWN_FIRMWARE_PATCH_FORMAT = 2
 extern native yield
 
-// Required parameter constants
+
 const int OPERAND_1_HIGH_PARAM_INDEX
 const int OPERAND_1_LOW_PARAM_INDEX
 const int OPERAND_2_HIGH_PARAM_INDEX
@@ -24,60 +24,60 @@ const int SWITCHES_PARAM_INDEX
 const int CLOCK_FREQ_PARAM_INDEX
 const int PARAM_COUNT
 
-// Standard global variables
-global array signal[2]          // Left/Right audio samples
-global array params[PARAM_COUNT]          // Parameter values (0-255)
-global array displayLEDs[4]     // LED displays
 
-// MIDI Learn mapping using parallel arrays (Impala doesn't have structs)
-global array midi_cc_numbers[8] = {-1, -1, -1, -1, -1, -1, -1, -1}    // CC numbers for each mapping
-global array midi_param_indices[8] = {(int)global params[CLOCK_FREQ_PARAM_INDEX], (int)global params[SWITCHES_PARAM_INDEX], (int)global params[OPERATOR_1_PARAM_INDEX], (int)global params[OPERAND_1_HIGH_PARAM_INDEX], (int)global params[OPERAND_1_LOW_PARAM_INDEX], (int)global params[OPERATOR_2_PARAM_INDEX], (int)global params[OPERAND_2_HIGH_PARAM_INDEX], (int)global params[OPERAND_2_LOW_PARAM_INDEX]}        // Target parameter for each mapping  
-global array midi_min_values[8] = {0, 0, 0, 0, 0, 0, 0, 0}           // Minimum scaled values
-global array midi_max_values[8] = {255, 255, 255, 255, 255, 255, 255, 255} // Maximum scaled values
-global array midi_active_flags[8] = {0, 0, 0, 0, 0, 0, 0, 0}         // 1=active, 0=inactive
+global array signal[2]
+global array params[PARAM_COUNT]
+global array displayLEDs[4]
 
-// Learn mode state
-global int learn_mode = 0           // 0=off, 1=learning
-global int learn_target_param = -1  // Which parameter we're learning (-1=none)
+
+global array midi_cc_numbers[8] = {-1, -1, -1, -1, -1, -1, -1, -1}
+global array midi_param_indices[8] = {(int)global params[CLOCK_FREQ_PARAM_INDEX], (int)global params[SWITCHES_PARAM_INDEX], (int)global params[OPERATOR_1_PARAM_INDEX], (int)global params[OPERAND_1_HIGH_PARAM_INDEX], (int)global params[OPERAND_1_LOW_PARAM_INDEX], (int)global params[OPERATOR_2_PARAM_INDEX], (int)global params[OPERAND_2_HIGH_PARAM_INDEX], (int)global params[OPERAND_2_LOW_PARAM_INDEX]}
+global array midi_min_values[8] = {0, 0, 0, 0, 0, 0, 0, 0}
+global array midi_max_values[8] = {255, 255, 255, 255, 255, 255, 255, 255}
+global array midi_active_flags[8] = {0, 0, 0, 0, 0, 0, 0, 0}
+
+
+global int learn_mode = 0
+global int learn_target_param = -1
 ```
 
 ## Learn Mode Implementation
 
 ```impala
-// Enter learn mode for a specific parameter
+
 function enterLearnMode(int param_index) {
     global learn_mode = 1;
     global learn_target_param = param_index;
     
-    // Visual feedback - blink LED for target parameter
-    global displayLEDs[0] = 255;  // Bright indication
+
+    global displayLEDs[0] = 255;
 }
 
-// Process MIDI learn when CC message received
+
 function processMidiLearn(int cc_number, int value) {
     if (global learn_mode == 1 && global learn_target_param >= 0) {
-        // Find empty mapping slot or update existing
+
         int slot = findMappingSlot(cc_number);
         
-        // Store the mapping using parallel arrays
+
         global midi_cc_numbers[slot] = cc_number;
         global midi_param_indices[slot] = global learn_target_param;
         global midi_min_values[slot] = 0;
         global midi_max_values[slot] = 255;
-        global midi_active_flags[slot] = 1;  // Mark as active
+        global midi_active_flags[slot] = 1;
         
-        // Exit learn mode
+
         global learn_mode = 0;
         global learn_target_param = -1;
-        global displayLEDs[0] = 128;  // Success indicator
+        global displayLEDs[0] = 128;
     }
 }
 
-// Find slot for new mapping (returns slot index)
+
 function findMappingSlot(int cc_number) returns int slot {
     int i;
     
-    // First, check if CC already mapped
+
     i = 0;
     loop {
         if (i >= 8) break;
@@ -88,7 +88,7 @@ function findMappingSlot(int cc_number) returns int slot {
         i = i + 1;
     }
     
-    // Find empty slot (inactive mapping)
+
     i = 0;
     loop {
         if (i >= 8) break;
@@ -99,7 +99,7 @@ function findMappingSlot(int cc_number) returns int slot {
         i = i + 1;
     }
     
-    // Use first slot if all full
+
     slot = 0;
 }
 ```
@@ -107,20 +107,20 @@ function findMappingSlot(int cc_number) returns int slot {
 ## MIDI Processing with Learned Mappings
 
 ```impala
-// Handle incoming MIDI CC messages
+
 function handleMidiCC(int cc_number, int value) {
-    // Check if in learn mode first
+
     if (global learn_mode == 1) {
         processMidiLearn(cc_number, value);
         return;
     }
     
-    // Process learned mappings
+
     int i = 0;
     loop {
         if (i >= 8) break;
         
-        // Check if this mapping is active and matches the CC
+
         if (global midi_active_flags[i] == 1 && global midi_cc_numbers[i] == cc_number) {
             applyLearnedMapping(i, value);
         }
@@ -128,27 +128,27 @@ function handleMidiCC(int cc_number, int value) {
     }
 }
 
-// Apply a learned mapping to update parameter
+
 function applyLearnedMapping(int mapping_index, int midi_value) {
-    // Scale MIDI value (0-127) to parameter range (0-255)
+
     int scaled_value = scaleValue(midi_value, 0, 127, 
                                   global midi_min_values[mapping_index], 
                                   global midi_max_values[mapping_index]);
     
-    // Update the target parameter
+
     int target_param = global midi_param_indices[mapping_index];
     if (target_param >= 0 && target_param < PARAM_COUNT) {
         global params[target_param] = scaled_value;
     }
 }
 
-// Scale value from one range to another
+
 function scaleValue(int value, int in_min, int in_max, int out_min, int out_max) returns int result {
     int in_range = in_max - in_min;
     int out_range = out_max - out_min;
     
     if (in_range == 0) {
-        result = out_min;  // Avoid division by zero
+        result = out_min;
     } else {
         result = out_min + ((value - in_min) * out_range / in_range);
     }
@@ -158,26 +158,26 @@ function scaleValue(int value, int in_min, int in_max, int out_min, int out_max)
 ## User Interface Integration
 
 ```impala
-// Global state for switch detection
+
 global array prev_switch_state[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-// Switch-based learn mode activation
+
 function checkLearnSwitches() {
-    int switches = (int)global params[SWITCHES_PARAM_INDEX];  // Read switch states from switches parameter
+    int switches = (int)global params[SWITCHES_PARAM_INDEX];
     
-    // Hold switch 1 (bit 0) + press other switches to enter learn
-    if ((switches & 0x01) != 0) {  // Switch 1 held
-        if ((switches & 0x02) != 0 && (global prev_switch_state[1] == 0)) {  // Switch 2 pressed
-            enterLearnMode(0);  // Learn for parameter 0
+
+    if ((switches & 0x01) != 0) {
+        if ((switches & 0x02) != 0 && (global prev_switch_state[1] == 0)) {
+            enterLearnMode(0);
             global prev_switch_state[1] = 1;
         }
-        if ((switches & 0x04) != 0 && (global prev_switch_state[2] == 0)) {  // Switch 3 pressed
-            enterLearnMode(1);  // Learn for parameter 1
+        if ((switches & 0x04) != 0 && (global prev_switch_state[2] == 0)) {
+            enterLearnMode(1);
             global prev_switch_state[2] = 1;
         }
     }
     
-    // Update previous switch states
+
     if ((switches & 0x02) != 0) {
         global prev_switch_state[1] = 1;
     } else {
@@ -190,43 +190,43 @@ function checkLearnSwitches() {
     }
 }
 
-// Clear all learned mappings
+
 function clearMidiMappings() {
     int i = 0;
     loop {
         if (i >= 8) break;
-        global midi_active_flags[i] = 0;    // Deactivate mapping
-        global midi_cc_numbers[i] = -1;     // Clear CC number
+        global midi_active_flags[i] = 0;
+        global midi_cc_numbers[i] = -1;
         i = i + 1;
     }
-    global displayLEDs[0] = 255;  // Clear confirmation
+    global displayLEDs[0] = 255;
 }
 ```
 
 ## Advanced Mapping Features
 
 ```impala
-// Advanced mapping features using additional arrays
-global array midi_curve_types[8] = {0, 0, 0, 0, 0, 0, 0, 0};  // 0=linear, 1=exponential, 2=logarithmic
-global array midi_invert_flags[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // 1=invert, 0=normal
-global array midi_center_detent[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // 1=center detent, 0=none
 
-// Apply curve to MIDI value before scaling
+global array midi_curve_types[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+global array midi_invert_flags[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+global array midi_center_detent[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+
 function applyCurve(int value, int curve_type) returns int result {
     if (curve_type == 0) {
-        result = value;  // Linear
+        result = value;
     } else if (curve_type == 1) {
-        result = (value * value) >> 7;  // Exponential (divide by 128)
+        result = (value * value) >> 7;
     } else if (curve_type == 2) {
-        result = logarithmicScale(value);  // Logarithmic
+        result = logarithmicScale(value);
     } else {
-        result = value;  // Default to linear
+        result = value;
     }
 }
 
-// Simple logarithmic scaling approximation
+
 function logarithmicScale(int value) returns int result {
-    // Simple log approximation for parameter curves
+
     if (value <= 0) {
         result = 0;
         return;
@@ -237,41 +237,41 @@ function logarithmicScale(int value) returns int result {
     loop {
         if (temp <= 1) break;
         log_val = log_val + 1;
-        temp = temp >> 1;  // Divide by 2
+        temp = temp >> 1;
     }
-    result = log_val << 4;  // Scale to parameter range
+    result = log_val << 4;
 }
 ```
 
 ## Complete Working Example
 
 ```impala
-// Complete MIDI Learn firmware example
+
 function process() {
     loop {
-        // Check for learn mode activation
+
         checkLearnSwitches();
         
-        // Simulate receiving MIDI CC message
-        // In real implementation, this would come from MIDI input
-        int incoming_cc = (int)global params[OPERATOR_2_PARAM_INDEX];    // Simulate CC number input
-        int incoming_value = (int)global params[OPERAND_2_HIGH_PARAM_INDEX]; // Simulate CC value input
+
+
+        int incoming_cc = (int)global params[OPERATOR_2_PARAM_INDEX];
+        int incoming_value = (int)global params[OPERAND_2_HIGH_PARAM_INDEX];
         
-        // Process MIDI if valid range
+
         if (incoming_cc > 0 && incoming_cc < 128) {
             handleMidiCC(incoming_cc, incoming_value);
         }
         
-        // Audio processing (example: simple gain control)
-        int gain = (int)global params[CLOCK_FREQ_PARAM_INDEX];  // This can be controlled by MIDI learn
-        global signal[0] = (global signal[0] * gain) >> 8;  // Apply gain
+
+        int gain = (int)global params[CLOCK_FREQ_PARAM_INDEX];
+        global signal[0] = (global signal[0] * gain) >> 8;
         global signal[1] = (global signal[1] * gain) >> 8;
         
-        // Visual feedback - show learn mode status
+
         if (global learn_mode == 1) {
-            global displayLEDs[1] = 255;  // Bright when learning
+            global displayLEDs[1] = 255;
         } else {
-            global displayLEDs[1] = 64;   // Dim when normal
+            global displayLEDs[1] = 64;
         }
         
         yield();
