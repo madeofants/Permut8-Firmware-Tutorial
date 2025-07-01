@@ -463,6 +463,7 @@ jobs:
 | Wrong files processed | Check argument order |
 | Permission denied | Check file permissions and admin rights |
 | No output generated | Verify input file exists and syntax is correct |
+| Invalid mnemonic errors | Remove compiler comments - see [GAZL Comment Handling](../GAZL-COMMENT-HANDLING.md) |
 
 ### Next Steps
 

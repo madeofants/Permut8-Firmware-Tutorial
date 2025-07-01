@@ -18,6 +18,7 @@ Permut8 enables you to create custom audio effects and synthesizers that run dir
 - **[QUICKSTART](user-guides/QUICKSTART.md)** - Your first firmware in 30 minutes
 - **[How to Use This Documentation](user-guides/how-to-use-this-documentation.md)** - Navigation guide
 - **[Understanding Permut8 Operators](user-guides/tutorials/understanding-permut8-operators.md)** - Built-in effects system
+- **[GAZL Comment Handling](tutorials/GAZL-COMMENT-HANDLING.md)** - Working with compiler output
 
 ### 👨‍💻 **User Guides**
 - **[Tutorials](user-guides/tutorials/)** - Step-by-step learning progression (21 tutorials)
